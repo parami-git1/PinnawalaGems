@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 
 function Home() {
   const [homeData, setHomeData] = useState({
-    heroTitle: 'CEYLON SAPPHIRES',
-    brandIntro: 'Discover the world’s finest natural gemstones, ethically sourced and masterfully cut in Sri Lanka.',
+    heroTitle: 'Welcome to Pinnawala Gems',
+    brandIntro: 'Premium gemstones marketplace offering the finest quality stones.',
     address: 'Pinnawala, Sri Lanka',
     contactNumber: '+94 77 123 4567',
     whatsappNumber: '94776599740',
