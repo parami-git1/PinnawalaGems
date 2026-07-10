@@ -32,7 +32,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     return res.status(400).json({ message: 'No file uploaded' });
   }
   // Upload වුණාට පස්සේ ඒකේ ලින්ක් එක Frontend එකට යවනවා
-  const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+  const imageUrl = `https://pinnawalagems.onrender.com/uploads/${req.file.filename}`;
   res.json({ imageUrl });
 });
 

@@ -18,7 +18,7 @@ function Home() {
   const isAdmin = !!localStorage.getItem('token');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/home')
+    fetch('https://pinnawalagems.onrender.com/api/home')
       .then(res => res.json())
       .then(data => {
         if(data && data.heroTitle) setHomeData(data); 
@@ -40,7 +40,7 @@ function Home() {
     setIsUploading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', {
         method: 'POST',
         body: uploadData,
       });
@@ -59,7 +59,7 @@ function Home() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/home', {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/home', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

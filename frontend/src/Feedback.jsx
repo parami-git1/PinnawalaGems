@@ -7,7 +7,7 @@ function Feedback() {
   const isAdmin = !!localStorage.getItem('token');
 
   const fetchFeedbacks = () => {
-    fetch('http://localhost:5000/api/feedback')
+    fetch('https://pinnawalagems.onrender.com/api/feedback')
       .then(res => res.json())
       .then(data => setFeedbacks(data))
       .catch(err => console.log("Error fetching feedback:", err));
@@ -24,7 +24,7 @@ function Feedback() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/feedback', {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -41,7 +41,7 @@ function Feedback() {
 
   const handleApprove = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/feedback/${id}/approve`, {
+      const response = await fetch(`https://pinnawalagems.onrender.com/api/feedback/${id}/approve`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -57,7 +57,7 @@ function Feedback() {
     const isConfirmed = window.confirm("Are you sure you want to delete this review?");
     if (isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:5000/api/feedback/${id}`, {
+        const response = await fetch(`https://pinnawalagems.onrender.com/api/feedback/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });

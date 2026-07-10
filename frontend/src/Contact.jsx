@@ -17,7 +17,7 @@ function Contact() {
   const isAdmin = !!localStorage.getItem('token');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/contact')
+    fetch('https://pinnawalagems.onrender.com/api/contact')
       .then(res => res.json())
       .then(data => {
         if(data) setContactInfo(data);
@@ -31,7 +31,7 @@ function Contact() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/contact', {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/contact', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

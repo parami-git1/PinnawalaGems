@@ -15,7 +15,7 @@ function GemDetails() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/inventory/stones/${stoneId}`)
+    fetch(`https://pinnawalagems.onrender.com/api/inventory/stones/${stoneId}`)
       .then(res => {
         if (!res.ok) throw new Error("Stone not found");
         return res.json();
@@ -29,7 +29,7 @@ function GemDetails() {
         setLoading(false);
       });
 
-    fetch('http://localhost:5000/api/home')
+    fetch('https://pinnawalagems.onrender.com/api/home')
       .then(res => res.json())
       .then(data => {
         if(data && data.whatsappNumber && data.inquiryEmail) {

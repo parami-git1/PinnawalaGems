@@ -32,12 +32,12 @@ function CategoryView() {
 
   const fetchCategoryAndStones = async (page = 1) => {
     try {
-      const catRes = await fetch('http://localhost:5000/api/inventory/categories');
+      const catRes = await fetch('https://pinnawalagems.onrender.com/api/inventory/categories');
       const catData = await catRes.json();
       const currentCat = catData.find(c => c._id === categoryId);
       if (currentCat) setCategoryTitle(currentCat.title);
 
-      let url = `http://localhost:5000/api/inventory/categories/${categoryId}/stones?page=${page}&limit=12`;
+      let url = `https://pinnawalagems.onrender.com/api/inventory/categories/${categoryId}/stones?page=${page}&limit=12`;
       if (searchColor) url += `&color=${searchColor}`;
       if (searchShape) url += `&shape=${searchShape}`;
       if (minWeight) url += `&minWeight=${minWeight}`;
@@ -71,7 +71,7 @@ function CategoryView() {
     const uploadData = new FormData(); uploadData.append('image', file);
     setIsUploading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/upload', { method: 'POST', body: uploadData });
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
       if (response.ok) { const data = await response.json(); setFormData({ ...formData, image: data.imageUrl }); }
     } catch (error) { console.log(error); } finally { setIsUploading(false); }
   };
@@ -82,7 +82,7 @@ function CategoryView() {
     const uploadData = new FormData(); uploadData.append('image', file);
     setIsUploadingCert(true);
     try {
-      const response = await fetch('http://localhost:5000/api/upload', { method: 'POST', body: uploadData });
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
       if (response.ok) { const data = await response.json(); setFormData({ ...formData, certificateImage: data.imageUrl }); }
     } catch (error) { console.log(error); } finally { setIsUploadingCert(false); }
   };
@@ -113,7 +113,7 @@ function CategoryView() {
     const payload = { ...formData, categoryId };
     if (!payload.price) delete payload.price;
 
-    const url = isEditMode ? `http://localhost:5000/api/inventory/stones/${editStoneId}` : 'http://localhost:5000/api/inventory/stones';
+    const url = isEditMode ? `https://pinnawalagems.onrender.com/api/inventory/stones/${editStoneId}` : 'https://pinnawalagems.onrender.com/api/inventory/stones';
     const method = isEditMode ? 'PUT' : 'POST';
 
     try {
@@ -134,14 +134,14 @@ function CategoryView() {
 
   const handleDeleteStone = async (stoneId) => {
     if(window.confirm("Are you sure you want to delete this stone?")) {
-       await fetch(`http://localhost:5000/api/inventory/stones/${stoneId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+       await fetch(`https://pinnawalagems.onrender.com/api/inventory/stones/${stoneId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
        fetchCategoryAndStones(currentPage);
     }
   };
 
   const handleToggleFeature = async (stoneId) => {
     try {
-      await fetch(`http://localhost:5000/api/inventory/stones/${stoneId}/feature`, { method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+      await fetch(`https://pinnawalagems.onrender.com/api/inventory/stones/${stoneId}/feature`, { method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
       fetchCategoryAndStones(currentPage);
     } catch (error) { console.log(error); }
   };

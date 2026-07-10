@@ -23,7 +23,7 @@ function AdminInventory() {
   useEffect(() => { fetchCategories(); }, []);
 
   const fetchCategories = () => {
-    fetch('http://localhost:5000/api/stock/categories')
+    fetch('https://pinnawalagems.onrender.com/api/stock/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -49,7 +49,7 @@ function AdminInventory() {
   }, [selectedCategory]);
 
   const fetchStones = () => {
-    fetch(`http://localhost:5000/api/stock/categories/${selectedCategory}/stones`)
+    fetch(`https://pinnawalagems.onrender.com/api/stock/categories/${selectedCategory}/stones`)
       .then(res => res.json())
       .then(data => setStones(data.stones || []))
       .catch(err => console.log(err));
@@ -61,7 +61,7 @@ function AdminInventory() {
     const uploadData = new FormData(); uploadData.append('image', file);
     setIsUploadingCat(true);
     try {
-      const response = await fetch('http://localhost:5000/api/upload', { method: 'POST', body: uploadData });
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
       if (response.ok) { 
         const data = await response.json(); 
         setCatFormData({ ...catFormData, mainImage: data.imageUrl }); 
@@ -76,7 +76,7 @@ function AdminInventory() {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/api/stock/categories', {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/stock/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(catFormData)
@@ -96,7 +96,7 @@ function AdminInventory() {
   const handleDeleteCategory = async () => {
     if (window.confirm("WARNING: Are you sure you want to delete this entire Gem Type? ALL the stock items inside this category will also be permanently deleted!")) {
       try {
-        const response = await fetch(`http://localhost:5000/api/stock/categories/${selectedCategory}`, {
+        const response = await fetch(`https://pinnawalagems.onrender.com/api/stock/categories/${selectedCategory}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
@@ -123,7 +123,7 @@ function AdminInventory() {
     const uploadData = new FormData(); uploadData.append('image', file);
     setIsUploading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/upload', { method: 'POST', body: uploadData });
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
       if (response.ok) { 
         const data = await response.json(); 
         setFormData({ ...formData, image: data.imageUrl }); 
@@ -156,7 +156,7 @@ function AdminInventory() {
       return;
     }
     const payload = { ...formData, categoryId: selectedCategory, quantity: formData.quantity || 1 };
-    const url = isEditMode ? `http://localhost:5000/api/stock/stones/${editStoneId}` : 'http://localhost:5000/api/stock/stones';
+    const url = isEditMode ? `https://pinnawalagems.onrender.com/api/stock/stones/${editStoneId}` : 'https://pinnawalagems.onrender.com/api/stock/stones';
     const method = isEditMode ? 'PUT' : 'POST';
 
     try {
@@ -175,7 +175,7 @@ function AdminInventory() {
 
   const handleDelete = async (stoneId) => {
     if(window.confirm("Delete this from business inventory?")) {
-       await fetch(`http://localhost:5000/api/stock/stones/${stoneId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+       await fetch(`https://pinnawalagems.onrender.com/api/stock/stones/${stoneId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
        setStones(stones.filter(s => s._id !== stoneId));
     }
   };

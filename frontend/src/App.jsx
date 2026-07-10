@@ -25,7 +25,7 @@ function App() {
   const [filterCert, setFilterCert] = useState(false);
 
   const fetchCategories = () => {
-    fetch('http://localhost:5000/api/inventory/categories')
+    fetch('https://pinnawalagems.onrender.com/api/inventory/categories')
       .then(res => res.json())
       .then(data => { 
         setCategories(Array.isArray(data) ? data : []); 
@@ -41,7 +41,7 @@ function App() {
     if (isFilterActive) {
       setIsSearching(true);
       setLoading(true);
-      let url = `http://localhost:5000/api/inventory/stones?page=1&limit=50`;
+      let url = `https://pinnawalagems.onrender.com/api/inventory/stones?page=1&limit=50`;
       if (searchType) url += `&gemType=${searchType}`;
       if (searchColor) url += `&color=${searchColor}`;
       if (searchShape) url += `&shape=${searchShape}`;
@@ -70,7 +70,7 @@ function App() {
     uploadData.append('image', file);
     setIsUploading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/upload', { method: 'POST', body: uploadData });
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
       if (response.ok) {
         const data = await response.json();
         setCatFormData(prev => ({ ...prev, mainImage: data.imageUrl }));
@@ -91,7 +91,7 @@ function App() {
         mainImage: catFormData.mainImage
     };
 
-    const url = isEditCat ? `http://localhost:5000/api/inventory/categories/${editCatId}` : 'http://localhost:5000/api/inventory/categories';
+    const url = isEditCat ? `https://pinnawalagems.onrender.com/api/inventory/categories/${editCatId}` : 'https://pinnawalagems.onrender.com/api/inventory/categories';
     const method = isEditCat ? 'PUT' : 'POST';
 
     try {
@@ -128,7 +128,7 @@ function App() {
   const handleDeleteCategory = async (categoryId) => {
     if (window.confirm("Are you sure you want to delete this Gem Type? WARNING: All stones inside this category will also be deleted!")) {
       try {
-        const response = await fetch(`http://localhost:5000/api/inventory/categories/${categoryId}`, {
+        const response = await fetch(`https://pinnawalagems.onrender.com/api/inventory/categories/${categoryId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });

@@ -10,7 +10,7 @@ function Workshop() {
   const isAdmin = !!localStorage.getItem('token');
 
   const fetchSteps = () => {
-    fetch('http://localhost:5000/api/workshop')
+    fetch('https://pinnawalagems.onrender.com/api/workshop')
       .then(res => res.json())
       .then(data => setSteps(data))
       .catch(err => console.log("Error fetching workshop steps:", err));
@@ -34,7 +34,7 @@ function Workshop() {
     setIsUploading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', {
         method: 'POST',
         body: uploadData,
       });
@@ -56,7 +56,7 @@ function Workshop() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/workshop', {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/workshop', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ function Workshop() {
     const isConfirmed = window.confirm("Are you sure you want to delete this section?");
     if (isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:5000/api/workshop/${id}`, {
+        const response = await fetch(`https://pinnawalagems.onrender.com/api/workshop/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
