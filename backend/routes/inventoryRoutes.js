@@ -65,10 +65,10 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
   }
 });
 
-// 4. අලුත් ගලක් එකතු කිරීම
+// 4. අලුත් ගලක් එකතු කිරීම (Origin සහ Additional Images එක් කර ඇත)
 router.post('/stones', async (req, res) => {
   try {
-    const { categoryId, title, description, weight, color, shape, price, hasCertificate, certificateDetails, certificateImage, image, isFeatured, quantity } = req.body;
+    const { categoryId, title, description, weight, color, shape, price, hasCertificate, certificateDetails, certificateImage, image, isFeatured, quantity, origin, additionalImages } = req.body;
     
     const category = await GemCategory.findById(categoryId);
     const prefix = category.title.toLowerCase().replace(/\s+/g, '-');
@@ -86,7 +86,9 @@ router.post('/stones', async (req, res) => {
     const newStone = new Stone({ 
       categoryId, title, description, weight, color, shape, price, 
       hasCertificate, certificateDetails, certificateImage, image, isFeatured, stoneId,
-      quantity: quantity || 1
+      quantity: quantity || 1,
+      origin: origin || '', 
+      additionalImages: additionalImages || []
     });
     
     await newStone.save();
@@ -108,7 +110,7 @@ router.put('/stones/:stoneId/feature', async (req, res) => {
   }
 });
 
-// 6. 🔹 අලුතින් එකතු කළ API එක: Category එකක තියෙන "ගල් ඔක්කොම එකපාර මකන" Route එක
+// 6. Category එකක තියෙන "ගල් ඔක්කොම එකපාර මකන" Route එක
 router.delete('/categories/:categoryId/stones', async (req, res) => {
   try {
     const stones = await Stone.find({ categoryId: req.params.categoryId });
@@ -121,6 +123,14 @@ router.delete('/categories/:categoryId/stones', async (req, res) => {
       if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
         const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
         await cloudinary.uploader.destroy(certPublicId);
+      }
+      if (stone.additionalImages && stone.additionalImages.length > 0) {
+        for (const img of stone.additionalImages) {
+          if (img.includes('cloudinary')) {
+            const pubId = img.split('/').slice(-2).join('/').split('.')[0];
+            await cloudinary.uploader.destroy(pubId);
+          }
+        }
       }
     }
 
@@ -154,6 +164,14 @@ router.delete('/categories/:categoryId', async (req, res) => {
         const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
         await cloudinary.uploader.destroy(certPublicId);
       }
+      if (stone.additionalImages && stone.additionalImages.length > 0) {
+        for (const img of stone.additionalImages) {
+          if (img.includes('cloudinary')) {
+            const pubId = img.split('/').slice(-2).join('/').split('.')[0];
+            await cloudinary.uploader.destroy(pubId);
+          }
+        }
+      }
     }
 
     await Stone.deleteMany({ categoryId: req.params.categoryId });
@@ -178,6 +196,14 @@ router.delete('/stones/:stoneId', async (req, res) => {
     if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
       const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
       await cloudinary.uploader.destroy(certPublicId);
+    }
+    if (stone.additionalImages && stone.additionalImages.length > 0) {
+      for (const img of stone.additionalImages) {
+        if (img.includes('cloudinary')) {
+          const pubId = img.split('/').slice(-2).join('/').split('.')[0];
+          await cloudinary.uploader.destroy(pubId);
+        }
+      }
     }
 
     await Stone.findByIdAndDelete(req.params.stoneId);

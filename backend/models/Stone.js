@@ -14,7 +14,9 @@ const stoneSchema = new mongoose.Schema({
   hasCertificate: { type: Boolean, default: false },
   certificateDetails: { type: String, required: false },
   certificateImage: { type: String, required: false },
-  isFeatured: { type: Boolean, default: false }
+  isFeatured: { type: Boolean, default: false },
+  origin: { type: String, default: '' },
+  additionalImages: [{ type: String }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('Stone', stoneSchema);

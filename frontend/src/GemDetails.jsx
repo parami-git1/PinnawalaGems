@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FaWhatsapp } from 'react-icons/fa';
+import { FaWhatsapp, FaChevronLeft, FaChevronRight } from 'react-icons/fa'; // 🔹 Arrows අලුතින් ගත්තා
 import { MdEmail, MdVerified } from 'react-icons/md';
 
 function GemDetails() {
@@ -13,6 +13,9 @@ function GemDetails() {
   });
   
   const [loading, setLoading] = useState(true);
+
+  // 🔹 පින්තූර මාරු කරන්න හදපු State එක
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   useEffect(() => {
     fetch(`https://pinnawalagems.onrender.com/api/inventory/stones/${stoneId}`)
@@ -39,14 +42,12 @@ function GemDetails() {
       .catch(err => console.log("Error fetching contact details:", err));
   }, [stoneId]);
 
-  // 🔹 Methane thamai waradda haduwe (gem.stoneId damma)
   const handleWhatsAppInquiry = () => {
     const message = `Hello Pinnawala Gems, I'm interested in the ${gem.title} (Reference ID: ${gem.stoneId}). Could you provide more details?`;
     const whatsappUrl = `https://wa.me/${contactInfo.whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
-  // 🔹 Email eketath gem.stoneId damma
   const handleEmailInquiry = () => {
     const subject = `Inquiry regarding ${gem.title}`;
     const body = `Hello,\n\nI am interested in the ${gem.title} (Reference ID: ${gem.stoneId}) from your collection. Please send me more information.\n\nThank you.`;
@@ -70,6 +71,18 @@ function GemDetails() {
     );
   }
 
+  // 🔹 Main image එකයි additional images ටිකයි එකතු කරලා එක Array එකක් හදාගන්නවා
+  const allImages = [gem.image, ...(gem.additionalImages || [])].filter(Boolean);
+
+  // 🔹 පින්තූර ඊළඟ එකට හා කලින් එකට මාරු කරන Functions
+  const nextImage = () => {
+    setCurrentImgIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevImage = () => {
+    setCurrentImgIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-blue-950">
       {/* Header */}
@@ -85,12 +98,44 @@ function GemDetails() {
       <main className="max-w-7xl mx-auto px-6 py-12 md:py-20">
         <div className="bg-white border border-blue-100 shadow-2xl rounded-sm overflow-hidden flex flex-col lg:flex-row">
           
-          <div className="w-full lg:w-1/2 bg-slate-100 relative p-8 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-blue-50">
+          {/* 🔹 Image Container with Slider 🔹 */}
+          <div className="w-full lg:w-1/2 bg-slate-100 relative p-8 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-blue-50 group">
+            
             <img
-              src={gem.image || "https://via.placeholder.com/600x600?text=No+Image"}
-              alt={gem.title}
-              className="w-full max-h-[600px] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-700 ease-in-out"
+              src={allImages[currentImgIndex] || "https://via.placeholder.com/600x600?text=No+Image"}
+              alt={`${gem.title} - View ${currentImgIndex + 1}`}
+              className="w-full max-h-[600px] object-contain drop-shadow-2xl transition-transform duration-700 ease-in-out"
             />
+
+            {/* පින්තූර 1 කට වඩා තියෙනවා නම් විතරක් Arrows පෙන්නනවා */}
+            {allImages.length > 1 && (
+              <>
+                <button 
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-blue-950 p-4 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all z-10 hover:scale-110"
+                >
+                  <FaChevronLeft className="text-xl" />
+                </button>
+
+                <button 
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-blue-950 p-4 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all z-10 hover:scale-110"
+                >
+                  <FaChevronRight className="text-xl" />
+                </button>
+
+                {/* Dots Indicators */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                  {allImages.map((_, idx) => (
+                    <button 
+                      key={idx} 
+                      onClick={() => setCurrentImgIndex(idx)}
+                      className={`h-2 rounded-full transition-all duration-300 ${currentImgIndex === idx ? 'w-6 bg-blue-950' : 'w-2 bg-slate-300 hover:bg-slate-400'}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           
           <div className="w-full lg:w-1/2 p-8 md:p-12 flex flex-col bg-white">
@@ -100,7 +145,6 @@ function GemDetails() {
               </h1>
               <div className="flex items-center gap-2 mb-6">
                 <span className="w-8 h-px bg-blue-300"></span>
-                {/* 🔹 Reference ID ekatath gem.stoneId damma */}
                 <p className="text-xs font-bold tracking-widest text-slate-400 uppercase">Reference ID: {gem.stoneId}</p>
               </div>
             </div>
@@ -109,7 +153,7 @@ function GemDetails() {
               <p className="text-slate-600 text-base leading-relaxed font-light">{gem.description}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-y-4 gap-x-8 border-t border-b border-slate-100 py-6 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8 border-t border-b border-slate-100 py-6 mb-8">
               <div>
                 <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400 block mb-1">Weight</span>
                 <span className="text-lg font-bold text-blue-950">{gem.weight} ct</span>
@@ -122,6 +166,15 @@ function GemDetails() {
                 <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400 block mb-1">Color</span>
                 <span className="text-lg font-bold text-blue-950 uppercase">{gem.color}</span>
               </div>
+              
+              {/* 🔹 Origin එක මෙතන පෙන්නනවා (තියෙනවා නම් විතරක්) */}
+              {gem.origin && (
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400 block mb-1">Origin</span>
+                  <span className="text-lg font-bold text-blue-950 uppercase">{gem.origin}</span>
+                </div>
+              )}
+
               {gem.price && (
                 <div>
                   <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400 block mb-1">Price</span>

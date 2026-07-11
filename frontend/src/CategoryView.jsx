@@ -15,9 +15,10 @@ function CategoryView() {
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingCert, setIsUploadingCert] = useState(false); 
   
+  // 🔹 Origin සහ Additional Images අලුතින් එකතු කර ඇත
   const [formData, setFormData] = useState({
-    title: '', shape: '', weight: '', color: '', price: '', description: '',
-    hasCertificate: false, certificateDetails: '', certificateImage: '', image: '', isFeatured: false
+    title: '', shape: '', weight: '', color: '', price: '', description: '', origin: '',
+    hasCertificate: false, certificateDetails: '', certificateImage: '', image: '', additionalImages: [], isFeatured: false
   });
 
   const [searchId, setSearchId] = useState('');
@@ -29,6 +30,23 @@ function CategoryView() {
   const [maxPrice, setMaxPrice] = useState('');
   const [filterCert, setFilterCert] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // 🔹 Hover Animation සඳහා States
+  const [hoveredStoneId, setHoveredStoneId] = useState(null);
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
+  // Hover කළාම පින්තූර මාරු වෙන Logic එක
+  useEffect(() => {
+    let interval;
+    if (hoveredStoneId) {
+      interval = setInterval(() => {
+        setCurrentImgIndex(prev => prev + 1);
+      }, 1000); // තත්පරෙන් තත්පරේට පින්තූරය මාරු වෙයි
+    } else {
+      setCurrentImgIndex(0);
+    }
+    return () => clearInterval(interval);
+  }, [hoveredStoneId]);
   
   const fetchCategoryAndStones = async (page = 1) => {
     try {
@@ -77,6 +95,32 @@ function CategoryView() {
     } catch (error) { console.log(error); } finally { setIsUploading(false); }
   };
 
+  // 🔹 අමතර පින්තූර Upload කරන Function එක
+  const handleAdditionalImagesUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setIsUploading(true);
+    try {
+      const uploadedUrls = [];
+      for (const file of files) {
+        const uploadData = new FormData(); uploadData.append('image', file);
+        const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
+        if (response.ok) {
+          const data = await response.json();
+          uploadedUrls.push(data.imageUrl);
+        }
+      }
+      setFormData(prev => ({ ...prev, additionalImages: [...(prev.additionalImages || []), ...uploadedUrls] }));
+    } catch (error) { console.log(error); } finally { setIsUploading(false); }
+  };
+
+  const removeAdditionalImage = (indexToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      additionalImages: prev.additionalImages.filter((_, index) => index !== indexToRemove)
+    }));
+  };
+
   const handleCertUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -90,7 +134,7 @@ function CategoryView() {
 
   const openAddForm = () => {
     setIsEditMode(false);
-    setFormData({ title: '', shape: '', weight: '', color: '', price: '', description: '', hasCertificate: false, certificateDetails: '', certificateImage: '', image: '', isFeatured: false });
+    setFormData({ title: '', shape: '', weight: '', color: '', price: '', description: '', origin: '', hasCertificate: false, certificateDetails: '', certificateImage: '', image: '', additionalImages: [], isFeatured: false });
     setShowForm(true);
   };
 
@@ -98,8 +142,8 @@ function CategoryView() {
     setIsEditMode(true);
     setEditStoneId(stone._id);
     setFormData({
-      title: stone.title, shape: stone.shape, weight: stone.weight, color: stone.color, price: stone.price || '', description: stone.description || '',
-      hasCertificate: stone.hasCertificate, certificateDetails: stone.certificateDetails || '', certificateImage: stone.certificateImage || '', image: stone.image, isFeatured: stone.isFeatured
+      title: stone.title, shape: stone.shape, weight: stone.weight, color: stone.color, price: stone.price || '', description: stone.description || '', origin: stone.origin || '',
+      hasCertificate: stone.hasCertificate, certificateDetails: stone.certificateDetails || '', certificateImage: stone.certificateImage || '', image: stone.image, additionalImages: stone.additionalImages || [], isFeatured: stone.isFeatured
     });
     setShowForm(true);
     window.scrollTo({ top: 300, behavior: 'smooth' });
@@ -140,7 +184,6 @@ function CategoryView() {
     }
   };
 
-  // 🔹 අලුතින් වෙනස් කළ "ඔක්කොම මකන" Function එක (Type කරන්න ඕනේ නෑ) 🔹
   const handleDeleteAllStones = async () => {
     if (window.confirm("🚨 WARNING: Are you ABSOLUTELY SURE you want to delete ALL stones in this category? This action cannot be undone!")) {
        try {
@@ -235,7 +278,6 @@ function CategoryView() {
           </div>
         )}
 
-        {/* ---------------- 🔹 ADMIN ADD/EDIT FORM & DELETE ALL BUTTONS 🔹 ---------------- */}
         {isAdmin && (
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-10">
             {!showForm && (
@@ -244,7 +286,6 @@ function CategoryView() {
               </button>
             )}
             
-            {/* 🔴 අලුත් Delete All බොත්තම */}
             {!showForm && stones.length > 0 && (
               <button onClick={handleDeleteAllStones} className="bg-red-50 text-red-600 border border-red-200 px-8 py-3 text-xs font-bold tracking-widest uppercase hover:bg-red-600 hover:text-white shadow-sm transition-colors">
                 🗑️ Delete All Stones
@@ -257,10 +298,14 @@ function CategoryView() {
           <div className="bg-white p-8 md:p-12 w-full max-w-3xl mx-auto border border-blue-100 shadow-xl rounded-sm mb-16">
             <h2 className="text-2xl font-serif text-blue-950 mb-8 text-center tracking-widest uppercase font-bold">{isEditMode ? 'Edit Stone Details' : 'Add Stone Details'}</h2>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2"><label className="text-xs text-blue-800 uppercase font-semibold">Gem Title</label><input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
-              <div><label className="text-xs text-blue-800 uppercase font-semibold">Shape</label><input type="text" name="shape" value={formData.shape} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
-              <div><label className="text-xs text-blue-800 uppercase font-semibold">Color</label><input type="text" name="color" value={formData.color} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
-              <div><label className="text-xs text-blue-800 uppercase font-semibold">Weight (ct)</label><input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
+              <div className="md:col-span-2"><label className="text-xs text-blue-800 uppercase font-semibold">Gem Title *</label><input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
+              
+              {/* 🔹 Origin එක අලුතින් එක් කළා */}
+              <div className="md:col-span-2"><label className="text-xs text-blue-800 uppercase font-semibold">Origin (Optional)</label><input type="text" name="origin" value={formData.origin} onChange={handleChange} placeholder="e.g. Ceylon" className="w-full border p-3 mt-2 bg-slate-50" /></div>
+
+              <div><label className="text-xs text-blue-800 uppercase font-semibold">Shape *</label><input type="text" name="shape" value={formData.shape} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
+              <div><label className="text-xs text-blue-800 uppercase font-semibold">Color *</label><input type="text" name="color" value={formData.color} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
+              <div><label className="text-xs text-blue-800 uppercase font-semibold">Weight (ct) *</label><input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} required className="w-full border p-3 mt-2" /></div>
               <div><label className="text-xs text-blue-800 uppercase font-semibold">Price (Rs.) - Optional</label><input type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full border p-3 mt-2" /></div>
               
               <div className="md:col-span-2"><label className="flex items-center gap-3"><input type="checkbox" name="hasCertificate" checked={formData.hasCertificate} onChange={handleChange} className="w-5 h-5" /><span className="text-xs text-blue-800 uppercase font-bold">Has Certificate?</span></label></div>
@@ -281,14 +326,32 @@ function CategoryView() {
               </div>
               
               <div className="md:col-span-2 border-2 border-dashed border-blue-200 p-6 text-center">
-                <label className="text-xs text-blue-800 uppercase font-semibold block mb-4">Upload Main Stone Image</label>
-                <input type="file" onChange={handleImageUpload} className="text-sm mx-auto block" />
+                <label className="text-xs text-blue-800 uppercase font-semibold block mb-4">Upload Main Stone Image *</label>
+                <input type="file" onChange={handleImageUpload} className="text-sm mx-auto block" required={!isEditMode && !formData.image} />
                 {formData.image && !isUploading && <img src={formData.image} alt="Preview" className="h-32 mx-auto object-cover mt-4 border p-1" />}
+              </div>
+
+              {/* 🔹 Additional Images අලුතින් එක් කළා */}
+              <div className="md:col-span-2 border border-slate-200 p-6 bg-slate-50">
+                <label className="text-xs text-blue-800 uppercase font-semibold block mb-2">Upload Additional Images (Optional)</label>
+                <p className="text-[10px] text-slate-500 mb-4">You can select multiple images to show different angles of the gem.</p>
+                <input type="file" multiple onChange={handleAdditionalImagesUpload} className="text-sm block" />
+                
+                {formData.additionalImages && formData.additionalImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {formData.additionalImages.map((img, idx) => (
+                      <div key={idx} className="relative group">
+                        <img src={img} alt={`Additional ${idx}`} className="h-16 w-16 object-cover border border-slate-300" />
+                        <button type="button" onClick={() => removeAdditionalImage(idx)} className="absolute -top-2 -right-2 bg-red-600 text-white w-5 h-5 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               <div className="md:col-span-2 flex gap-4 mt-4">
                 <button type="button" onClick={() => setShowForm(false)} className="w-1/3 bg-slate-200 font-bold py-4 uppercase">Cancel</button>
-                <button type="submit" disabled={isUploading || isUploadingCert || !formData.image} className="w-2/3 bg-blue-950 text-white font-bold py-4 uppercase">Save Stone</button>
+                <button type="submit" disabled={isUploading || isUploadingCert} className="w-2/3 bg-blue-950 text-white font-bold py-4 uppercase">Save Stone</button>
               </div>
             </form>
           </div>
@@ -299,39 +362,54 @@ function CategoryView() {
           <p className="text-center text-slate-400 font-serif tracking-widest py-12">No stones match your search criteria.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {stones.map(stone => (
-              <div key={stone._id} className="bg-white border border-slate-100 p-5 shadow-sm hover:shadow-xl transition-all flex flex-col relative group">
-                
-                {stone.isFeatured && <span className="absolute top-2 left-2 bg-amber-400 text-amber-950 text-[9px] px-2 py-1 uppercase font-bold tracking-widest z-10 shadow-sm">★ Featured</span>}
-                
-                {isAdmin && (
-                  <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEditForm(stone)} className="bg-amber-500 hover:bg-amber-600 text-white text-[8px] px-2 py-1 uppercase font-bold shadow-md">Edit</button>
-                    <button onClick={() => handleToggleFeature(stone._id)} className="bg-blue-600 hover:bg-blue-700 text-white text-[8px] px-2 py-1 uppercase font-bold shadow-md">{stone.isFeatured ? 'Unfeature' : 'Feature'}</button>
-                    <button onClick={() => handleDeleteStone(stone._id)} className="bg-red-600 hover:bg-red-700 text-white text-[8px] px-2 py-1 uppercase font-bold shadow-md">Delete</button>
-                  </div>
-                )}
-                
-                <Link to={`/gem/${stone._id}`} className="relative h-48 bg-slate-50 flex items-center justify-center mb-4 overflow-hidden">
-                  <img src={stone.image} alt={stone.title} className="max-h-full object-contain group-hover:scale-110 transition-transform duration-700" />
-                  {stone.hasCertificate && <div className="absolute bottom-2 right-2 bg-white text-green-600 px-2 py-1 text-[8px] font-bold tracking-widest border border-green-200 shadow-sm flex items-center gap-1"><span>✓</span> CERTIFIED</div>}
-                </Link>
+            {stones.map(stone => {
+              // 🔹 මේ ගලට අදාළ ඔක්කොම පින්තූර එකතු කරලා Array එකක් හදාගන්නවා 
+              const allImages = [stone.image, ...(stone.additionalImages || [])];
+              
+              // 🔹 Hover කරලා තියෙන ගල නම්, Index එකට අදාළ පින්තූරය ගන්නවා. නැත්නම් මුල් පින්තූරය විතරයි.
+              const displayImage = hoveredStoneId === stone._id ? allImages[currentImgIndex % allImages.length] : stone.image;
 
-                <h4 className="text-lg font-serif font-bold text-blue-950 uppercase mb-1 line-clamp-1" title={stone.title}>{stone.title}</h4>
-                
-                {stone.stoneId && <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-3">ID: {stone.stoneId}</p>}
-                
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <span className="text-blue-800 text-[9px] font-bold uppercase border border-blue-100 px-2 py-1">{stone.shape}</span>
-                  <span className="text-blue-800 text-[9px] font-bold uppercase border border-blue-100 px-2 py-1">{stone.weight} ct</span>
-                  {stone.price && <span className="text-green-800 bg-green-50 text-[9px] font-bold uppercase border border-green-200 px-2 py-1">Rs. {stone.price}</span>}
+              return (
+                <div key={stone._id} className="bg-white border border-slate-100 p-5 shadow-sm hover:shadow-xl transition-all flex flex-col relative group">
+                  
+                  {stone.isFeatured && <span className="absolute top-2 left-2 bg-amber-400 text-amber-950 text-[9px] px-2 py-1 uppercase font-bold tracking-widest z-10 shadow-sm">★ Featured</span>}
+                  
+                  {isAdmin && (
+                    <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEditForm(stone)} className="bg-amber-500 hover:bg-amber-600 text-white text-[8px] px-2 py-1 uppercase font-bold shadow-md">Edit</button>
+                      <button onClick={() => handleToggleFeature(stone._id)} className="bg-blue-600 hover:bg-blue-700 text-white text-[8px] px-2 py-1 uppercase font-bold shadow-md">{stone.isFeatured ? 'Unfeature' : 'Feature'}</button>
+                      <button onClick={() => handleDeleteStone(stone._id)} className="bg-red-600 hover:bg-red-700 text-white text-[8px] px-2 py-1 uppercase font-bold shadow-md">Delete</button>
+                    </div>
+                  )}
+                  
+                  <Link to={`/gem/${stone._id}`} 
+                    className="relative h-48 bg-slate-50 flex items-center justify-center mb-4 overflow-hidden"
+                    onMouseEnter={() => setHoveredStoneId(stone._id)}
+                    onMouseLeave={() => setHoveredStoneId(null)}
+                  >
+                    <img src={displayImage} alt={stone.title} className="max-h-full object-contain group-hover:scale-110 transition-transform duration-700" />
+                    {stone.hasCertificate && <div className="absolute bottom-2 right-2 bg-white text-green-600 px-2 py-1 text-[8px] font-bold tracking-widest border border-green-200 shadow-sm flex items-center gap-1"><span>✓</span> CERTIFIED</div>}
+                  </Link>
+
+                  <h4 className="text-lg font-serif font-bold text-blue-950 uppercase mb-1 line-clamp-1" title={stone.title}>{stone.title}</h4>
+                  
+                  {stone.stoneId && <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-1">ID: {stone.stoneId}</p>}
+                  
+                  {/* 🔹 Origin එක අලුතින් එක් කළා */}
+                  {stone.origin && <p className="text-[9px] text-blue-600 font-bold tracking-widest uppercase mb-3">🌍 Origin: {stone.origin}</p>}
+                  
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    <span className="text-blue-800 text-[9px] font-bold uppercase border border-blue-100 px-2 py-1">{stone.shape}</span>
+                    <span className="text-blue-800 text-[9px] font-bold uppercase border border-blue-100 px-2 py-1">{stone.weight} ct</span>
+                    {stone.price && <span className="text-green-800 bg-green-50 text-[9px] font-bold uppercase border border-green-200 px-2 py-1">Rs. {stone.price}</span>}
+                  </div>
+                  
+                  <div className="mt-auto border-t border-slate-100 pt-4 text-center">
+                    <Link to={`/gem/${stone._id}`} className="text-blue-700 hover:text-blue-900 text-xs font-bold uppercase tracking-widest transition-colors">View Details ➔</Link>
+                  </div>
                 </div>
-                
-                <div className="mt-auto border-t border-slate-100 pt-4 text-center">
-                  <Link to={`/gem/${stone._id}`} className="text-blue-700 hover:text-blue-900 text-xs font-bold uppercase tracking-widest transition-colors">View Details ➔</Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
