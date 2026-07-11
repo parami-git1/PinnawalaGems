@@ -20,7 +20,7 @@ function AdminInventory() {
   const [catFormData, setCatFormData] = useState({ title: '', description: '', mainImage: '' });
   const [isUploadingCat, setIsUploadingCat] = useState(false);
 
-  // 🔹 අලුතින් එකතු කළ Filter States
+  // Filter States
   const [searchId, setSearchId] = useState('');
   const [searchColor, setSearchColor] = useState('');
   const [searchShape, setSearchShape] = useState('');
@@ -29,6 +29,9 @@ function AdminInventory() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [filterCert, setFilterCert] = useState(false);
+
+  // 🔹 අලුතින් දැම්ම Admin Filter Toggle State එක
+  const [showFilters, setShowFilters] = useState(false);
   
   useEffect(() => { fetchCategories(); }, []);
 
@@ -50,7 +53,6 @@ function AdminInventory() {
       .catch(err => console.log(err));
   };
 
-  // 🔹 Filters වෙනස් වෙද්දී Stones අලුත් කරන useEffect එක
   useEffect(() => {
     if (selectedCategory) {
       fetchStones();
@@ -60,7 +62,6 @@ function AdminInventory() {
   }, [selectedCategory, searchId, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
 
   const fetchStones = () => {
-    // 🔹 අලුත් Filter Parameters URL එකට යැවීම
     let url = `https://pinnawalagems.onrender.com/api/stock/categories/${selectedCategory}/stones?_v=1`;
     if (searchId) url += `&stoneId=${searchId}`;
     if (searchColor) url += `&color=${searchColor}`;
@@ -77,7 +78,6 @@ function AdminInventory() {
       .catch(err => console.log(err));
   };
 
-  // 🔹 Filters Reset කිරීමේ Function එක
   const handleResetFilters = () => {
     setSearchId(''); setSearchColor(''); setSearchShape('');
     setMinWeight(''); setMaxWeight(''); setMinPrice(''); setMaxPrice('');
@@ -324,38 +324,51 @@ function AdminInventory() {
                 </form>
               )}
 
-              {/* ---------------- අලුත් FILTER PANEL එක Admin Inventory එකට ---------------- */}
-              <div className="bg-white border border-slate-200 shadow-sm p-4 mb-6 rounded-sm">
-                <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-900">🔍 Filter Stock Inventory</h3>
-                  <button onClick={handleResetFilters} className="text-[9px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">Reset All</button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-                  <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-                  <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-                  <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-                  <div>
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
-                    <div className="flex gap-1 mt-1">
-                      <input type="number" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                      <input type="number" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
-                    <div className="flex gap-1 mt-1">
-                      <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                      <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 pt-2 border-t border-slate-50 flex items-center">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-3 h-3 accent-blue-950" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Show Certified Only</span>
-                  </label>
-                </div>
+              {/* ---------------- 🔹 ADMIN FILTER HEADER & TOGGLE BUTTON ---------------- */}
+              <div className="flex justify-between items-center mb-3 mt-6">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-900">📦 Stock Inventory</h3>
+                <button 
+                  onClick={() => setShowFilters(!showFilters)} 
+                  className="bg-slate-200 text-blue-950 px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-300 transition-colors shadow-sm flex items-center gap-2"
+                >
+                  {showFilters ? '✖ Hide Filters' : '🔍 Filter Stock'}
+                </button>
               </div>
+
+              {/* ---------------- ADMIN FILTER PANEL (Conditional Rendering) ---------------- */}
+              {showFilters && (
+                <div className="bg-white border border-slate-200 shadow-sm p-4 mb-6 rounded-sm transition-all">
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+                    <h3 className="text-[9px] font-bold uppercase tracking-widest text-blue-900 opacity-0">Filter</h3> {/* Spacing aligner */}
+                    <button onClick={handleResetFilters} className="text-[9px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">Reset All</button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                    <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+                    <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+                    <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+                    <div>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
+                      <div className="flex gap-1 mt-1">
+                        <input type="number" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                        <input type="number" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
+                      <div className="flex gap-1 mt-1">
+                        <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                        <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-slate-50 flex items-center">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-3 h-3 accent-blue-950" />
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Show Certified Only</span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
                 {stones.length === 0 ? (

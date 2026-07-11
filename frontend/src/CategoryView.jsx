@@ -9,7 +9,7 @@ function CategoryView() {
   const [currentPage, setCurrentPage] = useState(1);
   const isAdmin = !!localStorage.getItem('token');
 
-  // 🔹 Form States (Add and Edit)
+  // Form States (Add and Edit)
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editStoneId, setEditStoneId] = useState(null);
@@ -21,7 +21,7 @@ function CategoryView() {
     hasCertificate: false, certificateDetails: '', certificateImage: '', image: '', isFeatured: false
   });
 
-  // 🔹 Filters (Gem ID එක අලුතින් එක් කර ඇත)
+  // Filters
   const [searchId, setSearchId] = useState('');
   const [searchColor, setSearchColor] = useState('');
   const [searchShape, setSearchShape] = useState('');
@@ -30,6 +30,9 @@ function CategoryView() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [filterCert, setFilterCert] = useState(false);
+
+  // 🔹 අලුතින් දැම්ම Filter Button Toggle State එක
+  const [showFilters, setShowFilters] = useState(false);
   
   const fetchCategoryAndStones = async (page = 1) => {
     try {
@@ -169,44 +172,56 @@ function CategoryView() {
 
       <main className="p-8 max-w-7xl mx-auto pt-48">
         
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h2 className="text-xs md:text-sm text-blue-800 tracking-[0.4em] uppercase mb-4 font-bold">Premium Selection</h2>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-blue-950 mb-4 tracking-wide uppercase">{categoryTitle}</h1>
-          <div className="w-16 h-1 bg-blue-300 mx-auto"></div>
+          <div className="w-16 h-1 bg-blue-300 mx-auto mb-8"></div>
         </div>
 
-        {/* ---------------- FILTER PANEL ---------------- */}
-        <div className="bg-white border border-blue-100 shadow-sm p-6 mb-12 rounded-sm max-w-5xl mx-auto">
-          <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-blue-900">🔍 Filter Collection</h3>
-            <button onClick={handleResetFilters} className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">Reset All</button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
-              <div className="flex gap-2 mt-1">
-                <input type="number" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                <input type="number" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
-              <div className="flex gap-2 mt-1">
-                <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 pt-3 border-t border-slate-50 flex items-center">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-4 h-4 accent-blue-950" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Show Certified Only</span>
-            </label>
-          </div>
+        {/* ---------------- 🔹 FILTER TOGGLE BUTTON ---------------- */}
+        <div className="flex justify-center mb-6">
+          <button 
+            onClick={() => setShowFilters(!showFilters)} 
+            className="bg-white border border-blue-200 text-blue-900 px-8 py-3 text-xs font-bold uppercase tracking-widest hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2"
+          >
+            {showFilters ? '✖ Hide Filters' : '🔍 Advanced Filters'}
+          </button>
         </div>
+
+        {/* ---------------- FILTER PANEL (Conditional Rendering) ---------------- */}
+        {showFilters && (
+          <div className="bg-white border border-blue-100 shadow-sm p-6 mb-12 rounded-sm max-w-5xl mx-auto transition-all">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-blue-900">🔍 Filter Collection</h3>
+              <button onClick={handleResetFilters} className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">Reset All</button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+              <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+              <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+              <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
+                <div className="flex gap-2 mt-1">
+                  <input type="number" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                  <input type="number" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
+                <div className="flex gap-2 mt-1">
+                  <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                  <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-50 flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-4 h-4 accent-blue-950" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Show Certified Only</span>
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* ---------------- ADMIN ADD/EDIT FORM ---------------- */}
         {isAdmin && (

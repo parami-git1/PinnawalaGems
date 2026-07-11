@@ -14,7 +14,7 @@ function App() {
   const [catFormData, setCatFormData] = useState({ title: '', description: '', mainImage: '' });
   const [isUploading, setIsUploading] = useState(false);
 
-  // Filters (Gem ID එක අලුතින් එක් කර ඇත)
+  // Filters
   const [searchId, setSearchId] = useState('');
   const [searchType, setSearchType] = useState('');
   const [searchColor, setSearchColor] = useState('');
@@ -24,6 +24,9 @@ function App() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [filterCert, setFilterCert] = useState(false);
+
+  // 🔹 අලුතින් දැම්ම Filter Button Toggle State එක
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchCategories = () => {
     fetch('https://pinnawalagems.onrender.com/api/inventory/categories')
@@ -162,40 +165,52 @@ function App() {
 
       <main className="p-8 max-w-7xl mx-auto pt-48">
         
-        {/* ---------------- GLOBAL FILTER PANEL ---------------- */}
-        <div className="bg-white border border-blue-100 shadow-sm p-6 mb-12 rounded-sm mx-auto">
-          <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
-            <h3 className="text-xs md:text-sm font-bold uppercase tracking-widest text-blue-900 flex items-center gap-2">🔍 Filter Collection</h3>
-            <button onClick={handleResetFilters} className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">RESET ALL</button>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
-            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem Type</label><input type="text" value={searchType} onChange={(e) => setSearchType(e.target.value)} placeholder="e.g. Blue Sapphire" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
-            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} placeholder="e.g. Pink, Royal Blue" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
-            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} placeholder="e.g. Oval, Cushion" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
-              <div className="flex gap-2 mt-1">
-                <input type="number" step="0.01" placeholder="Min" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
-                <input type="number" step="0.01" placeholder="Max" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
-              <div className="flex gap-2 mt-1">
-                <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
-                <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
-              </div>
-            </div>
-          </div>
-          <div className="mt-6 pt-4 border-t border-slate-50 flex items-center">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-5 h-5 accent-blue-950" />
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-900">Show Certified Only</span>
-            </label>
-          </div>
+        {/* ---------------- 🔹 FILTER TOGGLE BUTTON ---------------- */}
+        <div className="flex justify-center mb-6">
+          <button 
+            onClick={() => setShowFilters(!showFilters)} 
+            className="bg-white border border-blue-200 text-blue-900 px-8 py-3 text-xs font-bold uppercase tracking-widest hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2"
+          >
+            {showFilters ? '✖ Hide Filters' : '🔍 Advanced Filters'}
+          </button>
         </div>
+
+        {/* ---------------- GLOBAL FILTER PANEL (Conditional Rendering) ---------------- */}
+        {showFilters && (
+          <div className="bg-white border border-blue-100 shadow-sm p-6 mb-12 rounded-sm mx-auto transition-all">
+            <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
+              <h3 className="text-xs md:text-sm font-bold uppercase tracking-widest text-blue-900 flex items-center gap-2">🔍 Filter Collection</h3>
+              <button onClick={handleResetFilters} className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">RESET ALL</button>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
+              <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem Type</label><input type="text" value={searchType} onChange={(e) => setSearchType(e.target.value)} placeholder="e.g. Blue Sapphire" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
+              <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} placeholder="e.g. Pink, Royal Blue" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
+              <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} placeholder="e.g. Oval, Cushion" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
+                <div className="flex gap-2 mt-1">
+                  <input type="number" step="0.01" placeholder="Min" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
+                  <input type="number" step="0.01" placeholder="Max" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
+                <div className="flex gap-2 mt-1">
+                  <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
+                  <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-1/2 bg-slate-50 border border-slate-200 p-3 text-xs focus:outline-none focus:border-blue-950" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-slate-50 flex items-center">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-5 h-5 accent-blue-950" />
+                <span className="text-xs font-bold uppercase tracking-widest text-blue-900">Show Certified Only</span>
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* ---------------- ADMIN ADD/EDIT GEM TYPE FORM ---------------- */}
         {isAdmin && (
@@ -257,7 +272,6 @@ function App() {
 
                   <h4 className="text-lg font-serif font-bold text-blue-950 uppercase mb-1 line-clamp-1" title={stone.title}>{stone.title}</h4>
                   
-                  {/* 🔹 Aluthin add karapu Unique ID eka */}
                   {stone.stoneId && <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-3">ID: {stone.stoneId}</p>}
                   
                   <div className="flex flex-wrap gap-2 mb-6">
