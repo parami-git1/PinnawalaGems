@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const GemCategory = require('../models/GemCategory');
 const Stone = require('../models/Stone');
-const cloudinary = require('cloudinary').v2; // 🔹 Cloudinary එකතු කළා
+const cloudinary = require('cloudinary').v2; 
 
 // 1. Categories ගන්න API එක
 router.get('/categories', async (req, res) => {
@@ -25,11 +25,9 @@ router.post('/categories', async (req, res) => {
   }
 });
 
-// 3. සර්ච් සහ ෆිල්ටර් පහසුකම් සහිතව ගල් ලබා ගැනීමේ API එක (Pagination එක්ක)
+// 3. සර්ච් සහ ෆිල්ටර් පහසුකම් සහිතව ගල් ලබා ගැනීමේ API එක
 router.get('/categories/:categoryId/stones', async (req, res) => {
-  const { 
-    page = 1, limit = 12, stoneId, color, shape, minWeight, maxWeight, minPrice, maxPrice, hasCertificate 
-  } = req.query; 
+  const { page = 1, limit = 12, stoneId, color, shape, minWeight, maxWeight, minPrice, maxPrice, hasCertificate } = req.query; 
 
   try {
     let findQuery = { categoryId: req.params.categoryId };
@@ -61,11 +59,7 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
     
     const count = await Stone.countDocuments(findQuery);
     
-    res.json({
-      stones,
-      totalPages: Math.ceil(count / limit),
-      currentPage: Number(page)
-    });
+    res.json({ stones, totalPages: Math.ceil(count / limit), currentPage: Number(page) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -102,7 +96,7 @@ router.post('/stones', async (req, res) => {
   }
 });
 
-// 5. ගලක් Featured/Unfeatured කිරීමේ API එක (Customization)
+// 5. ගලක් Featured/Unfeatured කිරීම
 router.put('/stones/:stoneId/feature', async (req, res) => {
   try {
     const stone = await Stone.findById(req.params.stoneId);
@@ -114,20 +108,42 @@ router.put('/stones/:stoneId/feature', async (req, res) => {
   }
 });
 
-// 6. 🔹 ප්‍රධාන Category එක සහ ඒකේ තියෙන ඔක්කොම ගල් මකා දමන API එක (Update කර ඇත)
+// 6. 🔹 අලුතින් එකතු කළ API එක: Category එකක තියෙන "ගල් ඔක්කොම එකපාර මකන" Route එක
+router.delete('/categories/:categoryId/stones', async (req, res) => {
+  try {
+    const stones = await Stone.find({ categoryId: req.params.categoryId });
+    
+    for (const stone of stones) {
+      if (stone.image && stone.image.includes('cloudinary')) {
+        const publicId = stone.image.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+      }
+      if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
+        const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(certPublicId);
+      }
+    }
+
+    await Stone.deleteMany({ categoryId: req.params.categoryId });
+    
+    res.json({ message: 'All stones in this category have been deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 7. ප්‍රධාන Category එක මකා දැමීම
 router.delete('/categories/:categoryId', async (req, res) => {
   try {
     const category = await GemCategory.findById(req.params.categoryId);
     if (!category) return res.status(404).json({ message: 'Category not found' });
 
-    // Category එකේ ෆොටෝ එක Cloudinary එකෙන් මකනවා
     let catImageUrl = category.mainImage || category.image;
     if (catImageUrl && catImageUrl.includes('cloudinary')) {
       const catPublicId = catImageUrl.split('/').slice(-2).join('/').split('.')[0];
       await cloudinary.uploader.destroy(catPublicId);
     }
 
-    // Category එකට අදාළ හැම ගලක්ම හොයලා ඒවගේ ෆොටෝස් Cloudinary එකෙන් මකනවා
     const stones = await Stone.find({ categoryId: req.params.categoryId });
     for (const stone of stones) {
       if (stone.image && stone.image.includes('cloudinary')) {
@@ -140,7 +156,6 @@ router.delete('/categories/:categoryId', async (req, res) => {
       }
     }
 
-    // අන්තිමට Database එකෙන් දත්ත ටික මකා දානවා
     await Stone.deleteMany({ categoryId: req.params.categoryId });
     await GemCategory.findByIdAndDelete(req.params.categoryId);
     
@@ -150,13 +165,12 @@ router.delete('/categories/:categoryId', async (req, res) => {
   }
 });
 
-// 7. 🔹 තනි ගලක් (Stone) මකා දමන API එක (Update කර ඇත)
+// 8. තනි ගලක් මකා දැමීම
 router.delete('/stones/:stoneId', async (req, res) => {
   try {
     const stone = await Stone.findById(req.params.stoneId);
     if (!stone) return res.status(404).json({ message: 'Stone not found' });
 
-    // Cloudinary එකෙන් ෆොටෝස් මකනවා
     if (stone.image && stone.image.includes('cloudinary')) {
       const publicId = stone.image.split('/').slice(-2).join('/').split('.')[0];
       await cloudinary.uploader.destroy(publicId);
@@ -166,7 +180,6 @@ router.delete('/stones/:stoneId', async (req, res) => {
       await cloudinary.uploader.destroy(certPublicId);
     }
 
-    // Database එකෙන් මකනවා
     await Stone.findByIdAndDelete(req.params.stoneId);
     res.json({ message: 'Stone deleted and Cloudinary images removed' });
   } catch (err) {
@@ -174,20 +187,18 @@ router.delete('/stones/:stoneId', async (req, res) => {
   }
 });
 
-// 8. තනි ගලක් (Single Stone) ලබා ගැනීමේ API එක
+// 9. තනි ගලක් ලබා ගැනීම
 router.get('/stones/:stoneId', async (req, res) => {
   try {
     const stone = await Stone.findById(req.params.stoneId);
-    if (!stone) {
-      return res.status(404).json({ message: 'Stone not found' });
-    }
+    if (!stone) return res.status(404).json({ message: 'Stone not found' });
     res.json(stone);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// මුළු පද්ධතියෙන්ම ගල් සෙවීම සඳහා Global Search API එක
+// 10. Global Search API
 router.get('/stones', async (req, res) => {
   const { page = 1, limit = 12, stoneId, gemType, color, shape, minWeight, maxWeight, minPrice, maxPrice, hasCertificate } = req.query; 
 
@@ -215,24 +226,16 @@ router.get('/stones', async (req, res) => {
       findQuery.hasCertificate = true;
     }
 
-    const stones = await Stone.find(findQuery)
-      .sort({ isFeatured: -1, weight: 1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-    
+    const stones = await Stone.find(findQuery).sort({ isFeatured: -1, weight: 1 }).limit(limit * 1).skip((page - 1) * limit);
     const count = await Stone.countDocuments(findQuery);
     
-    res.json({
-      stones,
-      totalPages: Math.ceil(count / limit),
-      currentPage: Number(page)
-    });
+    res.json({ stones, totalPages: Math.ceil(count / limit), currentPage: Number(page) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// 9. Category (Gem Type) එකක් Edit කිරීමේ API එක
+// 11. Category Edit කිරීම
 router.put('/categories/:categoryId', async (req, res) => {
   try {
     const updatedCategory = await GemCategory.findByIdAndUpdate(req.params.categoryId, req.body, { new: true });
@@ -242,7 +245,7 @@ router.put('/categories/:categoryId', async (req, res) => {
   }
 });
 
-// 10. ගලක් (Stone) Edit කිරීමේ API එක
+// 12. ගලක් Edit කිරීම
 router.put('/stones/:stoneId', async (req, res) => {
   try {
     const updatedStone = await Stone.findByIdAndUpdate(req.params.stoneId, req.body, { new: true });

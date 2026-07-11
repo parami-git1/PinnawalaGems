@@ -9,7 +9,6 @@ function CategoryView() {
   const [currentPage, setCurrentPage] = useState(1);
   const isAdmin = !!localStorage.getItem('token');
 
-  // Form States (Add and Edit)
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editStoneId, setEditStoneId] = useState(null);
@@ -21,7 +20,6 @@ function CategoryView() {
     hasCertificate: false, certificateDetails: '', certificateImage: '', image: '', isFeatured: false
   });
 
-  // Filters
   const [searchId, setSearchId] = useState('');
   const [searchColor, setSearchColor] = useState('');
   const [searchShape, setSearchShape] = useState('');
@@ -30,8 +28,6 @@ function CategoryView() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [filterCert, setFilterCert] = useState(false);
-
-  // 🔹 අලුතින් දැම්ම Filter Button Toggle State එක
   const [showFilters, setShowFilters] = useState(false);
   
   const fetchCategoryAndStones = async (page = 1) => {
@@ -144,6 +140,24 @@ function CategoryView() {
     }
   };
 
+  // 🔹 අලුතින් වෙනස් කළ "ඔක්කොම මකන" Function එක (Type කරන්න ඕනේ නෑ) 🔹
+  const handleDeleteAllStones = async () => {
+    if (window.confirm("🚨 WARNING: Are you ABSOLUTELY SURE you want to delete ALL stones in this category? This action cannot be undone!")) {
+       try {
+         const response = await fetch(`https://pinnawalagems.onrender.com/api/inventory/categories/${categoryId}/stones`, {
+           method: 'DELETE',
+           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+         });
+         if (response.ok) {
+           alert("All stones have been deleted successfully! 🗑️");
+           fetchCategoryAndStones(1);
+         }
+       } catch (error) {
+         console.log(error);
+       }
+    }
+  };
+
   const handleToggleFeature = async (stoneId) => {
     try {
       await fetch(`https://pinnawalagems.onrender.com/api/inventory/stones/${stoneId}/feature`, { method: 'PUT', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
@@ -178,7 +192,6 @@ function CategoryView() {
           <div className="w-16 h-1 bg-blue-300 mx-auto mb-8"></div>
         </div>
 
-        {/* ---------------- 🔹 FILTER TOGGLE BUTTON ---------------- */}
         <div className="flex justify-center mb-6">
           <button 
             onClick={() => setShowFilters(!showFilters)} 
@@ -188,7 +201,6 @@ function CategoryView() {
           </button>
         </div>
 
-        {/* ---------------- FILTER PANEL (Conditional Rendering) ---------------- */}
         {showFilters && (
           <div className="bg-white border border-blue-100 shadow-sm p-6 mb-12 rounded-sm max-w-5xl mx-auto transition-all">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
@@ -223,10 +235,21 @@ function CategoryView() {
           </div>
         )}
 
-        {/* ---------------- ADMIN ADD/EDIT FORM ---------------- */}
+        {/* ---------------- 🔹 ADMIN ADD/EDIT FORM & DELETE ALL BUTTONS 🔹 ---------------- */}
         {isAdmin && (
-          <div className="flex justify-center mb-10">
-            {!showForm && <button onClick={openAddForm} className="bg-blue-950 text-white px-8 py-3 text-xs font-bold tracking-widest uppercase hover:bg-blue-800 shadow-md">+ Add New Stone to {categoryTitle}</button>}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-10">
+            {!showForm && (
+              <button onClick={openAddForm} className="bg-blue-950 text-white px-8 py-3 text-xs font-bold tracking-widest uppercase hover:bg-blue-800 shadow-md">
+                + Add New Stone to {categoryTitle}
+              </button>
+            )}
+            
+            {/* 🔴 අලුත් Delete All බොත්තම */}
+            {!showForm && stones.length > 0 && (
+              <button onClick={handleDeleteAllStones} className="bg-red-50 text-red-600 border border-red-200 px-8 py-3 text-xs font-bold tracking-widest uppercase hover:bg-red-600 hover:text-white shadow-sm transition-colors">
+                🗑️ Delete All Stones
+              </button>
+            )}
           </div>
         )}
 
