@@ -20,10 +20,43 @@ router.post('/categories', async (req, res) => {
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// 3. Get Stones for a Stock Category
+// 3. Get Stones for a Stock Category (🔹 අලුතින් Filter පහසුකම් සියල්ල ඇතුළත් කර ඇත)
 router.get('/categories/:categoryId/stones', async (req, res) => {
+  const { 
+    stoneId, 
+    color, 
+    shape, 
+    minWeight, 
+    maxWeight, 
+    minPrice, 
+    maxPrice, 
+    hasCertificate 
+  } = req.query;
+
   try {
-    const stones = await StockStone.find({ categoryId: req.params.categoryId });
+    let findQuery = { categoryId: req.params.categoryId };
+
+    if (stoneId) findQuery.stoneId = { $regex: stoneId, $options: 'i' };
+    if (color) findQuery.color = { $regex: color, $options: 'i' };
+    if (shape) findQuery.shape = { $regex: shape, $options: 'i' };
+
+    if (minWeight || maxWeight) {
+      findQuery.weight = {};
+      if (minWeight) findQuery.weight.$gte = parseFloat(minWeight);
+      if (maxWeight) findQuery.weight.$lte = parseFloat(maxWeight);
+    }
+
+    if (minPrice || maxPrice) {
+      findQuery.price = {};
+      if (minPrice) findQuery.price.$gte = parseFloat(minPrice);
+      if (maxPrice) findQuery.price.$lte = parseFloat(maxPrice);
+    }
+
+    if (hasCertificate === 'true') {
+      findQuery.hasCertificate = true;
+    }
+
+    const stones = await StockStone.find(findQuery);
     res.json({ stones });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -80,6 +113,5 @@ router.delete('/categories/:categoryId', async (req, res) => {
     res.status(500).json({ message: err.message }); 
   }
 });
-
 
 module.exports = router;

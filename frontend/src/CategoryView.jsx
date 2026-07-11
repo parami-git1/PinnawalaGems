@@ -21,7 +21,8 @@ function CategoryView() {
     hasCertificate: false, certificateDetails: '', certificateImage: '', image: '', isFeatured: false
   });
 
-  // 🔹 Filters
+  // 🔹 Filters (Gem ID එක අලුතින් එක් කර ඇත)
+  const [searchId, setSearchId] = useState('');
   const [searchColor, setSearchColor] = useState('');
   const [searchShape, setSearchShape] = useState('');
   const [minWeight, setMinWeight] = useState('');
@@ -29,7 +30,7 @@ function CategoryView() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [filterCert, setFilterCert] = useState(false);
-
+  
   const fetchCategoryAndStones = async (page = 1) => {
     try {
       const catRes = await fetch('https://pinnawalagems.onrender.com/api/inventory/categories');
@@ -38,6 +39,7 @@ function CategoryView() {
       if (currentCat) setCategoryTitle(currentCat.title);
 
       let url = `https://pinnawalagems.onrender.com/api/inventory/categories/${categoryId}/stones?page=${page}&limit=12`;
+      if (searchId) url += `&stoneId=${searchId}`;
       if (searchColor) url += `&color=${searchColor}`;
       if (searchShape) url += `&shape=${searchShape}`;
       if (minWeight) url += `&minWeight=${minWeight}`;
@@ -54,10 +56,10 @@ function CategoryView() {
     } catch (err) { console.log(err); }
   };
 
-  useEffect(() => { fetchCategoryAndStones(currentPage); }, [categoryId, currentPage, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
+  useEffect(() => { fetchCategoryAndStones(currentPage); }, [categoryId, currentPage, searchId, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
 
   const handleResetFilters = () => {
-    setSearchColor(''); setSearchShape(''); setMinWeight(''); setMaxWeight(''); setMinPrice(''); setMaxPrice(''); setFilterCert(false); setCurrentPage(1);
+    setSearchId(''); setSearchColor(''); setSearchShape(''); setMinWeight(''); setMaxWeight(''); setMinPrice(''); setMaxPrice(''); setFilterCert(false); setCurrentPage(1);
   };
 
   const handleChange = (e) => {
@@ -157,7 +159,6 @@ function CategoryView() {
           <Link to="/workshop" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Workshop</Link>
           <Link to="/feedback" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Feedback</Link>
           <Link to="/contact" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Contact</Link>
-           {/* 🔹 මෙන්න මෙතනටයි Admin Inventory ලින්ක් එක දාන්න ඕනේ! */}
           {isAdmin && (
             <Link to="/admin/inventory" className="text-[10px] md:text-xs font-bold tracking-[0.15em] text-red-600 hover:text-red-800 uppercase bg-red-50 px-3 py-1 rounded-sm">
               Inventory
@@ -180,7 +181,8 @@ function CategoryView() {
             <h3 className="text-xs font-bold uppercase tracking-widest text-blue-900">🔍 Filter Collection</h3>
             <button onClick={handleResetFilters} className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">Reset All</button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
             <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
             <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
             <div>
@@ -279,7 +281,6 @@ function CategoryView() {
 
                 <h4 className="text-lg font-serif font-bold text-blue-950 uppercase mb-1 line-clamp-1" title={stone.title}>{stone.title}</h4>
                 
-                {/* 🔹 Aluthin add karapu Unique ID eka */}
                 {stone.stoneId && <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-3">ID: {stone.stoneId}</p>}
                 
                 <div className="flex flex-wrap gap-2 mb-6">

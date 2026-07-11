@@ -20,6 +20,16 @@ function AdminInventory() {
   const [catFormData, setCatFormData] = useState({ title: '', description: '', mainImage: '' });
   const [isUploadingCat, setIsUploadingCat] = useState(false);
 
+  // 🔹 අලුතින් එකතු කළ Filter States
+  const [searchId, setSearchId] = useState('');
+  const [searchColor, setSearchColor] = useState('');
+  const [searchShape, setSearchShape] = useState('');
+  const [minWeight, setMinWeight] = useState('');
+  const [maxWeight, setMaxWeight] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [filterCert, setFilterCert] = useState(false);
+  
   useEffect(() => { fetchCategories(); }, []);
 
   const fetchCategories = () => {
@@ -40,19 +50,38 @@ function AdminInventory() {
       .catch(err => console.log(err));
   };
 
+  // 🔹 Filters වෙනස් වෙද්දී Stones අලුත් කරන useEffect එක
   useEffect(() => {
     if (selectedCategory) {
       fetchStones();
     } else {
       setStones([]);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, searchId, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
 
   const fetchStones = () => {
-    fetch(`https://pinnawalagems.onrender.com/api/stock/categories/${selectedCategory}/stones`)
+    // 🔹 අලුත් Filter Parameters URL එකට යැවීම
+    let url = `https://pinnawalagems.onrender.com/api/stock/categories/${selectedCategory}/stones?_v=1`;
+    if (searchId) url += `&stoneId=${searchId}`;
+    if (searchColor) url += `&color=${searchColor}`;
+    if (searchShape) url += `&shape=${searchShape}`;
+    if (minWeight) url += `&minWeight=${minWeight}`;
+    if (maxWeight) url += `&maxWeight=${maxWeight}`;
+    if (minPrice) url += `&minPrice=${minPrice}`;
+    if (maxPrice) url += `&maxPrice=${maxPrice}`;
+    if (filterCert) url += `&hasCertificate=true`;
+
+    fetch(url)
       .then(res => res.json())
       .then(data => setStones(data.stones || []))
       .catch(err => console.log(err));
+  };
+
+  // 🔹 Filters Reset කිරීමේ Function එක
+  const handleResetFilters = () => {
+    setSearchId(''); setSearchColor(''); setSearchShape('');
+    setMinWeight(''); setMaxWeight(''); setMinPrice(''); setMaxPrice('');
+    setFilterCert(false);
   };
 
   const handleCatImageUpload = async (e) => {
@@ -92,7 +121,6 @@ function AdminInventory() {
     } catch (error) { console.log(error); }
   };
 
-  // 🔹 Category එක මකා දැමීමේ Function එක
   const handleDeleteCategory = async () => {
     if (window.confirm("WARNING: Are you sure you want to delete this entire Gem Type? ALL the stock items inside this category will also be permanently deleted!")) {
       try {
@@ -102,9 +130,9 @@ function AdminInventory() {
         });
         if (response.ok) {
           alert("Gem Type and all related stock items have been deleted!");
-          setSelectedCategory(''); // Dropdown එක Reset කරනවා
-          setStones([]); // ගල් ටික Clear කරනවා
-          fetchCategories(); // අලුත් Categories ටික ගන්නවා
+          setSelectedCategory(''); 
+          setStones([]); 
+          fetchCategories(); 
         }
       } catch (err) {
         console.log(err);
@@ -245,7 +273,6 @@ function AdminInventory() {
                 <button onClick={openAddForm} className="bg-blue-950 text-white px-6 py-3 text-[10px] font-bold uppercase hover:bg-blue-800 shadow-md transition-colors">
                   + Add Stock to {selectedCatObj.title}
                 </button>
-                {/* 🔹 අලුතින් දැම්ම Delete Category බොත්තම */}
                 <button onClick={handleDeleteCategory} className="bg-red-50 text-red-600 border border-red-200 px-6 py-3 text-[10px] font-bold uppercase hover:bg-red-600 hover:text-white shadow-sm transition-colors">
                   Delete Category
                 </button>
@@ -296,6 +323,39 @@ function AdminInventory() {
                   </div>
                 </form>
               )}
+
+              {/* ---------------- අලුත් FILTER PANEL එක Admin Inventory එකට ---------------- */}
+              <div className="bg-white border border-slate-200 shadow-sm p-4 mb-6 rounded-sm">
+                <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-900">🔍 Filter Stock Inventory</h3>
+                  <button onClick={handleResetFilters} className="text-[9px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">Reset All</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                  <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+                  <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+                  <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
+                  <div>
+                    <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
+                    <div className="flex gap-1 mt-1">
+                      <input type="number" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                      <input type="number" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
+                    <div className="flex gap-1 mt-1">
+                      <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                      <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-50 flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-3 h-3 accent-blue-950" />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Show Certified Only</span>
+                  </label>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
                 {stones.length === 0 ? (

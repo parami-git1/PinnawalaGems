@@ -28,7 +28,8 @@ router.post('/categories', async (req, res) => {
 router.get('/categories/:categoryId/stones', async (req, res) => {
   const { 
     page = 1, 
-    limit = 12, 
+    limit = 12,
+    stoneId, // 🔹 අලුතින් එකතු කරපු Gem ID එක 
     color, 
     shape, 
     minWeight, 
@@ -43,6 +44,7 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
     let findQuery = { categoryId: req.params.categoryId };
 
     // ඔයා කිව්වා වගේ ඒවා දාලා තියෙනවා නම් විතරක් Query එකට එකතු කරනවා (Optional)
+    if (stoneId) findQuery.stoneId = { $regex: stoneId, $options: 'i' }; // 🔹 ID එකෙන් ෆිල්ටර් කිරීම
     if (color) findQuery.color = { $regex: color, $options: 'i' }; // කැපිටල්/සිම්පල් බැලීමක් නැත
     if (shape) findQuery.shape = { $regex: shape, $options: 'i' };
 
@@ -112,6 +114,7 @@ router.post('/stones', async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
+
 // 5. ගලක් Featured/Unfeatured කිරීමේ API එක (Customization)
 router.put('/stones/:stoneId/feature', async (req, res) => {
   try {
@@ -163,7 +166,8 @@ router.get('/stones/:stoneId', async (req, res) => {
 router.get('/stones', async (req, res) => {
   const { 
     page = 1, 
-    limit = 12, 
+    limit = 12,
+    stoneId, // 🔹 අලුතින් එකතු කරපු Gem ID එක
     gemType, // අලුතින් එකතු කරපු Gem Type එක
     color, 
     shape, 
@@ -177,6 +181,7 @@ router.get('/stones', async (req, res) => {
   try {
     let findQuery = {}; // මෙතන Category ID එකක් නෑ, මුළු සයිට් එකේම හොයනවා
 
+    if (stoneId) findQuery.stoneId = { $regex: stoneId, $options: 'i' }; // 🔹 ID එකෙන් ෆිල්ටර් කිරීම
     // Gem Type එක (උදා: Blue Sapphire) ගලේ Title එක ඇතුළේ තියෙනවද බලනවා
     if (gemType) findQuery.title = { $regex: gemType, $options: 'i' }; 
     if (color) findQuery.color = { $regex: color, $options: 'i' };
@@ -235,6 +240,5 @@ router.put('/stones/:stoneId', async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
-
 
 module.exports = router;

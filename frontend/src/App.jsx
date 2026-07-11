@@ -14,7 +14,8 @@ function App() {
   const [catFormData, setCatFormData] = useState({ title: '', description: '', mainImage: '' });
   const [isUploading, setIsUploading] = useState(false);
 
-  // Filters
+  // Filters (Gem ID එක අලුතින් එක් කර ඇත)
+  const [searchId, setSearchId] = useState('');
   const [searchType, setSearchType] = useState('');
   const [searchColor, setSearchColor] = useState('');
   const [searchShape, setSearchShape] = useState('');
@@ -37,11 +38,12 @@ function App() {
   useEffect(() => { fetchCategories(); }, []);
 
   useEffect(() => {
-    const isFilterActive = searchType || searchColor || searchShape || minWeight || maxWeight || minPrice || maxPrice || filterCert;
+    const isFilterActive = searchId || searchType || searchColor || searchShape || minWeight || maxWeight || minPrice || maxPrice || filterCert;
     if (isFilterActive) {
       setIsSearching(true);
       setLoading(true);
       let url = `https://pinnawalagems.onrender.com/api/inventory/stones?page=1&limit=50`;
+      if (searchId) url += `&stoneId=${searchId}`;
       if (searchType) url += `&gemType=${searchType}`;
       if (searchColor) url += `&color=${searchColor}`;
       if (searchShape) url += `&shape=${searchShape}`;
@@ -55,10 +57,10 @@ function App() {
     } else {
       setIsSearching(false);
     }
-  }, [searchType, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
+  }, [searchId, searchType, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
 
   const handleResetFilters = () => {
-    setSearchType(''); setSearchColor(''); setSearchShape('');
+    setSearchId(''); setSearchType(''); setSearchColor(''); setSearchShape('');
     setMinWeight(''); setMaxWeight(''); setMinPrice(''); setMaxPrice('');
     setFilterCert(false); setIsSearching(false);
   };
@@ -150,7 +152,6 @@ function App() {
           <Link to="/workshop" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Workshop</Link>
           <Link to="/feedback" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Feedback</Link>
           <Link to="/contact" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Contact</Link>
-          {/* 🔹 මෙන්න මෙතනටයි Admin Inventory ලින්ක් එක දාන්න ඕනේ! */}
           {isAdmin && (
             <Link to="/admin/inventory" className="text-[10px] md:text-xs font-bold tracking-[0.15em] text-red-600 hover:text-red-800 uppercase bg-red-50 px-3 py-1 rounded-sm">
               Inventory
@@ -168,7 +169,8 @@ function App() {
             <button onClick={handleResetFilters} className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">RESET ALL</button>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
             <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gem Type</label><input type="text" value={searchType} onChange={(e) => setSearchType(e.target.value)} placeholder="e.g. Blue Sapphire" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
             <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} placeholder="e.g. Pink, Royal Blue" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
             <div><label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} placeholder="e.g. Oval, Cushion" className="w-full bg-slate-50 border border-slate-200 p-3 mt-1 text-xs focus:outline-none focus:border-blue-950 uppercase" /></div>
