@@ -5,6 +5,9 @@ const multer = require('multer');
 const path = require('path');
 require('dotenv').config();
 
+// 🔹 අලුතින් Cloudinary පැකේජ් ටික ගෙන්න ගත්තා
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
 
@@ -12,38 +15,41 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
- 
-// Image Upload Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // ෆොටෝස් සේව් වෙන ෆෝල්ඩර් එක
+
+// 🔹 Cloudinary Configuration (අපි .env එකේ දාපු විස්තර)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// 🔹 අලුත් Cloudinary Storage එක (මේකෙන් ෆොටෝ එක කෙලින්ම Cloud එකට යවනවා)
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'pinnawala_gems', // Cloudinary එකේ මේ නමින් ෆෝල්ඩරයක් හැදෙයි
+    allowedFormats: ['jpeg', 'png', 'jpg', 'webp'],
   },
-  filename: (req, file, cb) => {
-    // ෆොටෝ එකේ නමට වෙලාව එකතු කරනවා (එකම නම තියෙන ෆොටෝස් replace නොවෙන්න)
-    cb(null, Date.now() + path.extname(file.originalname)); 
-  }
 });
 
 const upload = multer({ storage });
 
-// Image Upload API
+// Image Upload API (Cloudinary එකට ගියාට පස්සේ එන ලින්ක් එක Frontend එකට යවනවා)
 app.post('/api/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
-  // Upload වුණාට පස්සේ ඒකේ ලින්ක් එක Frontend එකට යවනවා
-  const imageUrl = `https://pinnawalagems.onrender.com/uploads/${req.file.filename}`;
+  // req.file.path කියන එක ඇතුළේ තියෙන්නේ කවදාවත් මැකෙන්නේ නැති Cloudinary ලින්ක් එක!
+  const imageUrl = req.file.path;
   res.json({ imageUrl });
 });
 
-const gemRoutes = require('./routes/gemRoutes'); //   import Routes file
-app.use('/api/gems', gemRoutes); // '/api/gems' kiyana link eken awoth ara routes walata yawanawa
+const gemRoutes = require('./routes/gemRoutes'); 
+app.use('/api/gems', gemRoutes); 
 
-// Server.js eke api/gems eka thiyena thana yatin meka danna
 const workshopRoutes = require('./routes/workshopRoutes');
 app.use('/api/workshop', workshopRoutes);
 
-// server.js එකේ workshop එක යටින් මේක දාන්න
 const feedbackRoutes = require('./routes/feedbackRoutes');
 app.use('/api/feedback', feedbackRoutes);
 
@@ -58,14 +64,13 @@ app.use('/api/home', homeRoutes);
 const inventoryRoutes = require('./routes/inventoryRoutes');
 app.use('/api/inventory', inventoryRoutes);
 
-// මේක අනිත් route දාලා තියෙන තැනින්ම දාන්න
 const stockRoutes = require('./routes/stockRoutes');
 app.use('/api/stock', stockRoutes);
 
 // Connect to MongoDB Database
 mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 10000, // Timeout eka poddak wadi karamu
-  family: 4 // Meken thama aniwarenma IPv4 pavichchi karanna kiyanne
+  serverSelectionTimeoutMS: 10000, 
+  family: 4 
 }).then(() => {
   console.log("✅ MongoDB Connected Successfully");
 }).catch((error) => {
@@ -83,7 +88,6 @@ const jwt = require('jsonwebtoken');
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
 
-  // .env eke thiyena details ekka check karanawa
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
     const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.status(200).json({ token });

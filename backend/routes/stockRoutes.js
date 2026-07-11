@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const StockCategory = require('../models/StockCategory');
 const StockStone = require('../models/StockStone');
+const cloudinary = require('cloudinary').v2; // 🔹 Cloudinary එකතු කළා
 
 // 1. Get all Stock Categories
 router.get('/categories', async (req, res) => {
@@ -20,18 +21,9 @@ router.post('/categories', async (req, res) => {
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// 3. Get Stones for a Stock Category (🔹 අලුතින් Filter පහසුකම් සියල්ල ඇතුළත් කර ඇත)
+// 3. Get Stones for a Stock Category 
 router.get('/categories/:categoryId/stones', async (req, res) => {
-  const { 
-    stoneId, 
-    color, 
-    shape, 
-    minWeight, 
-    maxWeight, 
-    minPrice, 
-    maxPrice, 
-    hasCertificate 
-  } = req.query;
+  const { stoneId, color, shape, minWeight, maxWeight, minPrice, maxPrice, hasCertificate } = req.query;
 
   try {
     let findQuery = { categoryId: req.params.categoryId };
@@ -61,7 +53,7 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// 4. Add new Stock Stone (With unique ID)
+// 4. Add new Stock Stone
 router.post('/stones', async (req, res) => {
   try {
     const { categoryId, title, quantity, ...rest } = req.body;
@@ -76,7 +68,7 @@ router.post('/stones', async (req, res) => {
       if (!isNaN(lastNum)) nextNumber = lastNum + 1;
     }
     
-    const stoneId = `${prefix}-stock-${nextNumber}`; // "pink-sapphire-stock-1"
+    const stoneId = `${prefix}-stock-${nextNumber}`; 
     
     const newStone = new StockStone({ categoryId, title, quantity: quantity || 1, stoneId, ...rest });
     await newStone.save();
@@ -92,21 +84,50 @@ router.put('/stones/:stoneId', async (req, res) => {
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// 6. Delete Stock Stone
+// 6. 🔹 Delete Stock Stone (Update කර ඇත)
 router.delete('/stones/:stoneId', async (req, res) => {
   try {
-    await StockStone.findByIdAndDelete(req.params.stoneId);
-    res.json({ message: 'Stock Stone deleted' });
+    const stone = await StockStone.findById(req.params.stoneId);
+    if(stone) {
+      if (stone.image && stone.image.includes('cloudinary')) {
+        const publicId = stone.image.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+      }
+      if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
+        const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(certPublicId);
+      }
+      await StockStone.findByIdAndDelete(req.params.stoneId);
+    }
+    res.json({ message: 'Stock Stone and images deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-
-// 7. Delete Stock Category (හා ඒකට අදාළ සියලුම ගල්)
+// 7. 🔹 Delete Stock Category (Update කර ඇත)
 router.delete('/categories/:categoryId', async (req, res) => {
   try {
-    // මුලින්ම ඒ category එකේ තියෙන ගල් ඔක්කොම මකනවා
+    const category = await StockCategory.findById(req.params.categoryId);
+    if(category) {
+      let catImageUrl = category.mainImage || category.image;
+      if (catImageUrl && catImageUrl.includes('cloudinary')) {
+        const catPublicId = catImageUrl.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(catPublicId);
+      }
+    }
+
+    const stones = await StockStone.find({ categoryId: req.params.categoryId });
+    for (const stone of stones) {
+      if (stone.image && stone.image.includes('cloudinary')) {
+        const publicId = stone.image.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+      }
+      if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
+        const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
+        await cloudinary.uploader.destroy(certPublicId);
+      }
+    }
+
     await StockStone.deleteMany({ categoryId: req.params.categoryId });
-    // ඊටපස්සේ category එක මකනවා
     await StockCategory.findByIdAndDelete(req.params.categoryId);
     res.json({ message: 'Stock Category and related stones deleted completely.' });
   } catch (err) { 
