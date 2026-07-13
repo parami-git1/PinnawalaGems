@@ -301,7 +301,7 @@ function CategoryView() {
               <img 
                 src={currentCategory.coverImage} 
                 alt="Category Cover" 
-                className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" 
+                className="absolute inset-0 w-full h-full object-cover opacity-[0.20] pointer-events-none" 
               />
             )}
             
