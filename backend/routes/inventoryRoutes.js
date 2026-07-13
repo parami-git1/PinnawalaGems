@@ -65,7 +65,7 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
   }
 });
 
-// 4. අලුත් ගලක් එකතු කිරීම (Origin සහ Additional Images එක් කර ඇත)
+// 4. අලුත් ගලක් එකතු කිරීම
 router.post('/stones', async (req, res) => {
   try {
     const { categoryId, title, description, weight, color, shape, price, hasCertificate, certificateDetails, certificateImage, image, isFeatured, quantity, origin, additionalImages } = req.body;
@@ -142,7 +142,7 @@ router.delete('/categories/:categoryId/stones', async (req, res) => {
   }
 });
 
-// 7. ප්‍රධාන Category එක මකා දැමීම
+// 7. ප්‍රධාන Category එක මකා දැමීම 
 router.delete('/categories/:categoryId', async (req, res) => {
   try {
     const category = await GemCategory.findById(req.params.categoryId);
@@ -152,6 +152,12 @@ router.delete('/categories/:categoryId', async (req, res) => {
     if (catImageUrl && catImageUrl.includes('cloudinary')) {
       const catPublicId = catImageUrl.split('/').slice(-2).join('/').split('.')[0];
       await cloudinary.uploader.destroy(catPublicId);
+    }
+    
+    // 🔹 Cover Image එකත් මකා දැමීම 🔹
+    if (category.coverImage && category.coverImage.includes('cloudinary')) {
+      const coverPublicId = category.coverImage.split('/').slice(-2).join('/').split('.')[0];
+      await cloudinary.uploader.destroy(coverPublicId);
     }
 
     const stones = await Stone.find({ categoryId: req.params.categoryId });
