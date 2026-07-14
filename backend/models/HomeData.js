@@ -10,7 +10,17 @@ const homeDataSchema = new mongoose.Schema({
   whatsappNumber: { type: String, default: '94776599740' }, 
   inquiryEmail: { type: String, default: 'paramividarshanamuthumali@gmail.com' }, 
   
-  googleMapsLink: { type: String, default: '' } 
+  googleMapsLink: { type: String, default: '' } ,
+
+
+  topAdImage: { type: String, default: '' },
+  sideAdImage: { type: String, default: '' },
+  bottomAdImage: { type: String, default: '' },
+
+  customerPhotos: { type: [String], default: [] }
+
 });
+
+
 
 module.exports = mongoose.model('HomeData', homeDataSchema);
