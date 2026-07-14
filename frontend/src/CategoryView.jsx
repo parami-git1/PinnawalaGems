@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 function CategoryView() {
   const { categoryId } = useParams();
   const [categoryTitle, setCategoryTitle] = useState('Gem Collection');
-  const [currentCategory, setCurrentCategory] = useState(null); // 🔹 Category එකේ සම්පූර්ණ විස්තර තියාගන්න State එක
+  const [currentCategory, setCurrentCategory] = useState(null); 
   const [stones, setStones] = useState([]);
   const [categories, setCategories] = useState([]); 
   const [totalPages, setTotalPages] = useState(1);
@@ -16,7 +16,7 @@ function CategoryView() {
   const [editStoneId, setEditStoneId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingCert, setIsUploadingCert] = useState(false);
-  const [isUploadingCover, setIsUploadingCover] = useState(false); // 🔹 Cover photo එක අප්ලෝඩ් වෙන වෙලාවට පෙන්නන්න State එකක්
+  const [isUploadingCover, setIsUploadingCover] = useState(false); 
   
   const [formData, setFormData] = useState({
     title: '', shape: '', weight: '', color: '', price: '', description: '', origin: '',
@@ -57,7 +57,7 @@ function CategoryView() {
       const currentCat = catData.find(c => c._id === categoryId);
       if (currentCat) {
         setCategoryTitle(currentCat.title);
-        setCurrentCategory(currentCat); // 🔹 Cover Image එක ගන්න 
+        setCurrentCategory(currentCat);
       }
 
       let url = `https://pinnawalagems.onrender.com/api/inventory/categories/${categoryId}/stones?page=${page}&limit=15`; 
@@ -80,7 +80,6 @@ function CategoryView() {
 
   useEffect(() => { fetchCategoryAndStones(currentPage); }, [categoryId, currentPage, searchId, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
 
-  // 🔹 Admin ට Cover Photo එක අලුතින් දාන්න / මාරු කරන්න Function එක 🔹
   const handleCoverUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -88,12 +87,10 @@ function CategoryView() {
     const uploadData = new FormData(); 
     uploadData.append('image', file);
     try {
-      // 1. Photo එක අප්ලෝඩ් කරනවා
       const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
       if (response.ok) { 
         const data = await response.json(); 
         
-        // 2. ඒ අලුත් Photo එකේ Link එක ඩේටාබේස් එකට යවනවා
         const updateRes = await fetch(`https://pinnawalagems.onrender.com/api/inventory/categories/${categoryId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
@@ -293,35 +290,35 @@ function CategoryView() {
 
         <div className="flex-1">
           
-          {/* ---------------- 🔹 අලුතින් හදපු COVER PHOTO HEADER එක 🔹 ---------------- */}
-          <div className="relative mb-10 p-8 rounded-sm overflow-hidden bg-white border border-blue-50 shadow-sm min-h-[140px] flex items-center">
+          <div className="relative mb-10 p-8 md:p-12 rounded-sm overflow-hidden bg-slate-100 border border-blue-50 shadow-sm min-h-[250px] md:min-h-[320px] flex items-center">
             
-            {/* Background Image (Cover) */}
             {currentCategory && currentCategory.coverImage && (
-              <img 
-                src={currentCategory.coverImage} 
-                alt="Category Cover" 
-                className="absolute inset-0 w-full h-full object-cover opacity-[0.20] pointer-events-none" 
-              />
+              <>
+                <img 
+                  src={currentCategory.coverImage} 
+                  alt="Category Cover" 
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none" 
+                />
+                <div className="absolute inset-0 bg-white/40 pointer-events-none"></div>
+              </>
             )}
             
-            {/* Header Text & Button Container */}
             <div className="relative z-10 w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-[10px] md:text-xs text-blue-800 tracking-[0.4em] uppercase mb-2 font-bold">Premium Selection</h2>
-                <h1 className="text-2xl md:text-3xl font-serif font-bold text-blue-950 uppercase">{categoryTitle}</h1>
+              
+              {/* 🔹 මෙතන Box එකයි අකුරුයි ගාණට පොඩි කළා 🔹 */}
+              <div className="bg-white/70 backdrop-blur-md p-4 md:px-6 md:py-4 rounded-sm shadow-sm border border-white/50 inline-block">
+                <h2 className="text-[9px] md:text-[10px] text-blue-800 tracking-[0.3em] uppercase mb-1 font-bold">Premium Selection</h2>
+                <h1 className="text-2xl md:text-4xl font-serif font-bold text-blue-950 uppercase">{categoryTitle}</h1>
               </div>
               
-              {/* Admin Cover Upload Button */}
               {isAdmin && (
-                <label className="cursor-pointer bg-white/70 backdrop-blur-sm border border-blue-200 text-blue-900 px-4 py-2 text-[9px] font-bold uppercase tracking-widest hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2">
+                <label className="cursor-pointer bg-white/90 backdrop-blur-sm border border-blue-200 text-blue-900 px-5 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-blue-50 transition-colors shadow-md flex items-center gap-2">
                   {isUploadingCover ? '⏳ Uploading...' : '🖼️ Add/Change Cover'}
                   <input type="file" className="hidden" onChange={handleCoverUpload} disabled={isUploadingCover} accept="image/*" />
                 </label>
               )}
             </div>
           </div>
-          {/* ---------------------------------------------------------------------- */}
 
           <div className="mb-6 flex flex-wrap gap-4 items-center">
             <button 
@@ -458,12 +455,16 @@ function CategoryView() {
                       {stone.hasCertificate && <div className="absolute bottom-1 right-1 bg-white text-green-600 px-1.5 py-0.5 text-[7px] font-bold tracking-widest border border-green-200 shadow-sm flex items-center gap-1"><span>✓</span> CERT</div>}
                     </Link>
 
-                    <h4 className="text-sm font-serif font-bold text-blue-950 uppercase mb-1 line-clamp-1" title={stone.title}>{stone.title}</h4>
+                    <h4 className="text-sm font-serif font-bold text-blue-950 uppercase mb-0.5 line-clamp-1" title={stone.title}>{stone.title}</h4>
                     {stone.stoneId && <p className="text-[8px] text-slate-400 font-bold tracking-widest uppercase mb-1">ID: {stone.stoneId}</p>}
                     
-                    <div className="flex flex-wrap gap-1 mb-3">
+                    {/* 🔹 Origin සහ Price ආයේ දැම්මා 🔹 */}
+                    {stone.origin && <p className="text-[8px] text-blue-600 font-bold tracking-widest uppercase mb-1.5">🌍 Origin: {stone.origin}</p>}
+                    
+                    <div className="flex flex-wrap gap-1 mb-2">
                       <span className="text-blue-800 text-[8px] font-bold uppercase border border-blue-100 px-1 py-0.5">{stone.shape}</span>
                       <span className="text-blue-800 text-[8px] font-bold uppercase border border-blue-100 px-1 py-0.5">{stone.weight} ct</span>
+                      {stone.price && <span className="text-green-800 bg-green-50 text-[8px] font-bold uppercase border border-green-200 px-1 py-0.5">Rs. {stone.price}</span>}
                     </div>
                     
                     <div className="mt-auto border-t border-slate-100 pt-2 text-center">
