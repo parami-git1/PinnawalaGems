@@ -15,7 +15,7 @@ function Home() {
     topAdImage: '',
     sideAdImage: '',
     bottomAdImage: '',
-    customerPhotos: [] // 🔹 අලුත් Customer Photos Array එක
+    customerPhotos: [] 
   });
   
   const [isEditing, setIsEditing] = useState(false);
@@ -71,7 +71,6 @@ function Home() {
     }
   };
 
-  // 🔹 Customer Photos ගොඩක් එකපාර Upload කරන Function එක
   const handleCustomerPhotosUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -170,25 +169,6 @@ function Home() {
         </div>
       </nav>
 
-      {/* ---------------- 🔹 ADVERTISEMENT SECTIONS (Public View) 🔹 ---------------- */}
-      {homeData.topAdImage && !isEditing && (
-        <div className="absolute top-[140px] md:top-[130px] left-0 w-full z-20 flex justify-center px-4">
-          <img src={homeData.topAdImage} alt="Top Advertisement" className="max-h-20 md:max-h-28 w-auto max-w-full object-contain shadow-lg" />
-        </div>
-      )}
-
-      {homeData.sideAdImage && !isEditing && (
-        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col justify-center">
-          <img src={homeData.sideAdImage} alt="Side Advertisement" className="w-16 md:w-24 h-auto object-contain shadow-2xl rounded-l-md border-y border-l border-white/20" />
-        </div>
-      )}
-
-      {homeData.bottomAdImage && !isEditing && (
-        <div className="absolute bottom-10 left-0 w-full z-20 flex justify-center px-4">
-          <img src={homeData.bottomAdImage} alt="Bottom Advertisement" className="max-h-20 md:max-h-28 w-auto max-w-full object-contain shadow-lg" />
-        </div>
-      )}
-
       {/* ---------------- 🔹 HERO SECTION (Image or Video) 🔹 ---------------- */}
       <main className="relative w-full min-h-screen flex items-center justify-center pt-32 pb-20">
         {homeData.heroVideo ? (
@@ -200,11 +180,13 @@ function Home() {
               frameBorder="0" 
               allow="autoplay; muted; loop; fullscreen"
             ></iframe>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/70 to-slate-50"></div>
+            {/* 🔹 වීඩියෝ එකේ Gradient එකේ Opacity අඩු කළා 🔹 */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/40 to-slate-50"></div>
           </div>
         ) : (
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" style={{ backgroundImage: `url('${bgImage}')` }}>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/80 to-slate-50"></div>
+            {/* 🔹 පින්තූරේ Gradient එකේ Opacity අඩු කළා 🔹 */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/40 to-slate-50"></div>
           </div>
         )}
 
@@ -238,7 +220,7 @@ function Home() {
                   </div>
                 </div>
 
-                {/* 🔹 NEW: CUSTOMER PHOTOS UPLOAD SECTION 🔹 */}
+                {/* 🔹 CUSTOMER PHOTOS UPLOAD SECTION 🔹 */}
                 <div className="border-2 border-dashed border-green-300 p-6 bg-green-50/30 text-center mb-6">
                   <h3 className="text-sm text-green-900 font-bold uppercase tracking-widest mb-4">Manage Customer Gallery</h3>
                   <label className="text-[10px] text-green-800 uppercase tracking-widest font-semibold block mb-2">Upload Multiple Photos (5+ Recommended)</label>
@@ -334,7 +316,7 @@ function Home() {
             <div className="text-center w-full mt-10 z-10">
               <h2 className="text-xs md:text-sm text-blue-800 tracking-[0.4em] uppercase mb-6 font-bold">Authentic Sri Lankan Gemstones</h2>
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif text-blue-950 mb-8 drop-shadow-sm tracking-wide leading-tight">{homeData.heroTitle}</h1>
-              <p className="text-base md:text-xl text-slate-700 mb-14 max-w-2xl mx-auto font-light leading-loose">{homeData.brandIntro}</p>
+              <p className="text-base md:text-xl text-slate-800 font-semibold mb-14 max-w-2xl mx-auto font-light leading-loose">{homeData.brandIntro}</p>
               <div className="flex justify-center">
                 <Link to="/catalog" className="px-10 py-4 bg-blue-950 text-white uppercase tracking-[0.2em] text-sm hover:bg-blue-900 transition-all duration-300 shadow-xl font-semibold">
                   Explore Collection
@@ -345,7 +327,7 @@ function Home() {
         </div>
       </main>
 
-      {/* ---------------- 🔹 NEW: CUSTOMER PHOTOS SLIDER 🔹 ---------------- */}
+      {/* ---------------- 🔹 CUSTOMER PHOTOS SLIDER 🔹 ---------------- */}
       {!isEditing && homeData.customerPhotos && homeData.customerPhotos.length > 0 && (
         <section className="w-full bg-slate-50 py-16 overflow-hidden border-t border-slate-200 shadow-inner">
           <div className="text-center mb-10 px-6">
@@ -355,9 +337,7 @@ function Home() {
           </div>
 
           <div className="relative w-full overflow-hidden flex bg-slate-50 py-4">
-            {/* 🔹 Seamless Loop Animation Container 🔹 */}
             <div className="animate-marquee gap-6 px-3">
-              {/* Array එක දෙපාරක් Render කරනවා හිස්තැන් නැතුව Loop වෙන්න */}
               {[...(homeData.customerPhotos), ...(homeData.customerPhotos)].map((photo, index) => (
                 <div key={index} className="flex-shrink-0 w-64 md:w-72 h-44 md:h-52 bg-white rounded-xl shadow-md overflow-hidden border border-slate-100 hover:shadow-xl transition-shadow cursor-pointer">
                   <img src={photo} alt={`Happy Customer ${index}`} className="w-full h-full object-cover" />
