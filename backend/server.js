@@ -67,6 +67,9 @@ app.use('/api/inventory', inventoryRoutes);
 const stockRoutes = require('./routes/stockRoutes');
 app.use('/api/stock', stockRoutes);
 
+const eventAdRoutes = require('./routes/eventAdRoutes');
+app.use('/api/event-ads', eventAdRoutes);
+
 // Connect to MongoDB Database
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 10000, 

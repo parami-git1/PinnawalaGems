@@ -6,25 +6,27 @@ const homeDataSchema = new mongoose.Schema({
   address: { type: String, default: 'Pinnawala, Sri Lanka' }, 
   contactNumber: { type: String, default: '+94 77 123 4567' }, 
   
-  // Aluthin add karapu fields 2
   whatsappNumber: { type: String, default: '94776599740' }, 
   inquiryEmail: { type: String, default: 'paramividarshanamuthumali@gmail.com' }, 
   
-  googleMapsLink: { type: String, default: '' } ,
+  googleMapsLink: { type: String, default: '' },
 
-
-topGems: [{
+  topGems: [{
     image: { type: String, required: true },
     name: { type: String, default: '' },
     weight: { type: String, default: '' }
   }],
-    sideAdImage: { type: String, default: '' },
+  
+  sideAdImage: { type: String, default: '' },
   bottomAdImage: { type: String, default: '' },
 
-  customerPhotos: { type: [String], default: [] }
+  customerPhotos: { type: [String], default: [] },
+
+  // 🔹 අලුතින් එකතු කළ Events & News Fields 🔹
+  showEvent: { type: Boolean, default: false }, // Banner එක පෙන්වනවාද නැද්ද කියලා On/Off කරන්න
+  eventText: { type: String, default: '' },     // Exhibition එකේ හෝ News එකේ විස්තරය
+  eventLink: { type: String, default: '' }      // Click කළාම යන ලින්ක් එක (Optional)
 
 });
-
-
 
 module.exports = mongoose.model('HomeData', homeDataSchema);
