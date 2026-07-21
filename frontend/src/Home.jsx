@@ -302,7 +302,6 @@ function Home() {
         .animate-marquee { display: flex; width: max-content; animation: marquee 35s linear infinite; }
         .animate-marquee:hover { animation-play-state: paused; }
 
-        /* 🔹 මැණික කෙළින් තියීලා වටේට දිලිසෙමින් කරකැවෙන Effect එක 🔹 */
         @keyframes shine-rotate {
           0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); }
           50% { transform: rotate(180deg) scale(1.1); filter: drop-shadow(0 0 8px rgba(59,130,246,0.9)) brightness(1.3); }
@@ -623,7 +622,7 @@ function Home() {
         </section>
       )}
 
-      {/* ---------------- 🔹 EVENTS & ADS POPUP MODAL (UI) ---------------- */}
+      {/* ---------------- 🔹 EVENTS & ADS POPUP MODAL (CUSTOMER & ADMIN FRIENDLY) ---------------- */}
       {showEventModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -642,13 +641,13 @@ function Home() {
               
               {/* If Admin, show Add Event Form inside Modal */}
               {isAdmin && (
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg shadow-sm">
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg shadow-sm mb-6">
                   <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-3">Admin Panel: Post New Event / Ad</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <input type="text" placeholder="Event Name / Title" value={newEventAd.title} onChange={(e) => setNewEventAd({...newEventAd, title: e.target.value})} className="bg-white border border-blue-200 p-2 text-xs rounded" />
                     <select value={newEventAd.layoutType} onChange={(e) => setNewEventAd({...newEventAd, layoutType: e.target.value})} className="bg-white border border-blue-200 p-2 text-xs rounded font-bold">
-                      <option value="horizontal">Horizontal Layout</option>
-                      <option value="vertical">Vertical Layout</option>
+                      <option value="horizontal">Horizontal Layout (තිරස්)</option>
+                      <option value="vertical">Vertical Layout (සිරස්)</option>
                     </select>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -665,25 +664,26 @@ function Home() {
                 </div>
               )}
 
-              {/* Display Events & Ads List */}
+              {/* Display Events & Ads List (Customer Clean View - No Horizontal/Vertical badges) */}
               {eventAds.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <p className="text-sm font-semibold">No active exhibitions or events right now.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-6">
                   {eventAds.map((ad) => (
-                    <div key={ad._id} className={`bg-white p-4 rounded-lg shadow border border-slate-200 flex flex-col ${ad.layoutType === 'horizontal' ? 'md:flex-row items-center gap-4' : 'items-center text-center'}`}>
-                      <img src={ad.image} alt={ad.title} className={`${ad.layoutType === 'horizontal' ? 'w-full md:w-48 h-40 object-cover' : 'w-full h-48 object-cover'} rounded shadow-sm`} />
-                      <div className={`flex-1 flex flex-col justify-center ${ad.layoutType === 'horizontal' ? 'text-left' : 'items-center'}`}>
-                        <div className="flex items-center justify-between w-full mb-1">
-                          <h4 className="text-base font-serif font-bold text-blue-950">{ad.title}</h4>
-                          <span className="text-[9px] uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">{ad.layoutType}</span>
-                        </div>
-                        {ad.description && <p className="text-slate-600 text-xs leading-relaxed">{ad.description}</p>}
+                    <div key={ad._id} className="bg-white p-5 rounded-xl shadow-md border border-slate-200 flex flex-col items-center">
+                      {/* Full Image view without cropping */}
+                      <div className="w-full bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center mb-4 p-2">
+                        <img src={ad.image} alt={ad.title} className="max-h-[400px] w-auto object-contain rounded" />
+                      </div>
+                      
+                      <div className="w-full text-center">
+                        <h3 className="text-xl font-serif font-bold text-blue-950 mb-2">{ad.title}</h3>
+                        {ad.description && <p className="text-slate-600 text-sm leading-relaxed max-w-2xl mx-auto">{ad.description}</p>}
                         
                         {isAdmin && (
-                          <button onClick={() => handleDeleteEventAd(ad._id)} className="mt-3 bg-red-600 text-white text-[10px] uppercase font-bold tracking-wider px-3 py-1 rounded hover:bg-red-700 w-max">
+                          <button onClick={() => handleDeleteEventAd(ad._id)} className="mt-4 bg-red-600 text-white text-[10px] uppercase font-bold tracking-wider px-4 py-1.5 rounded hover:bg-red-700">
                             Delete Event
                           </button>
                         )}
