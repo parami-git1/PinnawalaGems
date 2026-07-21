@@ -65,10 +65,14 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
   }
 });
 
-// 4. අලුත් ගලක් එකතු කිරීම
+// 4. අලුත් ගලක් එකතු කිරීම (Top Gems සහ Cut Fields ඇතුළුව)
 router.post('/stones', async (req, res) => {
   try {
-    const { categoryId, title, description, weight, color, shape, price, hasCertificate, certificateDetails, certificateImage, image, isFeatured, quantity, origin, additionalImages } = req.body;
+    const { 
+      categoryId, title, description, weight, color, shape, cut, price, 
+      hasCertificate, certificateDetails, certificateImage, image, 
+      isFeatured, quantity, origin, additionalImages, isTopGem, homePagePosition 
+    } = req.body;
     
     const category = await GemCategory.findById(categoryId);
     const prefix = category.title.toLowerCase().replace(/\s+/g, '-');
@@ -84,11 +88,13 @@ router.post('/stones', async (req, res) => {
     const stoneId = `${prefix}-${nextNumber}`; 
     
     const newStone = new Stone({ 
-      categoryId, title, description, weight, color, shape, price, 
+      categoryId, title, description, weight, color, shape, cut: cut || '', price, 
       hasCertificate, certificateDetails, certificateImage, image, isFeatured, stoneId,
       quantity: quantity || 1,
       origin: origin || '', 
-      additionalImages: additionalImages || []
+      additionalImages: additionalImages || [],
+      isTopGem: isTopGem || false,
+      homePagePosition: homePagePosition || 0
     });
     
     await newStone.save();
@@ -154,7 +160,6 @@ router.delete('/categories/:categoryId', async (req, res) => {
       await cloudinary.uploader.destroy(catPublicId);
     }
     
-    // 🔹 Cover Image එකත් මකා දැමීම 🔹
     if (category.coverImage && category.coverImage.includes('cloudinary')) {
       const coverPublicId = category.coverImage.split('/').slice(-2).join('/').split('.')[0];
       await cloudinary.uploader.destroy(coverPublicId);
@@ -277,13 +282,27 @@ router.put('/categories/:categoryId', async (req, res) => {
   }
 });
 
-// 12. ගලක් Edit කිරීම
+// 12. ගලක් Edit කිරීම (isTopGem වෙනස් කිරීම ඇතුළුව)
 router.put('/stones/:stoneId', async (req, res) => {
   try {
-    const updatedStone = await Stone.findByIdAndUpdate(req.params.stoneId, req.body, { new: true });
+    const updatedStone = await Stone.findByIdAndUpdate(
+      req.params.stoneId, 
+      { $set: req.body }, 
+      { new: true }
+    );
     res.json(updatedStone);
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+// 🔹 Home Page එකට විතරක් Top Gems ටික අරන් දෙන විශේෂ API එක 🔹
+router.get('/top-gems', async (req, res) => {
+  try {
+    const topStones = await Stone.find({ isTopGem: true }).sort({ homePagePosition: 1 }).limit(10);
+    res.json(topStones);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 

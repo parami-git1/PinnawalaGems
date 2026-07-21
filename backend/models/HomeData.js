@@ -13,8 +13,12 @@ const homeDataSchema = new mongoose.Schema({
   googleMapsLink: { type: String, default: '' } ,
 
 
-  topAdImage: { type: String, default: '' },
-  sideAdImage: { type: String, default: '' },
+topGems: [{
+    image: { type: String, required: true },
+    name: { type: String, default: '' },
+    weight: { type: String, default: '' }
+  }],
+    sideAdImage: { type: String, default: '' },
   bottomAdImage: { type: String, default: '' },
 
   customerPhotos: { type: [String], default: [] }

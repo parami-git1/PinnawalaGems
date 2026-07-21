@@ -1,5 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+
+// 🔹 Hover Slideshow එකට හදපු වෙනම Component එක 🔹
+const TopGemCard = ({ gem, isAdmin, onRemove }) => {
+  const [imgIdx, setImgIdx] = useState(0);
+  const images = [gem.image, ...(gem.additionalImages || [])].filter(Boolean);
+  const intervalRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (images.length > 1) {
+      intervalRef.current = setInterval(() => {
+        setImgIdx((prev) => (prev + 1) % images.length);
+      }, 1000); // තත්පරෙන් තත්පරේට මාරු වෙනවා
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setImgIdx(0); // ආයෙත් මුල් පින්තූරෙට එනවා
+  };
+
+  return (
+    <div className="bg-slate-50 rounded-md p-3 shadow-sm hover:shadow-lg transition-all border border-slate-100 flex flex-col items-center text-center relative group">
+      <Link to={`/gem/${gem._id || gem.stoneId}`} className="w-full">
+        <div 
+          className="w-full h-32 md:h-40 overflow-hidden rounded-sm mb-3 relative flex items-center justify-center bg-white"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <img 
+            src={images[imgIdx]} 
+            alt={gem.title || 'Premium Gem'} 
+            className="max-h-full max-w-full object-contain transition-opacity duration-500 ease-in-out" 
+          />
+        </div>
+        {gem.title && <h3 className="text-xs md:text-sm font-bold text-blue-950 uppercase tracking-wider line-clamp-1">{gem.title}</h3>}
+        {gem.weight && <p className="text-[10px] md:text-xs text-slate-500 mt-1 font-semibold">{gem.weight} ct</p>}
+      </Link>
+      {isAdmin && (
+        <button onClick={() => onRemove(gem._id)} className="absolute -top-2 -right-2 bg-red-600 text-white w-5 h-5 rounded-full text-[10px] shadow-md z-10 hover:bg-red-700">✖</button>
+      )}
+    </div>
+  );
+};
 
 function Home() {
   const [homeData, setHomeData] = useState({
@@ -9,66 +52,73 @@ function Home() {
     contactNumber: '+94 77 123 4567',
     whatsappNumber: '94776599740',
     inquiryEmail: 'paramividarshanamuthumali@gmail.com',
-    googleMapsLink: '',
     heroImage: '', 
     heroVideo: '',
-    topAdImage: '',
     sideAdImage: '',
     bottomAdImage: '',
-    customerPhotos: [] 
+    customerPhotos: [],
+    featureImage: '',
+    featureSubtitle: '',
+    featureTitle: '',
+    featureDescription: ''
   });
+  
+  const [topGems, setTopGems] = useState([]);
+  const [categories, setCategories] = useState([]); // Gem Types ටික ගන්න
   
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingCustomers, setIsUploadingCustomers] = useState(false);
+  const [isUploadingGemImg, setIsUploadingGemImg] = useState(false);
+  
+  // 🔹 අලුත් Top Gem එක Collection එකට යවන්න හදපු State එක 🔹
+  const [newTopGem, setNewTopGem] = useState({ 
+    gemType: '', homePagePosition: '1', title: '', weight: '', 
+    shape: '', cut: '', origin: '', certificateDetails: '', 
+    image: '', additionalImages: [] 
+  });
+  
   const isAdmin = !!localStorage.getItem('token');
 
+const fetchTopGems = () => {
+    fetch('https://pinnawalagems.onrender.com/api/inventory/top-gems')
+      .then(res => res.json())
+      .then(data => {
+        setTopGems(Array.isArray(data) ? data : []);
+      }).catch(err => console.log("Error fetching top gems:", err));
+  };
+
   useEffect(() => {
+    // Fetch Home Data
     fetch('https://pinnawalagems.onrender.com/api/home')
       .then(res => res.json())
       .then(data => {
-        if(data && data.heroTitle) {
-          setHomeData({
-            ...data,
-            heroVideo: data.heroVideo || '',
-            topAdImage: data.topAdImage || '',
-            sideAdImage: data.sideAdImage || '',
-            bottomAdImage: data.bottomAdImage || '',
-            customerPhotos: data.customerPhotos || []
-          }); 
-        }
-      })
-      .catch(err => console.log("Error fetching home data:", err));
+        if(data && data.heroTitle) setHomeData(data);
+      }).catch(err => console.log(err));
+
+    // Fetch Categories (Gem Types)
+    fetch('https://pinnawalagems.onrender.com/api/inventory/categories')
+      .then(res => res.json())
+      .then(data => setCategories(Array.isArray(data) ? data : [])).catch(err => console.log(err));
+
+    fetchTopGems();
   }, []);
 
-  const handleChange = (e) => {
-    setHomeData({ ...homeData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setHomeData({ ...homeData, [e.target.name]: e.target.value });
 
   const handleFileUpload = async (e, fieldName) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const uploadData = new FormData();
     uploadData.append('image', file);
     setIsUploading(true);
-
     try {
-      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', {
-        method: 'POST',
-        body: uploadData,
-      });
-      
+      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
       if (response.ok) {
         const data = await response.json();
         setHomeData(prev => ({ ...prev, [fieldName]: data.imageUrl }));
       }
-    } catch (error) {
-      console.log("Error uploading image:", error);
-      alert("Image upload failed.");
-    } finally {
-      setIsUploading(false);
-    }
+    } catch (error) { console.log(error); } finally { setIsUploading(false); }
   };
 
   const handleCustomerPhotosUpload = async (e) => {
@@ -78,43 +128,99 @@ function Home() {
     try {
       const uploadedUrls = [];
       for (const file of files) {
-        const uploadData = new FormData(); 
-        uploadData.append('image', file);
-        const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
-        if (response.ok) {
-          const data = await response.json();
-          uploadedUrls.push(data.imageUrl);
-        }
+        const uploadData = new FormData(); uploadData.append('image', file);
+        const res = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
+        if (res.ok) uploadedUrls.push((await res.json()).imageUrl);
       }
       setHomeData(prev => ({ ...prev, customerPhotos: [...(prev.customerPhotos || []), ...uploadedUrls] }));
     } catch (error) { console.log(error); } finally { setIsUploadingCustomers(false); }
   };
 
-  const removeAdImage = (fieldName) => {
-    setHomeData(prev => ({ ...prev, [fieldName]: '' }));
+  const handleTopGemImagesUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setIsUploadingGemImg(true);
+    try {
+      const urls = [];
+      for (let i = 0; i < Math.min(files.length, 5); i++) {
+        const uploadData = new FormData(); uploadData.append('image', files[i]);
+        const res = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
+        if (res.ok) urls.push((await res.json()).imageUrl);
+      }
+      if (urls.length > 0) {
+        setNewTopGem(prev => ({ ...prev, image: urls[0], additionalImages: urls.slice(1) }));
+      }
+    } catch (error) { alert("Upload failed."); } finally { setIsUploadingGemImg(false); }
   };
 
-  const removeCustomerPhoto = (indexToRemove) => {
-    setHomeData(prev => ({ ...prev, customerPhotos: prev.customerPhotos.filter((_, index) => index !== indexToRemove) }));
+  // 🔹 Collection එකට කෙළින්ම Gem එක යවනවා 🔹
+  const handleAddTopGem = async () => {
+    if (!newTopGem.gemType || !newTopGem.image) {
+      return alert("Gem Type and at least 1 Image are mandatory!");
+    }
+    
+    // හොයන Category එකේ ID එක හොයාගන්නවා
+    const selectedCategory = categories.find(cat => cat.title === newTopGem.gemType);
+    if (!selectedCategory) return alert("Invalid Category Selected");
+
+    const payload = {
+      categoryId: selectedCategory._id,
+      title: newTopGem.title || 'Premium Gemstone',
+      image: newTopGem.image,
+      additionalImages: newTopGem.additionalImages,
+      weight: newTopGem.weight,
+      shape: newTopGem.shape,
+      cut: newTopGem.cut,
+      origin: newTopGem.origin,
+      hasCertificate: !!newTopGem.certificateDetails,
+      certificateDetails: newTopGem.certificateDetails,
+      isTopGem: true,
+      homePagePosition: parseInt(newTopGem.homePagePosition) || 1
+    };
+
+    try {
+      const response = await fetch('https://pinnawalagems.onrender.com/api/inventory/stones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        alert("Top Gem Added & Synced to Collection! 💎");
+        setNewTopGem({ gemType: '', homePagePosition: '1', title: '', weight: '', shape: '', cut: '', origin: '', certificateDetails: '', image: '', additionalImages: [] });
+        fetchTopGems();
+      } else { 
+        const errorData = await response.json();
+        alert("Failed to add gem: " + (errorData.message || "Unknown error")); 
+      }
+    } catch (error) { console.log(error); }
   };
+
+  // 🔹 Top Gem ලිස්ට් එකෙන් අයින් කරනවා (නමුත් Collection එකේ තියෙනවා)
+  const removeTopGem = async (id) => {
+    if(window.confirm("Remove this from Home Page? (It will remain in the Catalog)")){
+      try {
+        await fetch(`https://pinnawalagems.onrender.com/api/inventory/stones/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ isTopGem: false })
+        });
+        fetchTopGems();
+      } catch (error) { console.log(error); }
+    }
+  };
+
+  const removeAdImage = (fieldName) => setHomeData(prev => ({ ...prev, [fieldName]: '' }));
+  const removeCustomerPhoto = (index) => setHomeData(prev => ({ ...prev, customerPhotos: prev.customerPhotos.filter((_, i) => i !== index) }));
 
   const handleSave = async () => {
     try {
-      const response = await fetch('https://pinnawalagems.onrender.com/api/home', {
+      const res = await fetch('https://pinnawalagems.onrender.com/api/home', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(homeData)
       });
-      if(response.ok) {
-        alert("Premium Home page updated successfully! 💎");
-        setIsEditing(false);
-      }
-    } catch (error) {
-      console.log("Error saving home data:", error);
-    }
+      if(res.ok) { alert("Home page updated successfully!"); setIsEditing(false); }
+    } catch (error) { console.log(error); }
   };
 
   const bgImage = homeData.heroImage || "https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?q=80&w=2074&auto=format&fit=crop";
@@ -122,111 +228,172 @@ function Home() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative overflow-x-hidden">
       
-      {/* 🔹 CSS Animations for the Marquee (Slider) 🔹 */}
       <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-marquee {
-          display: flex;
-          width: max-content;
-          animation: marquee 35s linear infinite;
-        }
-        .animate-marquee:hover {
-          animation-play-state: paused;
-        }
+        @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
+        .animate-marquee { display: flex; width: max-content; animation: marquee 35s linear infinite; }
+        .animate-marquee:hover { animation-play-state: paused; }
       `}</style>
 
       {/* ---------------- 🔹 SLIM NAVIGATION BAR 🔹 ---------------- */}
       <nav className="fixed w-full z-50 bg-white/95 backdrop-blur-md text-blue-950 py-3 px-6 border-b border-blue-100 shadow-sm flex flex-col items-center">
         <div className="flex flex-col items-center mb-2">
-          <img 
-            src="/image_27d308.png" 
-            alt="Pinnawala Gems Logo" 
-            className="h-10 md:h-12 w-auto object-contain mix-blend-multiply transform scale-[1.5] mt-2 mb-3" 
-          />
-          <h1 className="text-lg md:text-xl font-serif tracking-[0.2em] uppercase font-bold text-center">
-            Pinnawala Gems
-          </h1>
+          <img src="/image_27d308.png" alt="Pinnawala Gems Logo" className="h-10 md:h-12 w-auto object-contain mix-blend-multiply transform scale-[1.5] mt-2 mb-3" />
+          <h1 className="text-lg md:text-xl font-serif tracking-[0.2em] uppercase font-bold text-center">Pinnawala Gems</h1>
         </div>
-        
         <div className="flex gap-5 md:gap-8 items-center flex-wrap justify-center">
           <Link to="/" className="text-[10px] md:text-xs font-bold tracking-[0.15em] text-blue-600 transition-colors uppercase">Home</Link>
           <Link to="/catalog" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Collection</Link>
           <Link to="/workshop" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Workshop</Link>
           <Link to="/feedback" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Feedback</Link>
           <Link to="/contact" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Contact Us</Link>
-          
           {isAdmin && (
-            <button 
-              onClick={() => setIsEditing(!isEditing)} 
-              className="bg-blue-950 text-white px-4 py-1.5 text-[10px] font-bold tracking-wider uppercase hover:bg-blue-800 transition-colors shadow-md ml-2 rounded-sm"
-            >
+            <button onClick={() => setIsEditing(!isEditing)} className="bg-blue-950 text-white px-4 py-1.5 text-[10px] font-bold tracking-wider uppercase hover:bg-blue-800 transition-colors shadow-md ml-2 rounded-sm">
               {isEditing ? 'Cancel Edit' : 'Edit Content'}
             </button>
           )}
         </div>
       </nav>
 
-      {/* ---------------- 🔹 HERO SECTION (Image or Video) 🔹 ---------------- */}
+      {/* ---------------- 🔹 HERO SECTION 🔹 ---------------- */}
       <main className="relative w-full min-h-screen flex items-center justify-center pt-32 pb-20">
         {homeData.heroVideo ? (
           <div className="absolute inset-0 z-0 overflow-hidden bg-slate-100">
-            <iframe 
-              src={homeData.heroVideo} 
-              title="Background Video"
-              className="absolute top-1/2 left-1/2 w-[150vw] h-[100vh] min-w-full min-h-full -translate-x-1/2 -translate-y-1/2 object-cover pointer-events-none opacity-80"
-              frameBorder="0" 
-              allow="autoplay; muted; loop; fullscreen"
-            ></iframe>
-            {/* 🔹 වීඩියෝ එකේ Gradient එකේ Opacity අඩු කළා 🔹 */}
+            <iframe src={homeData.heroVideo} title="Background Video" className="absolute top-1/2 left-1/2 w-[150vw] h-[100vh] min-w-full min-h-full -translate-x-1/2 -translate-y-1/2 object-cover pointer-events-none opacity-80" frameBorder="0" allow="autoplay; muted; loop; fullscreen"></iframe>
             <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/40 to-slate-50"></div>
           </div>
         ) : (
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" style={{ backgroundImage: `url('${bgImage}')` }}>
-            {/* 🔹 පින්තූරේ Gradient එකේ Opacity අඩු කළා 🔹 */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/40 to-slate-50"></div>
           </div>
         )}
 
         <div className="relative z-10 w-full max-w-5xl px-6 flex flex-col items-center justify-center mt-10">
           {isEditing ? (
-            <div className="bg-white/95 backdrop-blur-xl p-8 md:p-12 w-full max-w-3xl border border-blue-100 shadow-2xl rounded-sm my-10 h-auto max-h-[80vh] overflow-y-auto">
+            <div className="bg-white/95 backdrop-blur-xl p-8 md:p-12 w-full max-w-5xl border border-blue-100 shadow-2xl rounded-sm my-10 h-auto max-h-[85vh] overflow-y-auto">
               <h2 className="text-2xl font-serif text-blue-950 mb-8 text-center tracking-widest uppercase font-bold">Edit Premium Content</h2>
               
               <div className="space-y-6">
                 
-                {/* Image/Video Upload Area */}
+                {/* 🔹 HERO IMAGE/VIDEO UPLOAD 🔹 */}
                 <div className="border-2 border-dashed border-blue-200 p-6 bg-slate-50 text-center mb-6">
-                  <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold block mb-4">Upload New Background Image</label>
-                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'heroImage')} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 mx-auto block" />
-                  {isUploading && <p className="text-xs text-blue-600 mt-3 tracking-widest font-bold">UPLOADING... ⏳</p>}
-                  
-                  {homeData.heroImage && !isUploading && (
-                    <div className="mt-4 mb-6 relative inline-block">
-                      <p className="text-[10px] text-green-600 uppercase tracking-widest font-bold mb-2">Selected Image:</p>
-                      <img src={homeData.heroImage} alt="Hero Preview" className="h-24 mx-auto object-cover rounded-sm border border-slate-200 shadow-sm" />
-                    </div>
-                  )}
+                  <h3 className="text-sm text-blue-900 font-bold uppercase tracking-widest mb-4">Main Background Cover</h3>
+                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'heroImage')} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 mx-auto block mb-4" />
+                  <input type="text" name="heroVideo" value={homeData.heroVideo} onChange={handleChange} placeholder="Or YouTube Embed URL..." className="w-full bg-white text-blue-950 border border-blue-200 p-3 focus:outline-none focus:border-blue-950 transition-colors text-xs" />
+                </div>
 
-                  <div className="w-full border-t border-slate-200 my-6 relative">
-                    <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-50 px-3 text-[10px] text-slate-400 font-bold uppercase tracking-widest">OR</span>
+                {/* 🔹 NEW: ADVANCED TOP 10 GEMS UPLOAD (SYNCED) 🔹 */}
+                <div className="border-2 border-dashed border-purple-400 p-6 bg-purple-50/50 mb-6 shadow-sm">
+                  <h3 className="text-sm text-purple-900 font-bold uppercase tracking-widest mb-4 text-center">Manage Top 10 Gems (Syncs with Collection)</h3>
+                  
+                  <div className="bg-white p-6 border border-purple-200 rounded-sm shadow-md mb-6">
+                    <h4 className="text-xs text-purple-800 uppercase font-bold mb-4 border-b border-purple-100 pb-2">Add a New Top Gem (Auto-ID Generated)</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                      {/* Dropdown for Gem Type */}
+                      <div className="col-span-1 md:col-span-2">
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Gem Type (Required)</label>
+                        <select value={newTopGem.gemType} onChange={(e) => setNewTopGem({...newTopGem, gemType: e.target.value})} className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500 font-bold">
+                          <option value="">Select Category...</option>
+                          {categories.map(cat => (
+                            <option key={cat._id} value={cat.title}>{cat.title}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      {/* Position Selection */}
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Display Position (1-10)</label>
+                        <select value={newTopGem.homePagePosition} onChange={(e) => setNewTopGem({...newTopGem, homePagePosition: e.target.value})} className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500 font-bold">
+                          {[1,2,3,4,5,6,7,8,9,10].map(num => (
+                            <option key={num} value={num}>Position {num}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Multiple Image Upload */}
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Upload Images (Up to 5)</label>
+                        <input type="file" multiple accept="image/*" onChange={handleTopGemImagesUpload} className="text-[10px] w-full mt-1" />
+                        {isUploadingGemImg && <p className="text-[10px] text-purple-600 mt-1 font-bold">Uploading...</p>}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Gem Name</label>
+                        <input type="text" value={newTopGem.title} onChange={(e) => setNewTopGem({...newTopGem, title: e.target.value})} placeholder="e.g. Royal Blue Sapphire" className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Weight (ct)</label>
+                        <input type="text" value={newTopGem.weight} onChange={(e) => setNewTopGem({...newTopGem, weight: e.target.value})} placeholder="e.g. 5.2" className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Shape</label>
+                        <input type="text" value={newTopGem.shape} onChange={(e) => setNewTopGem({...newTopGem, shape: e.target.value})} placeholder="e.g. Oval" className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Cut</label>
+                        <input type="text" value={newTopGem.cut} onChange={(e) => setNewTopGem({...newTopGem, cut: e.target.value})} placeholder="e.g. Brilliant" className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Origin</label>
+                        <input type="text" value={newTopGem.origin} onChange={(e) => setNewTopGem({...newTopGem, origin: e.target.value})} placeholder="e.g. Ceylon (Sri Lanka)" className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-purple-700 uppercase font-semibold block mb-1">Certificate Number</label>
+                        <input type="text" value={newTopGem.certificateDetails} onChange={(e) => setNewTopGem({...newTopGem, certificateDetails: e.target.value})} placeholder="e.g. GIA-123456" className="w-full bg-slate-50 border border-purple-200 p-2 text-xs focus:outline-none focus:border-purple-500" />
+                      </div>
+                      <button onClick={handleAddTopGem} disabled={isUploadingGemImg || !newTopGem.gemType || !newTopGem.image} className="bg-purple-900 text-white w-full py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-purple-800 transition-colors disabled:bg-slate-400">
+                        + Add & Sync to Catalog
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="mt-6 text-left">
-                    <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold block mb-2">Use YouTube Video Instead (Embed URL)</label>
-                    <input type="text" name="heroVideo" value={homeData.heroVideo} onChange={handleChange} placeholder="e.g. https://www.youtube.com/embed/XXXXXX?autoplay=1&mute=1&loop=1" className="w-full bg-white text-blue-950 border border-blue-200 p-3 focus:outline-none focus:border-blue-950 transition-colors text-xs" />
+                  {/* Added Gems Preview */}
+                  {topGems.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {topGems.map((gem, idx) => (
+                        <TopGemCard key={idx} gem={gem} isAdmin={true} onRemove={removeTopGem} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 🔹 HIGHLIGHT FEATURE SECTION UPLOAD 🔹 */}
+                <div className="border-2 border-dashed border-amber-300 p-6 bg-amber-50/30 mb-6">
+                  <h3 className="text-sm text-amber-900 font-bold uppercase tracking-widest mb-4 text-center">Manage Feature Section (Image Left, Text Right)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-xs text-amber-800 uppercase tracking-[0.2em] font-semibold block mb-2">Feature Image (Left Side)</label>
+                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'featureImage')} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 w-full block mb-2" />
+                      {homeData.featureImage && <img src={homeData.featureImage} alt="Feature Preview" className="h-24 object-cover rounded-sm border border-slate-200 shadow-sm" />}
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs text-amber-800 uppercase tracking-[0.2em] font-semibold">Small Subtitle:</label>
+                        <input type="text" name="featureSubtitle" value={homeData.featureSubtitle} onChange={handleChange} className="w-full bg-white text-blue-950 border border-amber-200 p-2 text-sm focus:outline-none focus:border-amber-500" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-amber-800 uppercase tracking-[0.2em] font-semibold">Main Title:</label>
+                        <input type="text" name="featureTitle" value={homeData.featureTitle} onChange={handleChange} className="w-full bg-white text-blue-950 border border-amber-200 p-2 text-sm focus:outline-none focus:border-amber-500" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-amber-800 uppercase tracking-[0.2em] font-semibold">Description Text:</label>
+                        <textarea name="featureDescription" value={homeData.featureDescription} onChange={handleChange} rows="4" className="w-full bg-white text-blue-950 border border-amber-200 p-2 text-sm focus:outline-none focus:border-amber-500"></textarea>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* 🔹 CUSTOMER PHOTOS UPLOAD SECTION 🔹 */}
+                {/* 🔹 CUSTOMER PHOTOS UPLOAD 🔹 */}
                 <div className="border-2 border-dashed border-green-300 p-6 bg-green-50/30 text-center mb-6">
-                  <h3 className="text-sm text-green-900 font-bold uppercase tracking-widest mb-4">Manage Customer Gallery</h3>
+                  <h3 className="text-sm text-green-900 font-bold uppercase tracking-widest mb-4">Manage Customer Gallery Slider</h3>
                   <label className="text-[10px] text-green-800 uppercase tracking-widest font-semibold block mb-2">Upload Multiple Photos (5+ Recommended)</label>
                   <input type="file" multiple accept="image/*" onChange={handleCustomerPhotosUpload} className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-green-100 file:text-green-800 hover:file:bg-green-200 mx-auto block mb-4" />
                   {isUploadingCustomers && <p className="text-xs text-green-600 font-bold mb-2">Uploading Photos... ⏳</p>}
-                  
                   {homeData.customerPhotos && homeData.customerPhotos.length > 0 && (
                     <div className="flex flex-wrap gap-3 mt-4 justify-center">
                       {homeData.customerPhotos.map((img, idx) => (
@@ -239,37 +406,26 @@ function Home() {
                   )}
                 </div>
 
-                {/* 🔹 ADVERTISEMENTS UPLOAD SECTION 🔹 */}
+                {/* 🔹 ADVERTISEMENTS UPLOAD 🔹 */}
                 <div className="border-2 border-dashed border-slate-300 p-6 bg-slate-50 text-center mb-6">
-                  <h3 className="text-sm text-blue-900 font-bold uppercase tracking-widest mb-4">Manage Advertisements (Optional)</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <h3 className="text-sm text-blue-900 font-bold uppercase tracking-widest mb-4">Manage Advertisements</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto">
                     <div className="border border-slate-200 p-3 bg-white">
-                      <label className="text-[10px] text-blue-800 uppercase tracking-widest font-semibold block mb-2">Horizontal Ad 1</label>
-                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'topAdImage')} className="text-[9px] w-full mb-2" />
-                      {homeData.topAdImage && (
-                        <div className="relative mt-2 inline-block">
-                          <img src={homeData.topAdImage} alt="Horizontal Ad 1" className="h-12 object-contain border" />
-                          <button onClick={() => removeAdImage('topAdImage')} className="absolute -top-2 -right-2 bg-red-600 text-white w-4 h-4 rounded-full text-[8px]">✖</button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="border border-slate-200 p-3 bg-white">
-                      <label className="text-[10px] text-blue-800 uppercase tracking-widest font-semibold block mb-2">Vertical Ad</label>
+                      <label className="text-[10px] text-blue-800 uppercase tracking-widest font-semibold block mb-2">Vertical Ad (Side)</label>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'sideAdImage')} className="text-[9px] w-full mb-2" />
                       {homeData.sideAdImage && (
                         <div className="relative mt-2 inline-block">
-                          <img src={homeData.sideAdImage} alt="Vertical Ad" className="h-12 object-contain border" />
+                          <img src={homeData.sideAdImage} alt="Ad 2" className="h-12 object-contain border" />
                           <button onClick={() => removeAdImage('sideAdImage')} className="absolute -top-2 -right-2 bg-red-600 text-white w-4 h-4 rounded-full text-[8px]">✖</button>
                         </div>
                       )}
                     </div>
                     <div className="border border-slate-200 p-3 bg-white">
-                      <label className="text-[10px] text-blue-800 uppercase tracking-widest font-semibold block mb-2">Horizontal Ad 2</label>
+                      <label className="text-[10px] text-blue-800 uppercase tracking-widest font-semibold block mb-2">Horizontal Ad (Bottom)</label>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'bottomAdImage')} className="text-[9px] w-full mb-2" />
                       {homeData.bottomAdImage && (
                         <div className="relative mt-2 inline-block">
-                          <img src={homeData.bottomAdImage} alt="Horizontal Ad 2" className="h-12 object-contain border" />
+                          <img src={homeData.bottomAdImage} alt="Ad 3" className="h-12 object-contain border" />
                           <button onClick={() => removeAdImage('bottomAdImage')} className="absolute -top-2 -right-2 bg-red-600 text-white w-4 h-4 rounded-full text-[8px]">✖</button>
                         </div>
                       )}
@@ -277,37 +433,17 @@ function Home() {
                   </div>
                 </div>
 
+                {/* 🔹 Basic Info 🔹 */}
                 <div>
                   <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold">Main Hero Title:</label>
-                  <input type="text" name="heroTitle" value={homeData.heroTitle} onChange={handleChange} className="w-full bg-slate-50 text-blue-950 border border-blue-200 p-3 mt-2 focus:outline-none focus:border-blue-950 transition-colors" />
+                  <input type="text" name="heroTitle" value={homeData.heroTitle} onChange={handleChange} className="w-full bg-white text-blue-950 border border-blue-200 p-3 mt-2 focus:outline-none focus:border-blue-950 transition-colors" />
                 </div>
                 <div>
                   <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold">Brand Introduction:</label>
-                  <textarea name="brandIntro" value={homeData.brandIntro} onChange={handleChange} className="w-full bg-slate-50 text-blue-950 border border-blue-200 p-3 mt-2 h-24 focus:outline-none focus:border-blue-950 transition-colors"></textarea>
+                  <textarea name="brandIntro" value={homeData.brandIntro} onChange={handleChange} className="w-full bg-white text-blue-950 border border-blue-200 p-3 mt-2 h-24 focus:outline-none focus:border-blue-950 transition-colors"></textarea>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold">Location Address:</label>
-                    <input type="text" name="address" value={homeData.address} onChange={handleChange} className="w-full bg-slate-50 text-blue-950 border border-blue-200 p-3 mt-2 focus:outline-none focus:border-blue-950 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold">Contact Number:</label>
-                    <input type="text" name="contactNumber" value={homeData.contactNumber} onChange={handleChange} className="w-full bg-slate-50 text-blue-950 border border-blue-200 p-3 mt-2 focus:outline-none focus:border-blue-950 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold">WhatsApp Number:</label>
-                    <input type="text" name="whatsappNumber" value={homeData.whatsappNumber} onChange={handleChange} className="w-full bg-slate-50 text-blue-950 border border-blue-200 p-3 mt-2 focus:outline-none focus:border-blue-950 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-blue-800 uppercase tracking-[0.2em] font-semibold">Inquiry Email:</label>
-                    <input type="email" name="inquiryEmail" value={homeData.inquiryEmail} onChange={handleChange} className="w-full bg-slate-50 text-blue-950 border border-blue-200 p-3 mt-2 focus:outline-none focus:border-blue-950 transition-colors" />
-                  </div>
-                </div>
-                <button 
-                  onClick={handleSave} 
-                  disabled={isUploading || isUploadingCustomers}
-                  className="w-full bg-blue-950 text-white font-bold py-4 mt-8 tracking-[0.2em] uppercase hover:bg-blue-900 transition-colors shadow-lg disabled:bg-slate-400"
-                >
+                
+                <button onClick={handleSave} disabled={isUploading || isUploadingCustomers || isUploadingGemImg} className="w-full bg-blue-950 text-white font-bold py-4 mt-8 tracking-[0.2em] uppercase hover:bg-blue-900 transition-colors shadow-lg disabled:bg-slate-400">
                   Save Changes
                 </button>
               </div>
@@ -327,19 +463,56 @@ function Home() {
         </div>
       </main>
 
+      {/* ---------------- 🔹 NEW: TOP 10 GEMS SHOWCASE 🔹 ---------------- */}
+      {!isEditing && topGems.length > 0 && (
+        <section className="w-full bg-white py-20 px-6 flex flex-col items-center border-t border-slate-100">
+          <div className="text-center mb-12">
+            <h2 className="text-xs md:text-sm text-blue-600 font-bold tracking-[0.3em] uppercase mb-2">Featured Collection</h2>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-blue-950">Top Premium Gemstones</h1>
+            <div className="w-16 h-1 bg-blue-300 mx-auto mt-4"></div>
+          </div>
+          
+          <div className="w-full max-w-6xl grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
+            {topGems.map((gem, idx) => (
+              <TopGemCard key={idx} gem={gem} isAdmin={false} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---------------- 🔹 SPLIT FEATURE SECTION 🔹 ---------------- */}
+      {!isEditing && (
+        <section className="w-full bg-slate-50 py-24 px-6 md:px-12 flex items-center justify-center border-t border-slate-200">
+          <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
+            <div className="relative group overflow-hidden rounded-sm shadow-2xl">
+              <img src={homeData.featureImage || 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=800&auto=format&fit=crop'} alt="Feature Section" className="w-full h-[400px] md:h-[500px] object-cover transform group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 border-4 border-white/20 m-4 pointer-events-none hidden md:block"></div>
+            </div>
+            <div className="flex flex-col justify-center space-y-6">
+              <h3 className="text-xs md:text-sm text-blue-600 font-bold tracking-[0.3em] uppercase">{homeData.featureSubtitle || 'Our Legacy'}</h3>
+              <h2 className="text-4xl md:text-5xl font-serif text-blue-950 font-bold leading-tight">{homeData.featureTitle || 'Crafted to Perfection'}</h2>
+              <div className="w-16 h-1 bg-blue-300"></div>
+              <p className="text-slate-600 leading-loose text-base md:text-lg font-light text-justify">{homeData.featureDescription || 'Discover the finest collection of authentic Sri Lankan gemstones. Each piece is carefully selected and masterfully crafted.'}</p>
+              <div className="pt-4">
+                 <Link to="/workshop" className="inline-block border-b-2 border-blue-950 pb-1 text-sm font-bold uppercase tracking-[0.15em] text-blue-950 hover:text-blue-600 hover:border-blue-600 transition-colors">Discover Our Process ➝</Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ---------------- 🔹 CUSTOMER PHOTOS SLIDER 🔹 ---------------- */}
       {!isEditing && homeData.customerPhotos && homeData.customerPhotos.length > 0 && (
-        <section className="w-full bg-slate-50 py-16 overflow-hidden border-t border-slate-200 shadow-inner">
+        <section className="w-full bg-white py-16 overflow-hidden border-t border-slate-100 shadow-inner">
           <div className="text-center mb-10 px-6">
             <h2 className="text-sm md:text-base text-blue-800 tracking-[0.3em] uppercase mb-2 font-bold">Moments with Our Clientele</h2>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-blue-950">Trusted by Customers Worldwide</h1>
             <div className="w-16 h-1 bg-blue-300 mx-auto mt-4"></div>
           </div>
-
-          <div className="relative w-full overflow-hidden flex bg-slate-50 py-4">
+          <div className="relative w-full overflow-hidden flex bg-white py-4">
             <div className="animate-marquee gap-6 px-3">
               {[...(homeData.customerPhotos), ...(homeData.customerPhotos)].map((photo, index) => (
-                <div key={index} className="flex-shrink-0 w-64 md:w-72 h-44 md:h-52 bg-white rounded-xl shadow-md overflow-hidden border border-slate-100 hover:shadow-xl transition-shadow cursor-pointer">
+                <div key={index} className="flex-shrink-0 w-64 md:w-72 h-44 md:h-52 bg-slate-50 rounded-xl shadow-md overflow-hidden border border-slate-200 hover:shadow-xl transition-shadow cursor-pointer">
                   <img src={photo} alt={`Happy Customer ${index}`} className="w-full h-full object-cover" />
                 </div>
               ))}
@@ -348,28 +521,15 @@ function Home() {
         </section>
       )}
 
-      {/* ---------------- 🔹 SCROLL DOWN ADVERTISEMENTS SECTION 🔹 ---------------- */}
-      {!isEditing && (homeData.topAdImage || homeData.sideAdImage || homeData.bottomAdImage) && (
-        <section className="w-full bg-white py-16 px-6 flex flex-col items-center gap-16 border-t border-slate-100">
-          
-          {homeData.topAdImage && (
-            <div className="w-full max-w-5xl">
-              <img src={homeData.topAdImage} alt="Advertisement 1" className="w-full h-auto object-contain rounded-sm shadow-md border border-slate-100" />
-            </div>
-          )}
-
+      {/* ---------------- 🔹 SCROLL DOWN ADVERTISEMENTS 🔹 ---------------- */}
+      {!isEditing && (homeData.sideAdImage || homeData.bottomAdImage) && (
+        <section className="w-full bg-slate-50 py-16 px-6 flex flex-col items-center gap-16 border-t border-slate-200">
           {homeData.sideAdImage && (
-            <div className="w-full max-w-md">
-              <img src={homeData.sideAdImage} alt="Advertisement 2" className="w-full h-auto object-contain rounded-sm shadow-md border border-slate-100" />
-            </div>
+            <div className="w-full max-w-md"><img src={homeData.sideAdImage} alt="Ad 2" className="w-full h-auto object-contain rounded-sm shadow-md border border-slate-200" /></div>
           )}
-
           {homeData.bottomAdImage && (
-            <div className="w-full max-w-5xl">
-              <img src={homeData.bottomAdImage} alt="Advertisement 3" className="w-full h-auto object-contain rounded-sm shadow-md border border-slate-100" />
-            </div>
+            <div className="w-full max-w-5xl"><img src={homeData.bottomAdImage} alt="Ad 3" className="w-full h-auto object-contain rounded-sm shadow-md border border-slate-200" /></div>
           )}
-
         </section>
       )}
 
