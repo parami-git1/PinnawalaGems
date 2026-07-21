@@ -302,11 +302,12 @@ function Home() {
         .animate-marquee { display: flex; width: max-content; animation: marquee 35s linear infinite; }
         .animate-marquee:hover { animation-play-state: paused; }
 
-        @keyframes steady-shine {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(59,130,246,0.6)) brightness(1); }
-          50% { transform: scale(1.12); filter: drop-shadow(0 0 12px rgba(96,165,250,1)) brightness(1.4); }
+        @keyframes shine-rotate {
+          0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); }
+          50% { transform: rotate(180deg) scale(1.1); filter: drop-shadow(0 0 8px rgba(59,130,246,0.9)) brightness(1.3); }
+          100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); }
         }
-        .animate-steady-shine { animation: steady-shine 2s ease-in-out infinite; }
+        .animate-gem-shine { animation: shine-rotate 4s ease-in-out infinite; }
 
         @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.4); } }
         .animate-red-dot { animation: pulse-dot 1.2s infinite; }
@@ -335,14 +336,17 @@ function Home() {
       {/* ---------------- 1. HERO SECTION (WELCOME) ---------------- */}
       <main className="relative w-full min-h-screen flex items-center justify-center pt-32 pb-20">
         
-        {/* 🔹 EVENTS & NEWS BADGE (EXACT ORIGINAL POSITION & SIZE) 🔹 */}
+        {/* 🔹 EVENTS / NOTIFICATION FLOATING BADGE (TOP RIGHT - LOWERED BELOW WHITE BAR) 🔹 */}
         <div className="absolute top-44 right-6 md:right-12 z-30">
           <button 
             onClick={() => setShowEventModal(true)}
             className="relative bg-white/90 backdrop-blur-md border border-blue-200 shadow-xl px-4 py-2.5 rounded-full flex items-center gap-2 hover:bg-blue-950 hover:text-white transition-all group cursor-pointer"
           >
+            {/* Red Pulsing Dot */}
             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-600 rounded-full animate-red-dot border-2 border-white"></span>
-            <span className="text-lg animate-steady-shine inline-block">💎</span>
+            
+            {/* Shimmering & Rotating Gem Icon */}
+            <span className="text-lg animate-gem-shine inline-block">💎</span>
             <span className="text-[11px] font-bold uppercase tracking-widest text-blue-950 group-hover:text-white">Events & News</span>
           </button>
         </div>
@@ -618,7 +622,7 @@ function Home() {
         </section>
       )}
 
-      {/* ---------------- 🔹 EVENTS & ADS POPUP MODAL ---------------- */}
+      {/* ---------------- 🔹 EVENTS & ADS POPUP MODAL (CUSTOMER & ADMIN FRIENDLY) ---------------- */}
       {showEventModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -642,8 +646,8 @@ function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <input type="text" placeholder="Event Name / Title" value={newEventAd.title} onChange={(e) => setNewEventAd({...newEventAd, title: e.target.value})} className="bg-white border border-blue-200 p-2 text-xs rounded" />
                     <select value={newEventAd.layoutType} onChange={(e) => setNewEventAd({...newEventAd, layoutType: e.target.value})} className="bg-white border border-blue-200 p-2 text-xs rounded font-bold">
-                      <option value="horizontal">Horizontal Layout</option>
-                      <option value="vertical">Vertical Layout</option>
+                      <option value="horizontal">Horizontal Layout (තිරස්)</option>
+                      <option value="vertical">Vertical Layout (සිරස්)</option>
                     </select>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -660,7 +664,7 @@ function Home() {
                 </div>
               )}
 
-              {/* Display Events & Ads List */}
+              {/* Display Events & Ads List (Customer Clean View - No Horizontal/Vertical badges) */}
               {eventAds.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <p className="text-sm font-semibold">No active exhibitions or events right now.</p>
@@ -669,6 +673,7 @@ function Home() {
                 <div className="grid grid-cols-1 gap-6">
                   {eventAds.map((ad) => (
                     <div key={ad._id} className="bg-white p-5 rounded-xl shadow-md border border-slate-200 flex flex-col items-center">
+                      {/* Full Image view without cropping */}
                       <div className="w-full bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center mb-4 p-2">
                         <img src={ad.image} alt={ad.title} className="max-h-[400px] w-auto object-contain rounded" />
                       </div>
