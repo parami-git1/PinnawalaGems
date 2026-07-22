@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-function Catalog() {
+function CategoryView() {
   const [categories, setCategories] = useState([]);
   const [stones, setStones] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all'); // Default to 'all' gems view
@@ -132,9 +132,6 @@ function Catalog() {
           <Link to="/workshop" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Workshop</Link>
           <Link to="/feedback" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Feedback</Link>
           <Link to="/contact" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Contact Us</Link>
-          {isAdmin && (
-            <Link to="/inventory" className="text-[10px] md:text-xs font-bold tracking-[0.15em] text-red-600 hover:text-red-800 transition-colors uppercase ml-2">Inventory</Link>
-          )}
         </div>
       </nav>
 
@@ -182,7 +179,7 @@ function Catalog() {
           {/* Cover Photo Banner */}
           <div 
             className="w-full h-40 md:h-[220px] rounded-sm bg-slate-200 relative bg-cover bg-center shadow-sm flex items-center px-6 md:px-12"
-            style={{ backgroundImage: `url('${activeCategoryObj.coverImage || 'https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?q=80&w=2000&auto=format&fit=crop'}')` }}
+            style={{ backgroundImage: `url('${activeCategoryObj.coverImage || 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=2000&auto=format&fit=crop'}')` }}
           >
             <div className="absolute inset-0 bg-black/10 rounded-sm"></div>
             
@@ -336,4 +333,4 @@ function Catalog() {
   );
 }
 
-export default Catalog;
+export default CategoryView;
