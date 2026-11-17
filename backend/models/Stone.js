@@ -20,6 +20,7 @@ const stoneSchema = new mongoose.Schema({
   additionalImages: [{ type: String }],      // පින්තූර 5ක් දාන්න
   
   // 🔹 අලුත් Top 10 Gems වලට අදාළ කෑලි 2 🔹
+  videos: { type: [String], default: [] },
   isTopGem: { type: Boolean, default: false },
   homePagePosition: { type: Number, default: 0 }
   

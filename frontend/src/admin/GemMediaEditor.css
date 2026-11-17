@@ -1,0 +1,55 @@
+.gem-media-editor { min-width: 0; }
+.gem-media-editor__zones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gem-media-editor__drop { min-width: 0; padding: 17px; border: 1px dashed #cbd2dc; border-radius: 9px; background: #fafbfd; text-align: center; transition: border-color 150ms, background 150ms; }
+.gem-media-editor__drop.is-dragging { border-color: #9a7b42; background: #f8f5ec; }
+.gem-media-editor__drop-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 17px; text-align: left; }
+.gem-media-editor__drop-icon { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border: 1px solid #e5e0d4; border-radius: 8px; background: #f3efe5; color: #9a7b42; }
+.gem-media-editor__drop-heading strong { display: block; font-size: 12px; color: #24364e; }
+.gem-media-editor__drop-heading small { display: block; margin-top: 3px; font-size: 10px; color: #677588; line-height: 1.6; }
+.gem-media-editor__drop-heading b { margin-left: auto; white-space: nowrap; color: #738094; font-size: 10px; font-weight: 500; }
+.gem-media-editor__drop > .admin-button { min-height: 36px; background: white; }
+.gem-media-editor__drop > p { margin-top: 8px; font-size: 10px; color: #7a8799; }
+.gem-media-editor__error { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px !important; padding: 11px 13px; border: 1px solid #efd6d2; border-radius: 7px; background: #fff6f4; color: #a13f37; font-size: 12px; }
+.gem-media-editor__error svg { margin-top: 3px; }
+.gem-media-editor__collection { margin-top: 23px; }
+.gem-media-editor__label { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 7px; margin-bottom: 11px; }
+.gem-media-editor__label h4, .gem-media-editor__queue-title h4 { font-size: 12px; }
+.gem-media-editor__label > span { color: #738094; font-size: 10px; }
+.gem-media-editor__photos { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+.gem-media-editor__photo { min-width: 0; border: 1px solid #e0e5ec; border-radius: 8px; overflow: hidden; background: white; }
+.gem-media-editor__photo > div { position: relative; aspect-ratio: 1.1; background: #f5f6f8; }
+.gem-media-editor__photo img { width: 100%; height: 100%; padding: 8px; object-fit: contain; }
+.gem-media-editor__cover { position: absolute; left: 7px; top: 7px; display: flex; align-items: center; gap: 4px; padding: 3px 6px; border: 1px solid #e9ddbd; border-radius: 4px; background: #fff9e9; color: #8d7039; font-size: 8px; font-weight: 600; }
+.gem-media-editor__photo figcaption, .gem-media-editor__video figcaption { display: flex; align-items: center; justify-content: space-between; gap: 2px; min-height: 38px; padding: 4px 6px 4px 9px; border-top: 1px solid #e9ecf1; }
+.gem-media-editor__photo figcaption > button:first-child { padding: 3px 0; border: 0; background: none; color: #455a74; text-align: left; font-size: 9px; font-weight: 500; }
+.gem-media-editor__photo figcaption > button:first-child:disabled { opacity: 1; color: #8b774f; }
+.gem-media-editor__remove { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; padding: 5px; border: 0; border-radius: 5px; background: transparent; color: #8b94a1; }
+.gem-media-editor__remove:hover { background: #fff0ed; color: #ae5147; }
+.gem-media-editor__videos { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.gem-media-editor__video { min-width: 0; overflow: hidden; border: 1px solid #e0e5ec; border-radius: 8px; background: #fff; }
+.gem-media-editor__video video { display: block; width: 100%; aspect-ratio: 1.45; object-fit: contain; background: #172338; }
+.gem-media-editor__video figcaption > span { color: #677588; font-size: 11px; }
+.gem-media-editor__queue { margin-top: 21px; padding: 14px; border: 1px solid #e3e7ed; border-radius: 8px; background: #fcfcfd; }
+.gem-media-editor__queue-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.gem-media-editor__queue-title > button { padding: 3px 0; border: 0; background: none; color: #6d798a; font-size: 10px; }
+.gem-media-editor__queue ul { margin: 0; padding: 0; list-style: none; }
+.gem-media-editor__queue li { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid #edf0f3; }
+.gem-media-editor__queue li:first-child { border-top: 0; }
+.gem-media-editor__queue li > svg { color: #8390a1; }
+.gem-media-editor__queue li.is-complete > svg { color: #41816b; }
+.gem-media-editor__queue li.is-failed > svg { color: #b25b4e; }
+.gem-media-editor__queue li > div { flex: 1; min-width: 0; }
+.gem-media-editor__queue li strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 500; color: #40516b; }
+.gem-media-editor__queue li div > span { display: block; margin-top: 3px; font-size: 10px; color: #7a8696; overflow-wrap: anywhere; }
+.gem-media-editor__queue li.is-failed div > span { color: #ad5447; }
+.gem-media-editor__queue progress { display: block; width: 100%; height: 4px; margin-top: 8px; appearance: none; border: 0; border-radius: 2px; overflow: hidden; background: #e6e9ee; accent-color: #aa8d56; }
+.gem-media-editor__queue progress::-webkit-progress-bar { background: #e6e9ee; }
+.gem-media-editor__queue progress::-webkit-progress-value { background: #aa8d56; }
+.gem-media-editor__queue progress::-moz-progress-bar { background: #aa8d56; }
+.gem-media-editor__status { color: #738094; font-size: 9px; white-space: nowrap; }
+.gem-media-editor__queue .is-complete .gem-media-editor__status { color: #41816b; }
+.gem-media-editor__links { margin-top: 21px; border-top: 1px solid #e5e8ee; padding-top: 15px; }
+.gem-media-editor__links summary { width: fit-content; color: #65738a; font-size: 11px; cursor: pointer; }
+.gem-media-editor__links > p { margin: 10px 0 14px; color: #7b8798; font-size: 10px; }
+@media(max-width:599px) { .gem-media-editor__zones { grid-template-columns: 1fr; } .gem-media-editor__photos { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; } .gem-media-editor__videos { grid-template-columns: 1fr; } .gem-media-editor__photo figcaption { flex-wrap: wrap; } .gem-media-editor__queue { padding: 12px; } .gem-media-editor__queue li { gap: 8px; } .gem-media-editor__queue .admin-button { padding-inline: 8px; } }
+@media(max-width:359px) { .gem-media-editor__photos { grid-template-columns: repeat(2,minmax(0,1fr)); } }

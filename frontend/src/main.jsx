@@ -1,33 +1,19 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import App from './App.jsx'
-import GemDetails from './GemDetails.jsx'
-import Login from './Login.jsx'
-import Home from './Home.jsx' 
-import Workshop from './Workshop.jsx'
-import Feedback from './Feedback.jsx' 
 import './index.css'
-import Contact from './Contact.jsx'
-import CategoryView from './CategoryView.jsx'
-import AdminInventory from './AdminInventory.jsx'; // උඩින් දාන්න
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'google-client-id-not-configured'
+const app = (
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/admin-login" element={<Login />} />
-        <Route path="/" element={<Home />} /> 
-        <Route path="/catalog" element={<App />} /> 
-        <Route path="/workshop" element={<Workshop />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/category/:categoryId" element={<CategoryView />} />
-        <Route path="/admin/inventory" element={<AdminInventory />} />
-        
-        {/* 🔹 GemDetails එකට තියෙන්න ඕනේ මේ එක Route එක විතරයි */}
-        <Route path="/gem/:stoneId" element={<GemDetails />} />
-      </Routes>
+      <App />
     </BrowserRouter>
-  </React.StrictMode>,
+  </React.StrictMode>
+)
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <GoogleOAuthProvider clientId={googleClientId}>{app}</GoogleOAuthProvider>,
 )

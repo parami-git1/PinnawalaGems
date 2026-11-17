@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const EventAd = require('../models/EventAd');
 const cloudinary = require('cloudinary').v2;
+const requireAdmin = require('../middleware/adminAuth');
 
 // සියලුම Events/Ads ලබා ගැනීම
 router.get('/', async (req, res) => {
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
 });
 
 // අලුත් Event/Ad එකක් එකතු කිරීම
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const { title, image, layoutType, description } = req.body;
     const newAd = new EventAd({ title, image, layoutType, description });
@@ -25,8 +26,19 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Update an Event/Ad (Admin only)
+router.put('/:id', requireAdmin, async (req, res) => {
+  try {
+    const updatedAd = await EventAd.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!updatedAd) return res.status(404).json({ message: 'Ad not found' });
+    res.json(updatedAd);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // Event/Ad එකක් මකා දැමීම
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const ad = await EventAd.findById(req.params.id);
     if (!ad) return res.status(404).json({ message: 'Ad not found' });

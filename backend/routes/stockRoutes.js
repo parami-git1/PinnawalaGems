@@ -3,6 +3,7 @@ const router = express.Router();
 const StockCategory = require('../models/StockCategory');
 const StockStone = require('../models/StockStone');
 const cloudinary = require('cloudinary').v2; // 🔹 Cloudinary එකතු කළා
+const requireAdmin = require('../middleware/adminAuth');
 
 // 1. Get all Stock Categories
 router.get('/categories', async (req, res) => {
@@ -13,7 +14,7 @@ router.get('/categories', async (req, res) => {
 });
 
 // 2. Add new Stock Category
-router.post('/categories', async (req, res) => {
+router.post('/categories', requireAdmin, async (req, res) => {
   try {
     const newCategory = new StockCategory(req.body);
     await newCategory.save();
@@ -53,8 +54,16 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// Get all stock stones for admin inventory management
+router.get('/stones', async (req, res) => {
+  try {
+    const stones = await StockStone.find().sort({ createdAt: -1 });
+    res.json({ stones });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 // 4. Add new Stock Stone
-router.post('/stones', async (req, res) => {
+router.post('/stones', requireAdmin, async (req, res) => {
   try {
     const { categoryId, title, quantity, ...rest } = req.body;
     const category = await StockCategory.findById(categoryId);
@@ -77,7 +86,7 @@ router.post('/stones', async (req, res) => {
 });
 
 // 5. Update Stock Stone
-router.put('/stones/:stoneId', async (req, res) => {
+router.put('/stones/:stoneId', requireAdmin, async (req, res) => {
   try {
     const updated = await StockStone.findByIdAndUpdate(req.params.stoneId, req.body, { new: true });
     res.json(updated);
@@ -85,7 +94,7 @@ router.put('/stones/:stoneId', async (req, res) => {
 });
 
 // 6. 🔹 Delete Stock Stone (Update කර ඇත)
-router.delete('/stones/:stoneId', async (req, res) => {
+router.delete('/stones/:stoneId', requireAdmin, async (req, res) => {
   try {
     const stone = await StockStone.findById(req.params.stoneId);
     if(stone) {
@@ -104,7 +113,7 @@ router.delete('/stones/:stoneId', async (req, res) => {
 });
 
 // 7. 🔹 Delete Stock Category (Update කර ඇත)
-router.delete('/categories/:categoryId', async (req, res) => {
+router.delete('/categories/:categoryId', requireAdmin, async (req, res) => {
   try {
     const category = await StockCategory.findById(req.params.categoryId);
     if(category) {

@@ -1,0 +1,53 @@
+.pg-hero .pg-eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .12em; text-transform: none; }
+.pg-home .pg-hero-description { width: max-content; max-width: min(720px, calc(100vw - 112px)); font-size: 14px; }
+.pg-hero-actions { width: fit-content; max-width: 100%; gap: 7px; padding: 7px; border: 1px solid rgb(217 197 148 / .35); border-radius: 999px; background: rgb(8 18 38 / .45); }
+.pg-hero-actions .pg-button { min-height: 52px; border-radius: 999px; padding-inline: 27px; }
+.pg-hero-actions .pg-hero-secondary { justify-content: center; gap: 14px; min-height: 52px; padding: 15px 23px; border: 1px solid rgb(239 226 193 / .22); border-radius: 999px; color: #f1eadb; transition: background .25s, border-color .25s; }
+.pg-hero-actions .pg-hero-secondary:hover { background: rgb(255 255 255 / .09); border-color: #ccb47e; }
+.pg-hero-footer { justify-content: flex-start; padding-top: 0; border-top: 0; }
+@media (max-width: 899px) {
+  .pg-home .pg-hero-description { max-width: calc(100vw - 56px); }
+  .pg-hero-actions .pg-button { padding-inline: 21px; }
+  .pg-hero-actions .pg-hero-secondary { padding-inline: 18px; }
+}
+@media (max-width: 599px) {
+  .pg-hero .pg-eyebrow { font-size: 11px; letter-spacing: .1em; }
+  .pg-home .pg-hero-description { max-width: 100%; font-size: 12px; }
+  .pg-hero-actions { display: flex; flex-direction: column; align-items: stretch; width: min(350px, 100%); gap: 6px; padding: 6px; border-radius: 32px; margin-top: 25px; }
+  .pg-hero-actions .pg-button, .pg-hero-actions .pg-hero-secondary { width: 100%; min-height: 49px; padding: 15px 23px; font-size: 9px; }
+  .pg-hero-inner { padding-bottom: 88px; }
+}
+@media (max-width: 359px) {
+  .pg-home .pg-hero-description { font-size: 10px; }
+  .pg-hero .pg-eyebrow { font-size: 10px; }
+}
+
+/* White section surfaces keep the gemstone colours and photography distinct. */
+.pg-home { --pg-ivory: #ffffff; background: #fff; }
+.pg-home .pg-community { background: #fff; }
+.pg-home .pg-craft-visual, .pg-featured .pg-gem-card, .pg-featured .pg-gem-track--single .pg-gem-link, .pg-event, .pg-poster-dialog { background: #fff; }
+.pg-gem-studio__viewer::before { background: radial-gradient(ellipse, #f6faff 0%, #ffffff 62%, transparent 75%); }
+.pg-home .pg-visit { color: #0b1330; }
+.pg-home .pg-visit h2 em { color: #9c7c40; }
+.pg-home .pg-visit-inner > p:not(.pg-eyebrow) { color: #667284; }
+.pg-home .pg-visit .pg-text-link { color: #33415b; border-color: #a99b7c; }
+.pg-home .pg-visit .pg-eyebrow { color: #8c703c; }
+.pg-home .pg-visit-location { color: #6d7988; }
+
+/* The default Ceylon photograph uses ivory light; keep the existing hero layout. */
+.pg-hero--ivory { background: #f8f8f4; color: #18263b; }
+.pg-hero--ivory .pg-hero-shade { background: linear-gradient(90deg, rgb(249 249 245 / .5), rgb(249 249 245 / .12) 52%, transparent 76%); }
+.pg-hero--ivory .pg-eyebrow { color: #806438; }
+.pg-hero--ivory h1 em { color: #8b6c35; }
+.pg-home .pg-hero--ivory .pg-hero-description { color: #52606c; }
+.pg-hero--ivory .pg-hero-actions { border-color: rgb(145 127 89 / .35); background: rgb(255 255 255 / .6); }
+.pg-hero--ivory .pg-hero-secondary { border-color: #c7bda8; background: rgb(255 255 255 / .4); color: #293c51; }
+.pg-hero--ivory .pg-hero-secondary:hover { border-color: #a78b55; background: rgb(255 255 255 / .85); color: #684f29; }
+.pg-hero--ivory .pg-scroll-link { color: #526173; }
+.pg-hero--ivory .pg-film-button { color: #6b5a3c; }
+@media (max-width: 899px) and (min-width: 600px) {
+  .pg-hero--ivory .pg-hero-shade { background: linear-gradient(90deg, rgb(249 249 245 / .82), rgb(249 249 245 / .4) 52%, rgb(249 249 245 / .05) 80%); }
+}
+@media (max-width: 599px) {
+  .pg-hero--ivory .pg-hero-shade { background: linear-gradient(180deg, transparent, rgb(248 248 244 / .03) 20%, rgb(248 248 244 / .2) 34%, #f8f8f4 55%, #f8f8f4 100%); }
+}

@@ -1,336 +1,239 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useOutletContext, useParams } from 'react-router-dom';
+import { useRemoteResource } from './hooks/useRemoteResource';
+import CollectionBanner from './CollectionBanner';
+import './CollectionPolish.css';
 
-function CategoryView() {
-  const [categories, setCategories] = useState([]);
-  const [stones, setStones] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all'); // Default to 'all' gems view
-  const [isAdmin] = useState(!!localStorage.getItem('token'));
+const EMPTY_FILTERS = { search: '', shape: '', cut: '', origin: '', color: '', certificate: '', min: '', max: '' };
+const PAGE_SIZE = 30;
+const clean = (value) => String(value ?? '').trim();
+const slugify = (value) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+const categoryIdOf = (gem) => clean(gem.categoryId?._id || gem.categoryId || gem.category?._id);
+const certified = (gem) => Boolean(gem.hasCertificate || clean(gem.certificateDetails) || clean(gem.certificateImage));
+const weightLabel = (value) => clean(value) ? `${clean(value).replace(/\s*(?:cts?\.?|carats?)\s*$/i, '').trim()} ct` : '';
 
-  // Modals State
-  const [showAddCatModal, setShowAddCatModal] = useState(false);
-  const [showAddStoneModal, setShowAddStoneModal] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-
-  // New Category State
-  const [newCat, setNewCat] = useState({ title: '', image: '', coverImage: '' });
-  
-  // New Stone State
-  const [newStone, setNewStone] = useState({
-    categoryId: '', title: '', weight: '', shape: '', cut: '', origin: '', 
-    certificateDetails: '', image: '', additionalImages: []
-  });
-
-  useEffect(() => {
-    fetchCategories();
-    fetchStones();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch('https://pinnawalagems.onrender.com/api/inventory/categories');
-      const data = await res.json();
-      if (Array.isArray(data)) setCategories(data);
-    } catch (err) { console.log(err); }
+function Icon({ type = 'arrow', ...props }) {
+  const paths = {
+    arrow: 'M5 12h14m-6-6 6 6-6 6',
+    diagonal: 'M6 18 18 6M6 6h12v12',
+    search: 'm20 20-5-5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0',
+    filter: 'M4 7h16M4 17h16M8 4v6m8 4v6',
+    close: 'm6 6 12 12M6 18 18 6',
+    gem: 'm7 4-5 6 10 11 10-11-5-6H7Zm-5 6h20M7 4l5 17 5-17M7 4l5 6 5-6',
+    check: 'm5 12 4 4L19 6',
   };
-
-  const fetchStones = async () => {
-    try {
-      const res = await fetch('https://pinnawalagems.onrender.com/api/inventory/stones?limit=500');
-      const data = await res.json();
-      if (data.stones) setStones(data.stones);
-    } catch (err) { console.log(err); }
-  };
-
-  const handleImageUpload = async (e, type) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const uploadData = new FormData();
-    uploadData.append('image', file);
-    setIsUploading(true);
-    
-    try {
-      const res = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
-      if (res.ok) {
-        const data = await res.json();
-        if (type === 'catIcon') setNewCat({ ...newCat, image: data.imageUrl });
-        if (type === 'catCover') setNewCat({ ...newCat, coverImage: data.imageUrl });
-        if (type === 'stoneMain') setNewStone({ ...newStone, image: data.imageUrl });
-      }
-    } catch (err) { alert('Upload failed!'); } 
-    finally { setIsUploading(false); }
-  };
-
-  const handleAddCategory = async () => {
-    if (!newCat.title || !newCat.image) return alert("Title and Icon are required!");
-    try {
-      const res = await fetch('https://pinnawalagems.onrender.com/api/inventory/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify(newCat)
-      });
-      if (res.ok) {
-        fetchCategories();
-        setShowAddCatModal(false);
-        setNewCat({ title: '', image: '', coverImage: '' });
-      }
-    } catch (err) { console.log(err); }
-  };
-
-  const handleAddStone = async () => {
-    if (!newStone.categoryId || !newStone.title || !newStone.image) {
-      return alert("Category, Title, and Image are required!");
-    }
-    try {
-      const res = await fetch('https://pinnawalagems.onrender.com/api/inventory/stones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ ...newStone, isTopGem: false, homePagePosition: 1 })
-      });
-      if (res.ok) {
-        fetchStones();
-        setShowAddStoneModal(false);
-        setNewStone({ categoryId: '', title: '', weight: '', shape: '', cut: '', origin: '', certificateDetails: '', image: '', additionalImages: [] });
-      }
-    } catch (err) { console.log(err); }
-  };
-
-  const deleteStone = async (id) => {
-    if(window.confirm("Are you sure you want to delete this gem?")) {
-      try {
-        await fetch(`https://pinnawalagems.onrender.com/api/inventory/stones/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        fetchStones();
-      } catch(err) { console.log(err); }
-    }
-  };
-
-  // Active Category info for Cover Banner
-  const activeCategoryObj = selectedCategory === 'all' 
-    ? { title: 'All Gem Types', coverImage: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=2000&auto=format&fit=crop' } 
-    : categories.find(c => c._id === selectedCategory) || {};
-
-  // Filtered Stones
-  const displayedStones = selectedCategory === 'all' 
-    ? stones 
-    : stones.filter(s => s.categoryId === selectedCategory || s.category?._id === selectedCategory);
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans overflow-x-hidden">
-      
-      {/* ---------------- 🔹 NAVIGATION BAR 🔹 ---------------- */}
-      <nav className="fixed w-full z-50 bg-white/95 backdrop-blur-md text-blue-950 py-2.5 px-6 border-b border-blue-100 shadow-sm flex flex-col items-center">
-        <div className="flex flex-col items-center mb-1">
-          <img src="/image_27d308.png" alt="Pinnawala Gems Logo" className="h-8 md:h-10 w-auto object-contain mix-blend-multiply transform scale-[1.2] mt-1 mb-1" />
-          <h1 className="text-base md:text-lg font-serif tracking-[0.2em] uppercase font-bold text-center">Pinnawala Gems</h1>
-        </div>
-        <div className="flex gap-4 md:gap-7 items-center flex-wrap justify-center">
-          <Link to="/" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Home</Link>
-          <Link to="/catalog" className="text-[10px] md:text-xs font-bold tracking-[0.15em] text-blue-600 transition-colors uppercase">Collection</Link>
-          <Link to="/workshop" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Workshop</Link>
-          <Link to="/feedback" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Feedback</Link>
-          <Link to="/contact" className="text-[10px] md:text-xs font-bold tracking-[0.15em] hover:text-blue-600 transition-colors uppercase">Contact Us</Link>
-        </div>
-      </nav>
-
-      {/* ---------------- 🔹 COLLECTION PAGE LAYOUT (SIDEBAR + CONTENT) 🔹 ---------------- */}
-      <main className="flex-1 flex w-full max-w-[1400px] mx-auto pt-28 px-4 md:px-8 gap-6 pb-20">
-        
-        {/* LEFT SIDEBAR (GEM CATEGORIES + ALL GEMS) */}
-        <aside className="hidden md:flex flex-col w-64 flex-shrink-0 border-r border-slate-200 pr-4">
-          <div className="flex items-center justify-between mb-6 pl-2">
-            <h3 className="text-[11px] font-bold text-blue-950 uppercase tracking-[0.2em]">Gem Categories</h3>
-            {isAdmin && (
-              <button onClick={() => setShowAddCatModal(true)} className="text-[10px] bg-blue-950 text-white px-2 py-1 rounded hover:bg-blue-900 font-bold uppercase tracking-wider">
-                + Add
-              </button>
-            )}
-          </div>
-          
-          <ul className="space-y-1">
-            {/* 'ALL GEMS' Default Item */}
-            <li 
-              onClick={() => setSelectedCategory('all')}
-              className={`flex items-center gap-4 px-3 py-2.5 cursor-pointer transition-all ${selectedCategory === 'all' ? 'border-l-[3px] border-blue-600 bg-blue-50/50' : 'border-l-[3px] border-transparent hover:bg-slate-100'}`}
-            >
-              <div className="w-6 h-6 rounded-full bg-slate-300 flex items-center justify-center text-xs shadow-sm">💎</div>
-              <span className={`text-[11px] uppercase tracking-wider font-bold ${selectedCategory === 'all' ? 'text-blue-900' : 'text-slate-600'}`}>All Gem Types</span>
-            </li>
-
-            {/* Dynamic Categories */}
-            {categories.map(cat => (
-              <li 
-                key={cat._id} 
-                onClick={() => setSelectedCategory(cat._id)}
-                className={`flex items-center gap-4 px-3 py-2.5 cursor-pointer transition-all ${selectedCategory === cat._id ? 'border-l-[3px] border-blue-600 bg-blue-50/50' : 'border-l-[3px] border-transparent hover:bg-slate-100'}`}
-              >
-                <img src={cat.image} alt={cat.title} className="w-6 h-6 rounded-full object-cover shadow-sm bg-white border border-slate-200" />
-                <span className={`text-[11px] uppercase tracking-wider font-bold ${selectedCategory === cat._id ? 'text-blue-900' : 'text-slate-600'}`}>{cat.title}</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        {/* RIGHT MAIN CONTENT AREA */}
-        <section className="flex-1 flex flex-col min-w-0">
-          
-          {/* Cover Photo Banner */}
-          <div 
-            className="w-full h-40 md:h-[220px] rounded-sm bg-slate-200 relative bg-cover bg-center shadow-sm flex items-center px-6 md:px-12"
-            style={{ backgroundImage: `url('${activeCategoryObj.coverImage || 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?q=80&w=2000&auto=format&fit=crop'}')` }}
-          >
-            <div className="absolute inset-0 bg-black/10 rounded-sm"></div>
-            
-            <div className="relative z-10 bg-white/85 backdrop-blur-sm px-6 py-4 border border-white/40 shadow-lg min-w-[200px]">
-              <p className="text-[9px] font-bold text-blue-700 tracking-[0.25em] uppercase mb-1">Premium Selection</p>
-              <h2 className="text-2xl md:text-3xl font-serif font-bold text-blue-950 uppercase tracking-widest">{activeCategoryObj.title}</h2>
-            </div>
-          </div>
-
-          {/* Advanced Filters & Admin Add Button */}
-          <div className="flex flex-wrap items-center justify-between mt-6 mb-6 gap-4">
-            <button className="flex items-center gap-2 border border-blue-200 bg-white text-blue-900 text-[10px] font-bold uppercase tracking-widest px-4 py-2 hover:bg-blue-50 transition-colors rounded-sm shadow-sm">
-              <span className="text-sm">🔍</span> Advanced Filters
-            </button>
-
-            {isAdmin && (
-              <button 
-                onClick={() => {
-                  setNewStone({ ...newStone, categoryId: selectedCategory === 'all' ? '' : selectedCategory });
-                  setShowAddStoneModal(true);
-                }} 
-                className="bg-blue-950 text-white text-[10px] font-bold uppercase tracking-widest px-5 py-2 rounded-sm shadow-md hover:bg-blue-900 transition-colors"
-              >
-                + Add Gem to Collection
-              </button>
-            )}
-          </div>
-
-          {/* Gemstones Grid */}
-          {displayedStones.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-slate-400 text-xs font-semibold mt-10">
-              No gemstones available in this selection yet.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {displayedStones.map(gem => (
-                <div key={gem._id} className="bg-white rounded-sm p-3 shadow-sm border border-slate-100 flex flex-col items-center text-center relative group hover:shadow-md transition-all">
-                  <Link to={`/gem/${gem._id}`} className="w-full flex flex-col items-center">
-                    <div className="w-full h-32 overflow-hidden bg-slate-50 flex items-center justify-center mb-3">
-                      <img src={gem.image} alt={gem.title} className="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
-                    </div>
-                    <span className="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider absolute top-2 left-2 shadow-sm rounded-sm">Featured</span>
-                    <h3 className="text-[11px] font-bold text-blue-950 uppercase tracking-wider line-clamp-1">{gem.title}</h3>
-                    {gem.weight && <p className="text-[10px] text-slate-500 mt-1 font-semibold">{gem.weight} ct</p>}
-                  </Link>
-
-                  {isAdmin && (
-                    <button onClick={() => deleteStone(gem._id)} className="absolute -top-2 -right-2 bg-red-600 text-white w-5 h-5 rounded-full text-[10px] shadow-md z-10 hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
-
-      {/* ---------------- 🔹 MODALS 🔹 ---------------- */}
-      
-      {/* Add Category Modal */}
-      {showAddCatModal && (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md p-6 rounded-md shadow-2xl">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="text-sm font-bold text-blue-950 uppercase tracking-widest">Add New Category</h2>
-              <button onClick={() => setShowAddCatModal(false)} className="text-red-500 font-bold hover:text-red-700">✕</button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">Category Name</label>
-                <input type="text" value={newCat.title} onChange={(e) => setNewCat({...newCat, title: e.target.value})} placeholder="e.g. Pink Sapphire" className="w-full border border-slate-300 p-2 text-xs rounded-sm" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">Small Icon (Sidebar)</label>
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'catIcon')} className="text-[9px] w-full" />
-                  {newCat.image && <img src={newCat.image} alt="icon" className="h-8 mt-2 object-contain" />}
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">Cover Photo (Banner)</label>
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'catCover')} className="text-[9px] w-full" />
-                  {newCat.coverImage && <img src={newCat.coverImage} alt="cover" className="h-8 mt-2 object-cover" />}
-                </div>
-              </div>
-              <button onClick={handleAddCategory} disabled={isUploading || !newCat.title || !newCat.image} className="w-full bg-blue-900 text-white font-bold text-[10px] uppercase tracking-widest py-3 mt-2 rounded-sm hover:bg-blue-800 disabled:bg-slate-400">
-                {isUploading ? 'Uploading...' : 'Save Category'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Gem Stone Modal */}
-      {showAddStoneModal && (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-2xl p-6 rounded-md shadow-2xl h-auto max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-5 border-b pb-3">
-              <h2 className="text-sm font-bold text-blue-950 uppercase tracking-widest">Add Gem to Collection</h2>
-              <button onClick={() => setShowAddStoneModal(false)} className="text-red-500 font-bold hover:text-red-700">✕</button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">Assign to Category</label>
-                <select value={newStone.categoryId} onChange={(e) => setNewStone({...newStone, categoryId: e.target.value})} className="w-full border border-slate-300 p-2 text-xs rounded-sm bg-slate-50 font-bold">
-                  <option value="">-- Select Category --</option>
-                  {categories.map(cat => (
-                    <option key={cat._id} value={cat._id}>{cat.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">Gem Name / Title</label>
-                <input type="text" value={newStone.title} onChange={(e) => setNewStone({...newStone, title: e.target.value})} placeholder="e.g. Royal Blue Sapphire" className="w-full border border-slate-300 p-2 text-xs rounded-sm" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Weight (ct)</label>
-                <input type="text" value={newStone.weight} onChange={(e) => setNewStone({...newStone, weight: e.target.value})} className="w-full border border-slate-300 p-2 text-xs rounded-sm" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Shape</label>
-                <input type="text" value={newStone.shape} onChange={(e) => setNewStone({...newStone, shape: e.target.value})} className="w-full border border-slate-300 p-2 text-xs rounded-sm" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Cut</label>
-                <input type="text" value={newStone.cut} onChange={(e) => setNewStone({...newStone, cut: e.target.value})} className="w-full border border-slate-300 p-2 text-xs rounded-sm" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Origin</label>
-                <input type="text" value={newStone.origin} onChange={(e) => setNewStone({...newStone, origin: e.target.value})} className="w-full border border-slate-300 p-2 text-xs rounded-sm" />
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-[10px] font-bold text-blue-900 uppercase tracking-wider mb-1">Upload Main Gem Image</label>
-              <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'stoneMain')} className="text-[10px] w-full" />
-              {isUploading && <p className="text-[10px] text-blue-600 mt-1">Uploading...</p>}
-              {newStone.image && <img src={newStone.image} alt="Preview" className="h-16 mt-2 object-contain border border-slate-200 rounded-sm p-1" />}
-            </div>
-
-            <button onClick={handleAddStone} disabled={isUploading || !newStone.categoryId || !newStone.title || !newStone.image} className="w-full bg-blue-900 text-white font-bold text-[11px] uppercase tracking-widest py-3 mt-4 rounded-sm hover:bg-blue-800 disabled:bg-slate-400">
-              {isUploading ? 'Uploading...' : 'Save Gem to Catalog'}
-            </button>
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d={paths[type]} /></svg>;
 }
 
-export default CategoryView;
+function GemImage({ src, title = '', className = '', thumbnail = false }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return <span className={`collection-image-fallback ${className}`}><Icon type="gem" />{!thumbnail && <span>Image unavailable</span>}</span>;
+  return <img className={className} src={src} alt={title} loading="lazy" decoding="async" onError={() => setFailed(true)} />;
+}
+
+function FilterSelect({ label, value, onChange, options, placeholder }) {
+  return <label className="collection-filter-field"><span>{label}</span><select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}><option value="">{placeholder}</option>{options.map((option) => typeof option === 'string' ? <option key={option} value={option}>{option}</option> : <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
+}
+
+function GemCard({ gem, category }) {
+  return <article className="gem-product-card">
+    <Link to={`/gem/${gem._id}`} className="gem-product-link">
+      <div className="gem-product-photo">
+        <span className="gem-product-reference">{clean(gem.stoneId)}</span>
+        <GemImage key={gem.image} src={gem.image} title={clean(gem.title) || 'Gemstone'} />
+        <span className="gem-product-photo__bottom">
+          {certified(gem) ? <span className="gem-product-certificate"><Icon type="check" /> Certified</span> : <span />}
+          <span className="gem-product-arrow"><Icon type="diagonal" /></span>
+        </span>
+      </div>
+      <div className="gem-product-copy">
+        <div className="gem-product-kicker"><span>{category?.title || gem.category?.title || 'The gemstone collection'}</span>{clean(gem.weight) && <span className="gem-product-weight">{weightLabel(gem.weight)}</span>}</div>
+        <h3>{clean(gem.title) || 'Untitled gemstone'}</h3>
+        <p className="gem-product-meta">{[clean(gem.shape), clean(gem.origin), !gem.shape && !gem.origin ? clean(gem.color) : ''].filter(Boolean).join(' · ')}</p>
+        <div className="gem-product-detail"><span>View details</span><Icon /></div>
+      </div>
+    </Link>
+  </article>;
+}
+
+export default function CategoryView() {
+  const { categorySlug, categoryId } = useParams();
+  const { categoriesResource } = useOutletContext();
+  const stonesResource = useRemoteResource('inventory/stones?limit=500');
+  const categories = useMemo(() => Array.isArray(categoriesResource.data) ? categoriesResource.data : [], [categoriesResource.data]);
+  const stones = useMemo(() => Array.isArray(stonesResource.data?.stones) ? stonesResource.data.stones : [], [stonesResource.data]);
+  const [localCategory, setLocalCategory] = useState(null);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [sortOrder, setSortOrder] = useState('featured');
+  const [isFiltersOpen, setIsFiltersOpen] = useState(() => window.matchMedia('(min-width: 600px)').matches);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [pagination, setPagination] = useState({ key: '', page: 1 });
+  const routeKey = `${categorySlug || ''}/${categoryId || ''}`;
+  const routeCategory = categoryId || (categorySlug ? categories.find((category) => slugify(category.title) === categorySlug.toLowerCase())?._id || 'unknown' : 'all');
+  const selectedCategory = localCategory?.routeKey === routeKey ? localCategory.id : routeCategory;
+  const activeCategory = categories.find((category) => category._id === selectedCategory);
+  const allCategories = selectedCategory === 'all';
+  const isLoading = stonesResource.status === 'loading' || categoriesResource.status === 'loading';
+  const hasError = stonesResource.status === 'error' || categoriesResource.status === 'error';
+  const unknownCategory = !allCategories && !activeCategory && !isLoading && !hasError;
+
+  const categoryCounts = useMemo(() => stones.reduce((counts, gem) => {
+    const id = categoryIdOf(gem);
+    counts[id] = (counts[id] || 0) + 1;
+    return counts;
+  }, {}), [stones]);
+  const categoryStones = useMemo(() => allCategories ? stones : stones.filter((gem) => categoryIdOf(gem) === selectedCategory), [stones, allCategories, selectedCategory]);
+  const filterOptions = useMemo(() => {
+    const values = (key) => [...new Map(stones.map((gem) => clean(gem[key])).filter(Boolean).map((value) => [value.toLowerCase(), value])).values()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return { shapes: values('shape'), cuts: values('cut'), origins: values('origin'), colors: values('color') };
+  }, [stones]);
+
+  const displayedStones = useMemo(() => {
+    const query = filters.search.trim().toLowerCase();
+    const min = Number.parseFloat(filters.min);
+    const max = Number.parseFloat(filters.max);
+    return categoryStones.filter((gem) => {
+      const categoryName = categories.find((category) => category._id === categoryIdOf(gem))?.title;
+      const searchable = [gem.title, gem.stoneId, categoryName, gem.category?.title, gem.shape, gem.cut, gem.origin, gem.color].filter(Boolean).join(' ').toLowerCase();
+      const weight = Number.parseFloat(gem.weight);
+      return (!query || searchable.includes(query))
+        && ['shape', 'cut', 'origin', 'color'].every((key) => !filters[key] || clean(gem[key]).toLowerCase() === filters[key].toLowerCase())
+        && (!filters.certificate || (filters.certificate === 'certified' ? certified(gem) : !certified(gem)))
+        && (!filters.min || (Number.isFinite(min) && Number.isFinite(weight) && weight >= min))
+        && (!filters.max || (Number.isFinite(max) && Number.isFinite(weight) && weight <= max));
+    }).sort((a, b) => {
+      if (sortOrder === 'weight-low') return (Number.parseFloat(a.weight) || 0) - (Number.parseFloat(b.weight) || 0);
+      if (sortOrder === 'weight-high') return (Number.parseFloat(b.weight) || 0) - (Number.parseFloat(a.weight) || 0);
+      if (sortOrder === 'name') return clean(a.title).localeCompare(clean(b.title));
+      const featuredDifference = Number(Boolean(b.isFeatured || b.isTopGem)) - Number(Boolean(a.isFeatured || a.isTopGem));
+      const position = (gem) => Number.isFinite(Number(gem.homePagePosition)) && gem.homePagePosition !== null && gem.homePagePosition !== '' ? Number(gem.homePagePosition) : 999;
+      return featuredDifference || position(a) - position(b);
+    });
+  }, [categoryStones, categories, filters, sortOrder]);
+
+  const selectionKey = JSON.stringify([routeKey, selectedCategory, filters, sortOrder]);
+  const totalPages = Math.max(1, Math.ceil(displayedStones.length / PAGE_SIZE));
+  const currentPage = pagination.key === selectionKey ? Math.min(pagination.page, totalPages) : 1;
+  const visibleStones = displayedStones.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const filterLabels = { search: 'Search', shape: 'Shape', cut: 'Cut', origin: 'Origin', color: 'Colour', certificate: 'Certification', min: 'Min carats', max: 'Max carats' };
+  const activeFilters = Object.entries(filters).filter(([, value]) => value !== '');
+  const resetPage = () => setPagination({ key: '', page: 1 });
+  const setFilter = (key, value) => { setFilters((previous) => ({ ...previous, [key]: value })); resetPage(); };
+  const clearFilters = () => { setFilters(EMPTY_FILTERS); setSortOrder('featured'); resetPage(); };
+  const chooseCategory = (id) => { setLocalCategory({ routeKey, id }); resetPage(); };
+  const changeSort = (value) => { setSortOrder(value); resetPage(); };
+  const changePage = (page) => {
+    setPagination({ key: selectionKey, page });
+    document.getElementById('collection-edit')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+  };
+  const retry = () => { if (stonesResource.status === 'error') stonesResource.retry(); if (categoriesResource.status === 'error') categoriesResource.retry(); };
+  const invalidWeightRange = filters.min !== '' && filters.max !== '' && Number.parseFloat(filters.min) > Number.parseFloat(filters.max);
+
+  return (
+    <main id="main-content" className="collection-polish">
+      <div className="collection-shell">
+        <nav className="collection-breadcrumb" aria-label="Breadcrumb">
+          <Link to="/">Home</Link><span aria-hidden="true">/</span>
+          <span aria-current="page">{allCategories ? 'Collection' : activeCategory?.title || 'Collection'}</span>
+        </nav>
+        <CollectionBanner key={selectedCategory} category={activeCategory || {}} all={allCategories} />
+
+        <div className="collection-below-banner" id="collection-edit">
+          <button type="button" className="collection-categories-toggle" onClick={() => setIsCategoriesOpen((open) => !open)} aria-expanded={isCategoriesOpen} aria-controls="collection-categories">
+            <Icon type="gem" /><span>Gem categories</span><span aria-hidden="true">{isCategoriesOpen ? '−' : '+'}</span>
+          </button>
+          <aside id="collection-categories" className={`gem-category-panel${isCategoriesOpen ? ' is-open' : ''}`} aria-label="Gemstone categories">
+            <h2>Gem categories</h2>
+            <div className="collection-category-list">
+              <button type="button" className={`gem-category-option${allCategories ? ' is-active' : ''}`} onClick={() => chooseCategory('all')} aria-label="All gemstones" aria-pressed={allCategories}>
+                <span className="gem-category-photo gem-category-photo--all"><Icon type="gem" /></span>
+                <span className="gem-category-name">All gemstones</span>
+                <span className="gem-category-count" aria-hidden="true">{isLoading ? '—' : stones.length}</span>
+              </button>
+              {categories.map((category) => (
+                <button key={category._id} type="button" className={`gem-category-option${selectedCategory === category._id ? ' is-active' : ''}`} onClick={() => chooseCategory(category._id)} aria-label={category.title} aria-pressed={selectedCategory === category._id}>
+                  <span className="gem-category-photo"><GemImage key={category.mainImage || category.image} src={category.mainImage || category.image} thumbnail /></span>
+                  <span className="gem-category-name">{category.title}</span>
+                  <span className="gem-category-count" aria-hidden="true">{categoryCounts[category._id] || 0}</span>
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <section className="collection-catalog" aria-label="Gemstone collection">
+            <div className="collection-aligned-controls">
+              <label className="collection-search">
+                <Icon type="search" /><span className="sr-only">Search collection</span>
+                <input type="search" value={filters.search} onChange={(event) => setFilter('search', event.target.value)} placeholder="Search gemstones…" />
+              </label>
+              <div className="collection-controls__right">
+                <span className="collection-result-count" role="status" aria-live="polite">
+                  {isLoading ? 'Loading…' : hasError ? 'Unavailable' : <><strong>{displayedStones.length}</strong> {displayedStones.length === 1 ? 'gemstone' : 'gemstones'}</>}
+                </span>
+                <label className="collection-sort"><span className="sr-only">Sort collection</span>
+                  <select aria-label="Sort collection" value={sortOrder} onChange={(event) => changeSort(event.target.value)}>
+                    <option value="featured">Featured</option><option value="name">Name A–Z</option>
+                    <option value="weight-low">Weight: Low–High</option><option value="weight-high">Weight: High–Low</option>
+                  </select>
+                </label>
+                <button type="button" className={`collection-refine-toggle${isFiltersOpen ? ' is-active' : ''}`} onClick={() => setIsFiltersOpen((open) => !open)} aria-label="Refine selection" aria-expanded={isFiltersOpen} aria-controls="collection-filters">
+                  <Icon type="filter" /><span>Filters{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}</span>
+                </button>
+                <button type="button" className="collection-clear" onClick={clearFilters}>Clear all</button>
+              </div>
+            </div>
+
+            {isFiltersOpen && (
+              <div id="collection-filters" className="collection-filter-panel" aria-label="Refine collection">
+                <div className="collection-filter-fields">
+                  <FilterSelect label="Shape" value={filters.shape} onChange={(value) => setFilter('shape', value)} options={filterOptions.shapes} placeholder="All shapes" />
+                  <FilterSelect label="Cut" value={filters.cut} onChange={(value) => setFilter('cut', value)} options={filterOptions.cuts} placeholder="All cuts" />
+                  <FilterSelect label="Origin" value={filters.origin} onChange={(value) => setFilter('origin', value)} options={filterOptions.origins} placeholder="All origins" />
+                  {filterOptions.colors.length > 0 && <FilterSelect label="Colour" value={filters.color} onChange={(value) => setFilter('color', value)} options={filterOptions.colors} placeholder="All colours" />}
+                  <fieldset className="collection-filter-field collection-weight">
+                    <legend>Carat weight</legend>
+                    <div><input aria-label="Minimum carat weight" type="number" inputMode="decimal" min="0" step="any" value={filters.min} onChange={(event) => setFilter('min', event.target.value)} placeholder="Min" /><span aria-hidden="true">–</span><input aria-label="Maximum carat weight" type="number" inputMode="decimal" min="0" step="any" value={filters.max} onChange={(event) => setFilter('max', event.target.value)} placeholder="Max" /></div>
+                    {invalidWeightRange && <p role="alert" className="collection-weight-error">Minimum must be below maximum.</p>}
+                  </fieldset>
+                  <FilterSelect label="Certification" value={filters.certificate} onChange={(value) => setFilter('certificate', value)} options={[{ value: 'certified', label: 'Certified only' }, { value: 'uncertified', label: 'Without certificate' }]} placeholder="Any certification" />
+                </div>
+              </div>
+            )}
+
+            <div className="collection-results">
+              {activeFilters.length > 0 && <div className="collection-active-filters" aria-label="Active refinements">
+                {activeFilters.map(([key, value]) => <button key={key} type="button" onClick={() => setFilter(key, '')} aria-label={`Remove ${filterLabels[key]} filter`}>{filterLabels[key]}: {key === 'certificate' ? value === 'certified' ? 'Certified' : 'Without certificate' : value}<Icon type="close" /></button>)}
+              </div>}
+              {isLoading ? (
+                <div className="gem-product-grid collection-loading" aria-busy="true" aria-label="Loading collection">
+                  {Array.from({ length: 10 }, (_, index) => <div className="collection-skeleton" key={index}><div /><span /><span /></div>)}
+                </div>
+              ) : hasError ? (
+                <div className="collection-empty" role="alert"><Icon type="gem" /><h2>Collection unavailable</h2><p>We couldn’t load the gemstones. Please try again.</p><button type="button" className="collection-button" onClick={retry}>Try again <Icon /></button></div>
+              ) : displayedStones.length === 0 ? (
+                <div className="collection-empty">
+                  <Icon type="gem" /><h2>{unknownCategory ? 'This collection couldn’t be found.' : 'No gemstones found'}</h2>
+                  <p>{activeFilters.length > 0 ? 'Try another filter or reset your selection.' : 'Explore another category or contact us about a gemstone.'}</p>
+                  {activeFilters.length > 0 ? <button type="button" className="collection-button" onClick={clearFilters}>Reset refinements <Icon /></button> : <button type="button" className="collection-button" onClick={() => chooseCategory('all')}>Explore all gemstones <Icon /></button>}
+                  <Link to="/contact">Contact us <Icon type="diagonal" /></Link>
+                </div>
+              ) : (
+                <>
+                  <div className="gem-product-grid">{visibleStones.map((gem) => <GemCard key={gem._id} gem={gem} category={categories.find((category) => category._id === categoryIdOf(gem))} />)}</div>
+                  <div className="collection-pagination">
+                    <span>Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, displayedStones.length)} of {displayedStones.length}</span>
+                    {totalPages > 1 && <nav aria-label="Collection pages">
+                      <button type="button" onClick={() => changePage(currentPage - 1)} disabled={currentPage === 1} aria-label="Previous page"><Icon className="collection-arrow-back" /></button>
+                      <span>{currentPage} <i>/</i> {totalPages}</span>
+                      <button type="button" onClick={() => changePage(currentPage + 1)} disabled={currentPage === totalPages} aria-label="Next page"><Icon /></button>
+                    </nav>}
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}

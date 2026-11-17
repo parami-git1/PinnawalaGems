@@ -3,11 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-require('dotenv').config();
+if (require.main === module) require('dotenv').config();
 
 // 🔹 අලුතින් Cloudinary පැකේජ් ටික ගෙන්න ගත්තා
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const requireAdmin = require('./middleware/adminAuth');
 
 const app = express();
 
@@ -35,7 +36,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // Image Upload API (Cloudinary එකට ගියාට පස්සේ එන ලින්ක් එක Frontend එකට යවනවා)
-app.post('/api/upload', upload.single('image'), (req, res) => {
+app.post('/api/upload', requireAdmin, upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
@@ -44,7 +45,9 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   res.json({ imageUrl });
 });
 
-const gemRoutes = require('./routes/gemRoutes'); 
+app.use('/api/media', require('./routes/mediaRoutes'));
+
+const gemRoutes = require('./routes/gemRoutes');
 app.use('/api/gems', gemRoutes); 
 
 const workshopRoutes = require('./routes/workshopRoutes');
@@ -70,14 +73,35 @@ app.use('/api/stock', stockRoutes);
 const eventAdRoutes = require('./routes/eventAdRoutes');
 app.use('/api/event-ads', eventAdRoutes);
 
-// Connect to MongoDB Database
-mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 10000, 
-  family: 4 
-}).then(() => {
-  console.log("✅ MongoDB Connected Successfully");
-}).catch((error) => {
-  console.log("❌ MongoDB Connection Error: ", error);
+const analyticsRoutes = require('./routes/analyticsRoutes');
+app.use('/api/analytics', analyticsRoutes);
+
+const adminAuthRoutes = require('./routes/adminAuthRoutes');
+app.use('/api/admin', adminAuthRoutes);
+
+const appointmentRoutes = require('./routes/appointmentRoutes');
+app.use('/api/appointments', appointmentRoutes);
+
+const adminNoteRoutes = require('./routes/adminNoteRoutes');
+app.use('/api/admin-notes', adminNoteRoutes);
+
+const plannerRoutes = require('./routes/plannerRoutes');
+app.use('/api/planner', plannerRoutes);
+
+
+
+app.get('/api/health', (req, res) => {
+  const connected = mongoose.connection.readyState === 1;
+  res.status(connected ? 200 : 503).json({
+    status: connected ? 'ok' : 'starting',
+    database: connected ? 'connected' : 'unavailable',
+    features: ['appointments', 'admin-notes', 'planner-notifications', 'gem-media'],
+    revision: process.env.RENDER_GIT_COMMIT || null
+  });
+});
+
+app.use('/api', (req, res) => {
+  res.status(404).json({ message: `API route not found: ${req.method} ${req.originalUrl.split('?')[0]}` });
 });
 
 // Basic Test Route
@@ -85,22 +109,21 @@ app.get('/', (req, res) => {
   res.send('Pinnawala Gems API is running...');
 });
 
-const jwt = require('jsonwebtoken');
-
-// Admin Login Route
-app.post('/api/admin/login', (req, res) => {
-  const { username, password } = req.body;
-
-  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ token });
-  } else {
-    res.status(401).json({ message: "Invalid credentials" });
+async function startServer() {
+  if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
+    throw new Error('MONGO_URI and JWT_SECRET must be configured before starting the backend.');
   }
-});
+  await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000, family: 4 });
+  const port = process.env.PORT || 5000;
+  return app.listen(port, () => console.log(`Pinnawala Gems API listening on port ${port}`));
+}
 
-// Server Start
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-});
+if (require.main === module) {
+  startServer().catch(async (error) => {
+    console.error(`Backend startup failed: ${error.name}. Check the server environment and database connection.`);
+    await mongoose.disconnect();
+    process.exitCode = 1;
+  });
+}
+
+module.exports = app;

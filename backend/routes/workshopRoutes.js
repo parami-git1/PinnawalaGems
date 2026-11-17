@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const WorkshopStep = require('../models/WorkshopStep');
+const requireAdmin = require('../middleware/adminAuth');
 
 // Get all workshop steps
 router.get('/', async (req, res) => {
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
 });
 
 // Add a new workshop step (Admin only)
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   const { title, description, imageUrl } = req.body;
   const newStep = new WorkshopStep({ title, description, imageUrl });
   try {
@@ -25,8 +26,23 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Update a workshop step (Admin only)
+router.put('/:id', requireAdmin, async (req, res) => {
+  try {
+    const updatedStep = await WorkshopStep.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    if (!updatedStep) return res.status(404).json({ message: 'Workshop step not found' });
+    res.json(updatedStep);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 // Delete a workshop step (Admin only)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     await WorkshopStep.findByIdAndDelete(req.params.id);
     res.json({ message: 'Workshop step deleted successfully' });

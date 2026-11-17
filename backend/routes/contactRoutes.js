@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ContactData = require('../models/ContactData');
+const requireAdmin = require('../middleware/adminAuth');
 
 // Get Contact Details
 router.get('/', async (req, res) => {
@@ -16,7 +17,7 @@ router.get('/', async (req, res) => {
 });
 
 // Update Contact Details (Admin Only)
-router.put('/', async (req, res) => {
+router.put('/', requireAdmin, async (req, res) => {
   try {
     let data = await ContactData.findOne();
     if (!data) {

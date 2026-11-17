@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const HomeData = require('../models/HomeData');
+const requireAdmin = require('../middleware/adminAuth');
 
 // 1. Home page details ganna API eka (Frontend ekata pennanna)
 router.get('/', async (req, res) => {
@@ -19,7 +20,7 @@ router.get('/', async (req, res) => {
 });
 
 // 2. Admin ta details update karanna API eka
-router.put('/', async (req, res) => {
+router.put('/', requireAdmin, async (req, res) => {
   try {
     // Database eke thiyena data update karanawa
     const updatedData = await HomeData.findOneAndUpdate({}, req.body, { new: true, upsert: true });

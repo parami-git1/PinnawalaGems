@@ -1,415 +1,283 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import AdminOperations from './AdminOperations';
+import AdminPlanner from './AdminPlanner';
+import AdminDashboard from './admin/AdminDashboard';
+import GemMediaEditor from './admin/GemMediaEditor';
+import { FeedbackPanel, WebsiteSettings, WorkshopPanel } from './admin/AdminContent';
+import { AdminEmptyState, AdminField, AdminIcon, AdminImage, AdminModal } from './admin/AdminUI';
+import { GEM_MEDIA_LIMITS, mediaUrls } from './mediaPolicy';
+import './admin/Admin.css';
 
-function AdminInventory() {
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [stones, setStones] = useState([]);
-  
-  const [showForm, setShowForm] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editStoneId, setEditStoneId] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    title: '', shape: '', weight: '', color: '', price: '', description: '',
-    hasCertificate: false, image: '', quantity: 1
-  });
+const API_URL = import.meta.env.VITE_API_URL || 'https://pinnawalagems.onrender.com';
+const EMPTY_GEM = { title: '', categoryId: '', stoneId: '', image: '', weight: '', color: '', shape: '', cut: '', price: '', quantity: 1, description: '', hasCertificate: false, certificateDetails: '', certificateImage: '', isFeatured: false, origin: '', additionalImages: [], videos: [], isTopGem: false, homePagePosition: 0 };
+const EMPTY_FILTERS = { search: '', categoryId: '', color: '', shape: '', certificate: '', minWeight: '', maxWeight: '', minPrice: '', maxPrice: '' };
+const VIEWS = [
+  { id: 'analytics', label: 'Overview', icon: 'grid', group: 'Workspace', description: 'A clear view of your gemstone collection and the work that needs your attention.' },
+  { id: 'inventory', label: 'Gem inventory', icon: 'gem', description: 'Manage gemstone details, availability and how each piece appears in the collection.' },
+  { id: 'operations', label: 'Operations', icon: 'layers', description: 'Keep your categories, stock and collection content organised in one place.' },
+  { id: 'planner', label: 'Appointments & notes', icon: 'calendar', description: 'Coordinate customer appointments and keep the important details close at hand.' },
+  { id: 'settings', label: 'Website settings', icon: 'settings', group: 'Website', description: 'Manage your homepage and contact information with a consistent, considered presentation.' },
+  { id: 'feedback', label: 'Customer reviews', icon: 'star', description: 'Review customer experiences and choose the feedback to share on your website.' },
+  { id: 'workshop', label: 'Workshop posts', icon: 'image', description: 'Share the craft behind your collection through workshop images and stories.' },
+];
+const array = (value) => Array.isArray(value) ? value : [];
+const categoryId = (stone) => typeof stone.categoryId === 'object' ? stone.categoryId?._id : stone.categoryId;
+const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 
-  const [showCatForm, setShowCatForm] = useState(false);
-  const [catFormData, setCatFormData] = useState({ title: '', description: '', mainImage: '' });
-  const [isUploadingCat, setIsUploadingCat] = useState(false);
-
-  // Filter States
-  const [searchId, setSearchId] = useState('');
-  const [searchColor, setSearchColor] = useState('');
-  const [searchShape, setSearchShape] = useState('');
-  const [minWeight, setMinWeight] = useState('');
-  const [maxWeight, setMaxWeight] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [filterCert, setFilterCert] = useState(false);
-
-  // 🔹 අලුතින් දැම්ම Admin Filter Toggle State එක
-  const [showFilters, setShowFilters] = useState(false);
-  
-  useEffect(() => { fetchCategories(); }, []);
-
-  const fetchCategories = () => {
-    fetch('https://pinnawalagems.onrender.com/api/stock/categories')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const uniqueCategories = data.filter((cat, index, self) =>
-            index === self.findIndex((c) => (
-              c.title.toLowerCase().trim() === cat.title.toLowerCase().trim()
-            ))
-          );
-          setCategories(uniqueCategories);
-        } else {
-          setCategories([]);
-        }
-      })
-      .catch(err => console.log(err));
-  };
-
-  useEffect(() => {
-    if (selectedCategory) {
-      fetchStones();
-    } else {
-      setStones([]);
-    }
-  }, [selectedCategory, searchId, searchColor, searchShape, minWeight, maxWeight, minPrice, maxPrice, filterCert]);
-
-  const fetchStones = () => {
-    let url = `https://pinnawalagems.onrender.com/api/stock/categories/${selectedCategory}/stones?_v=1`;
-    if (searchId) url += `&stoneId=${searchId}`;
-    if (searchColor) url += `&color=${searchColor}`;
-    if (searchShape) url += `&shape=${searchShape}`;
-    if (minWeight) url += `&minWeight=${minWeight}`;
-    if (maxWeight) url += `&maxWeight=${maxWeight}`;
-    if (minPrice) url += `&minPrice=${minPrice}`;
-    if (maxPrice) url += `&maxPrice=${maxPrice}`;
-    if (filterCert) url += `&hasCertificate=true`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => setStones(data.stones || []))
-      .catch(err => console.log(err));
-  };
-
-  const handleResetFilters = () => {
-    setSearchId(''); setSearchColor(''); setSearchShape('');
-    setMinWeight(''); setMaxWeight(''); setMinPrice(''); setMaxPrice('');
-    setFilterCert(false);
-  };
-
-  const handleCatImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const uploadData = new FormData(); uploadData.append('image', file);
-    setIsUploadingCat(true);
-    try {
-      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
-      if (response.ok) { 
-        const data = await response.json(); 
-        setCatFormData({ ...catFormData, mainImage: data.imageUrl }); 
-      }
-    } catch (error) { console.log(error); } finally { setIsUploadingCat(false); }
-  };
-
-  const handleCatSubmit = async (e) => {
-    e.preventDefault();
-    if (!catFormData.title || !catFormData.mainImage) {
-      alert("Gem Type Name and Image are strictly required!");
-      return;
-    }
-    try {
-      const response = await fetch('https://pinnawalagems.onrender.com/api/stock/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify(catFormData)
-      });
-      if (response.ok) {
-        const newCat = await response.json();
-        alert("New Gem Type Added to Inventory!");
-        setShowCatForm(false);
-        setCatFormData({ title: '', description: '', mainImage: '' });
-        fetchCategories();
-        setSelectedCategory(newCat._id); 
-      }
-    } catch (error) { console.log(error); }
-  };
-
-  const handleDeleteCategory = async () => {
-    if (window.confirm("WARNING: Are you sure you want to delete this entire Gem Type? ALL the stock items inside this category will also be permanently deleted!")) {
-      try {
-        const response = await fetch(`https://pinnawalagems.onrender.com/api/stock/categories/${selectedCategory}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          alert("Gem Type and all related stock items have been deleted!");
-          setSelectedCategory(''); 
-          setStones([]); 
-          fetchCategories(); 
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    }
-  };
-
-  const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setFormData({ ...formData, [e.target.name]: value });
-  };
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const uploadData = new FormData(); uploadData.append('image', file);
-    setIsUploading(true);
-    try {
-      const response = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', body: uploadData });
-      if (response.ok) { 
-        const data = await response.json(); 
-        setFormData({ ...formData, image: data.imageUrl }); 
-      }
-    } catch (error) { console.log(error); } finally { setIsUploading(false); }
-  };
-
-  const openAddForm = () => {
-    setIsEditMode(false);
-    setFormData({ title: '', shape: '', weight: '', color: '', price: '', description: '', hasCertificate: false, image: '', quantity: 1 });
-    setShowForm(true);
-  };
-
-  const openEditForm = (stone) => {
-    setIsEditMode(true);
-    setEditStoneId(stone._id);
-    setFormData({
-      title: stone.title, shape: stone.shape || '', weight: stone.weight || '', color: stone.color || '', 
-      price: stone.price || '', description: stone.description || '', hasCertificate: stone.hasCertificate, 
-      image: stone.image, quantity: stone.quantity || 1
-    });
-    setShowForm(true);
-    window.scrollTo({ top: 300, behavior: 'smooth' });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.title || !formData.image) {
-      alert("Title and Image are strictly required!");
-      return;
-    }
-    const payload = { ...formData, categoryId: selectedCategory, quantity: formData.quantity || 1 };
-    const url = isEditMode ? `https://pinnawalagems.onrender.com/api/stock/stones/${editStoneId}` : 'https://pinnawalagems.onrender.com/api/stock/stones';
-    const method = isEditMode ? 'PUT' : 'POST';
-
-    try {
-      const response = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify(payload)
-      });
-      if (response.ok) {
-        alert(isEditMode ? "Stock Record Updated!" : "New Stock Record Added!");
-        setShowForm(false);
-        fetchStones();
-      }
-    } catch (error) { console.log(error); }
-  };
-
-  const handleDelete = async (stoneId) => {
-    if(window.confirm("Delete this from business inventory?")) {
-       await fetch(`https://pinnawalagems.onrender.com/api/stock/stones/${stoneId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-       setStones(stones.filter(s => s._id !== stoneId));
-    }
-  };
-
-  const selectedCatObj = categories.find(c => c._id === selectedCategory);
-
-  return (
-    <div className="min-h-screen bg-slate-100 font-sans text-blue-950 p-8">
-      <div className="max-w-7xl mx-auto">
-        
-        <div className="flex justify-between items-center mb-8 bg-white p-6 shadow-sm border">
-          <h1 className="text-2xl font-bold uppercase tracking-widest text-blue-900">📦 Business Inventory</h1>
-          <Link to="/catalog" className="bg-slate-200 px-6 py-2 font-bold text-xs uppercase hover:bg-slate-300">Back to Live Site</Link>
-        </div>
-
-        <div className="bg-white p-6 shadow-sm border mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <label className="text-xs font-bold uppercase text-slate-500 block">Select or Add Stock Gem Type</label>
-            {!showCatForm && (
-              <button onClick={() => setShowCatForm(true)} className="bg-blue-950 text-white px-4 py-2 text-[10px] font-bold uppercase hover:bg-blue-800">
-                + Add New Gem Type
-              </button>
-            )}
-          </div>
-
-          {!showCatForm ? (
-            <select value={selectedCategory} onChange={(e) => { setSelectedCategory(e.target.value); setShowForm(false); }} className="w-full border p-3 bg-slate-50 outline-none cursor-pointer">
-              <option value="">-- Choose Category --</option>
-              {categories.map(cat => <option key={cat._id} value={cat._id}>{cat.title}</option>)}
-            </select>
-          ) : (
-            <form onSubmit={handleCatSubmit} className="bg-slate-50 border p-6 mt-2 border-dashed border-blue-200">
-              <h3 className="text-sm font-bold uppercase mb-4 text-blue-900">Add New Gem Type to Inventory</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-slate-500">Gem Type Name *</label>
-                  <input type="text" placeholder="e.g. Pink Sapphire" value={catFormData.title} onChange={(e) => setCatFormData({...catFormData, title: e.target.value})} className="w-full border p-2 text-sm" required />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-slate-500">Image *</label>
-                  <input type="file" onChange={handleCatImageUpload} className="w-full text-sm" required/>
-                  {isUploadingCat && <span className="text-[10px] text-blue-500">Uploading...</span>}
-                </div>
-                <div className="md:col-span-2">
-                   <label className="text-[10px] font-bold uppercase text-slate-500">Description (Optional)</label>
-                   <textarea placeholder="Category description..." value={catFormData.description} onChange={(e) => setCatFormData({...catFormData, description: e.target.value})} className="w-full border p-2 text-sm h-12"></textarea>
-                </div>
-                <div className="md:col-span-2 flex gap-2 pt-2">
-                  <button type="button" onClick={() => setShowCatForm(false)} className="bg-slate-300 px-6 py-2 text-xs font-bold uppercase hover:bg-slate-400 transition-colors">Cancel</button>
-                  <button type="submit" disabled={isUploadingCat || !catFormData.mainImage} className="bg-blue-950 text-white px-6 py-2 text-xs font-bold uppercase hover:bg-blue-800 disabled:bg-slate-400 transition-colors">Save Category</button>
-                </div>
-              </div>
-            </form>
-          )}
-        </div>
-
-        {selectedCategory && selectedCatObj && (
-          <div className="bg-white shadow-sm border overflow-hidden">
-            
-            <div className="bg-slate-50 p-6 flex flex-col md:flex-row items-center gap-6 border-b">
-              <img src={selectedCatObj.mainImage || selectedCatObj.image} alt={selectedCatObj.title} className="w-24 h-24 md:w-32 md:h-32 object-cover border border-slate-200 shadow-sm rounded-sm bg-white p-1" />
-              <div className="text-center md:text-left flex-1">
-                <h2 className="text-2xl font-serif font-bold uppercase text-blue-950">{selectedCatObj.title}</h2>
-                <p className="text-xs text-slate-500 mt-2 max-w-lg">{selectedCatObj.description || 'No description provided for this category.'}</p>
-              </div>
-              <div className="mt-4 md:mt-0 flex gap-2 flex-col md:flex-row">
-                <button onClick={openAddForm} className="bg-blue-950 text-white px-6 py-3 text-[10px] font-bold uppercase hover:bg-blue-800 shadow-md transition-colors">
-                  + Add Stock to {selectedCatObj.title}
-                </button>
-                <button onClick={handleDeleteCategory} className="bg-red-50 text-red-600 border border-red-200 px-6 py-3 text-[10px] font-bold uppercase hover:bg-red-600 hover:text-white shadow-sm transition-colors">
-                  Delete Category
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {showForm && (
-                <form onSubmit={handleSubmit} className="bg-white border p-6 mb-10 grid grid-cols-1 md:grid-cols-3 gap-4 shadow-sm border-blue-100">
-                  <div className="md:col-span-3 pb-2 border-b border-blue-100 mb-2"><h3 className="font-bold uppercase text-blue-900">{isEditMode ? 'Edit Gem Stock' : 'Add New Stock Record'}</h3></div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="text-[10px] font-bold uppercase text-slate-500">Gem Title *</label>
-                    <input type="text" name="title" value={formData.title} onChange={handleChange} required className="w-full border p-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-slate-500">Quantity (Stock) *</label>
-                    <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} min="0" required className="w-full border p-2 text-sm font-bold text-blue-700 bg-blue-50" />
-                  </div>
-
-                  <div><label className="text-[10px] font-bold uppercase">Color (Optional)</label><input type="text" name="color" value={formData.color} onChange={handleChange} className="w-full border p-2 text-sm" /></div>
-                  <div><label className="text-[10px] font-bold uppercase">Shape (Optional)</label><input type="text" name="shape" value={formData.shape} onChange={handleChange} className="w-full border p-2 text-sm" /></div>
-                  <div><label className="text-[10px] font-bold uppercase">Weight (ct) (Optional)</label><input type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} className="w-full border p-2 text-sm" /></div>
-                  <div><label className="text-[10px] font-bold uppercase">Price (Rs.) (Optional)</label><input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full border p-2 text-sm" /></div>
-                  
-                  <div className="flex items-center pt-5">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" name="hasCertificate" checked={formData.hasCertificate} onChange={handleChange} className="w-5 h-5 accent-blue-900" />
-                      <span className="text-xs font-bold uppercase text-blue-900">Has Certificate</span>
-                    </label>
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <label className="text-[10px] font-bold uppercase text-slate-500">Description (Optional)</label>
-                    <textarea name="description" value={formData.description} onChange={handleChange} className="w-full border p-2 text-sm h-16"></textarea>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-[10px] font-bold uppercase text-slate-500">Image *</label>
-                    <input type="file" onChange={handleImageUpload} className="w-full text-sm" />
-                    {isUploading && <span className="text-[10px] text-blue-500">Uploading...</span>}
-                  </div>
-                  <div className="flex items-end">{formData.image && <img src={formData.image} alt="preview" className="h-12 border bg-slate-50 p-1" />}</div>
-
-                  <div className="md:col-span-3 flex gap-2 mt-4 pt-4 border-t border-slate-100">
-                    <button type="button" onClick={() => setShowForm(false)} className="bg-slate-300 px-6 py-2 text-xs font-bold uppercase hover:bg-slate-400 transition-colors">Cancel</button>
-                    <button type="submit" disabled={isUploading || !formData.image} className="bg-blue-950 text-white px-8 py-2 text-xs font-bold uppercase hover:bg-blue-800 disabled:bg-slate-400 transition-colors">Save Record</button>
-                  </div>
-                </form>
-              )}
-
-              {/* ---------------- 🔹 ADMIN FILTER HEADER & TOGGLE BUTTON ---------------- */}
-              <div className="flex justify-between items-center mb-3 mt-6">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-900">📦 Stock Inventory</h3>
-                <button 
-                  onClick={() => setShowFilters(!showFilters)} 
-                  className="bg-slate-200 text-blue-950 px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-300 transition-colors shadow-sm flex items-center gap-2"
-                >
-                  {showFilters ? '✖ Hide Filters' : '🔍 Filter Stock'}
-                </button>
-              </div>
-
-              {/* ---------------- ADMIN FILTER PANEL (Conditional Rendering) ---------------- */}
-              {showFilters && (
-                <div className="bg-white border border-slate-200 shadow-sm p-4 mb-6 rounded-sm transition-all">
-                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-                    <h3 className="text-[9px] font-bold uppercase tracking-widest text-blue-900 opacity-0">Filter</h3> {/* Spacing aligner */}
-                    <button onClick={handleResetFilters} className="text-[9px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 transition-colors">Reset All</button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-                    <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Gem ID</label><input type="text" value={searchId} onChange={(e) => setSearchId(e.target.value)} placeholder="e.g. GEM-102" className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-                    <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Color</label><input type="text" value={searchColor} onChange={(e) => setSearchColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-                    <div><label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Shape</label><input type="text" value={searchShape} onChange={(e) => setSearchShape(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-2 mt-1 text-xs uppercase focus:border-blue-950" /></div>
-                    <div>
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Weight (ct)</label>
-                      <div className="flex gap-1 mt-1">
-                        <input type="number" value={minWeight} onChange={(e) => setMinWeight(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                        <input type="number" value={maxWeight} onChange={(e) => setMaxWeight(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Price (Rs.)</label>
-                      <div className="flex gap-1 mt-1">
-                        <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                        <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max" className="w-1/2 bg-slate-50 border border-slate-200 p-2 text-xs focus:border-blue-950" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-slate-50 flex items-center">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={filterCert} onChange={(e) => setFilterCert(e.target.checked)} className="w-3 h-3 accent-blue-950" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Show Certified Only</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
-                {stones.length === 0 ? (
-                  <p className="col-span-full text-center text-sm text-slate-400 py-8 border border-dashed border-slate-300">No stock found in this category.</p>
-                ) : (
-                  stones.map(stone => (
-                    <div key={stone._id} className="bg-white border border-slate-200 shadow-sm hover:shadow-lg transition-all flex flex-col relative rounded-sm overflow-hidden">
-                      <div className="h-48 bg-slate-50 flex items-center justify-center p-4 border-b border-slate-100 relative group">
-                        <img src={stone.image} alt={stone.title} className="max-h-full object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-500" />
-                        {stone.hasCertificate && <div className="absolute top-2 right-2 bg-white text-green-600 px-2 py-1 text-[8px] font-bold tracking-widest border border-green-200 shadow-sm">✓ CERT</div>}
-                      </div>
-                      
-                      <div className="p-5 flex flex-col flex-1">
-                        <h4 className="text-lg font-serif font-bold text-blue-950 mb-1 leading-tight uppercase line-clamp-1" title={stone.title}>{stone.title}</h4>
-                        <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-4">ID: {stone.stoneId}</p>
-                        
-                        <div className="mb-4">
-                          <span className={`px-3 py-1 font-bold text-xs tracking-widest uppercase rounded-full inline-block ${stone.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {stone.quantity || 0} IN STOCK
-                          </span>
-                        </div>
-                        
-                        <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mb-5">
-                          Price: {stone.price ? <span className="text-green-700">Rs. {stone.price}</span> : 'Not Set'}
-                        </div>
-                        
-                        <div className="mt-auto pt-4 border-t border-slate-100 flex gap-2">
-                          <button onClick={() => openEditForm(stone)} className="w-1/2 bg-amber-500 hover:bg-amber-600 text-white py-2 text-[10px] font-bold tracking-widest uppercase shadow-sm transition-colors">Edit</button>
-                          <button onClick={() => handleDelete(stone._id)} className="w-1/2 bg-red-600 hover:bg-red-700 text-white py-2 text-[10px] font-bold tracking-widest uppercase shadow-sm transition-colors">Delete</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+async function request(path, options = {}) {
+  const isForm = options.body instanceof FormData;
+  const headers = { ...(options.body && !isForm ? { 'Content-Type': 'application/json' } : {}), ...options.headers, Authorization: `Bearer ${localStorage.getItem('adminToken')}` };
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 401) { localStorage.removeItem('adminToken'); window.location.assign('/admin-login'); }
+  if (!response.ok) throw new Error(data.message || `Unable to complete this request (${response.status}). Please try again.`);
+  return data;
 }
 
-export default AdminInventory;
+function summarise(stones, categories) {
+  const names = new Map(categories.map((item) => [item._id, item.title]));
+  const weights = stones.map((stone) => Number.parseFloat(stone.weight)).filter(Number.isFinite);
+  const groups = new Map();
+  const colours = new Map();
+  stones.forEach((stone) => {
+    const key = categoryId(stone) || 'uncategorized';
+    const group = groups.get(key) || { categoryId: key, name: names.get(key) || 'Uncategorized', stones: 0, quantity: 0, weights: [], prices: [] };
+    group.stones += 1; group.quantity += number(stone.quantity);
+    const weight = Number.parseFloat(stone.weight);
+    if (Number.isFinite(weight)) group.weights.push(weight);
+    if (stone.price !== '' && stone.price != null && Number.isFinite(Number(stone.price))) group.prices.push(Number(stone.price));
+    groups.set(key, group);
+    const color = stone.color || 'Unspecified'; colours.set(color, (colours.get(color) || 0) + 1);
+  });
+  const mean = (values) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+  const categoryOverview = [...groups.values()].map((group) => ({ ...group, weights: undefined, prices: undefined, averageWeight: mean(group.weights), minWeight: group.weights.length ? Math.min(...group.weights) : 0, maxWeight: group.weights.length ? Math.max(...group.weights) : 0, averagePrice: mean(group.prices) }));
+  return { totalStones: stones.length, totalQuantity: stones.reduce((sum, stone) => sum + number(stone.quantity), 0), totalBlueSapphires: stones.filter((stone) => /blue/i.test(stone.title || '')).length, avgCaratWeight: mean(weights), minCaratWeight: weights.length ? Math.min(...weights) : 0, maxCaratWeight: weights.length ? Math.max(...weights) : 0, categoryOverview, colorDistribution: [...colours].map(([name, value]) => ({ name, value })) };
+}
+
+function Notice({ value, onDismiss }) {
+  if (!value) return null;
+  return <div className={`admin-status ${value.type === 'error' ? 'is-error' : ''}`} role={value.type === 'error' ? 'alert' : 'status'}><AdminIcon name={value.type === 'error' ? 'bell' : 'check'} /><p>{value.message}</p>{onDismiss && <button type="button" onClick={onDismiss} aria-label="Dismiss message"><AdminIcon name="close" /></button>}</div>;
+}
+
+function FormSection({ icon, title, description, children }) {
+  return <section className="admin-form-section"><div className="admin-form-section-heading"><AdminIcon name={icon} /><div><h3>{title}</h3>{description && <p>{description}</p>}</div></div><div className="admin-form-grid">{children}</div></section>;
+}
+
+function GemEditor({ stone, categories, onClose, onSaved }) {
+  const editing = Boolean(stone?._id);
+  const [form, setForm] = useState(() => ({ ...EMPTY_GEM, ...stone, categoryId: stone ? categoryId(stone) || '' : '', additionalImages: mediaUrls(stone?.additionalImages), videos: mediaUrls(stone?.videos) }));
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const guard = useRef(false);
+  const uploadGuard = useRef(false);
+  const update = (event) => { const { name, type, value, checked } = event.target; setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value })); };
+  const input = (name, label, props = {}) => <AdminField key={name} label={label} required={Boolean(props.required)} hint={props.hint} className={props.full ? 'admin-span-full' : ''}><input name={name} value={form[name] ?? ''} onChange={update} type={props.type || 'text'} step={props.step} required={props.required} placeholder={props.placeholder} readOnly={props.readOnly} /></AdminField>;
+  const busy = saving || uploading;
+  const save = async (event) => {
+    event.preventDefault(); if (guard.current || uploadGuard.current) return;
+    guard.current = true; setSaving(true); setError('');
+    try {
+      const image = String(form.image || '').trim();
+      const additionalImages = mediaUrls(form.additionalImages).filter((url) => url !== image);
+      const videos = mediaUrls(form.videos);
+      if (!image) throw new Error('Add at least one photo and choose a cover image before saving.');
+      if (additionalImages.length + 1 > GEM_MEDIA_LIMITS.images) throw new Error('Each gemstone can have up to 10 photos, including the cover.');
+      if (videos.length > GEM_MEDIA_LIMITS.videos) throw new Error('Each gemstone can have up to 2 videos.');
+      if ([image, ...additionalImages, ...videos].some((url) => !/^https?:\/\/|^\/(?!\/)/i.test(url))) throw new Error('Use a valid http(s) media URL or upload your files above.');
+      const payload = { ...form, image, additionalImages, videos, quantity: Number(form.quantity), price: form.price === '' || form.price == null ? null : Number(form.price), homePagePosition: Number(form.homePagePosition || 0) };
+      await request(editing ? `/api/inventory/stones/${stone._id}` : '/api/inventory/stones', { method: editing ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+      onSaved(editing ? 'Gemstone changes saved.' : 'Gemstone added to the collection.');
+    } catch (problem) { setError(problem.message); }
+    finally { guard.current = false; setSaving(false); }
+  };
+  return <AdminModal title={editing ? 'Edit gemstone' : 'Add gemstone'} description="Keep each piece beautifully presented, with accurate details and clear availability." onClose={onClose} busy={busy}><form onSubmit={save} aria-label="Gemstone details">
+    {error && <Notice value={{ type: 'error', message: error }} onDismiss={() => setError('')} />}
+    <fieldset disabled={busy} className="admin-plain-fieldset">
+      <FormSection icon="gem" title="Gemstone details" description="Start with the essentials for your collection.">
+        {input('title', 'Gem name', { required: true, placeholder: 'e.g. Ceylon blue sapphire' })}
+        <AdminField label="Category" required><select name="categoryId" value={form.categoryId} onChange={update} required><option value="">Select a category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.title}</option>)}</select></AdminField>
+        {input('stoneId', 'Gem ID', { placeholder: editing ? 'Your inventory reference' : 'Assigned when created', readOnly: !editing, hint: editing ? undefined : 'A reference is generated automatically for new gemstones.' })}{input('origin', 'Origin', { placeholder: 'e.g. Sri Lanka' })}
+        <AdminField label="Description" className="admin-span-full"><textarea name="description" rows={3} value={form.description} onChange={update} placeholder="Describe the character and details of this gemstone." /></AdminField>
+      </FormSection>
+      <FormSection icon="layers" title="Specifications & availability">
+        {input('weight', 'Weight (ct)', { placeholder: 'e.g. 2.75' })}{input('color', 'Color')}{input('shape', 'Shape')}{input('cut', 'Cut')}{input('quantity', 'Quantity', { type: 'number', step: '1', required: true })}{input('price', 'Price (Rs.)', { type: 'number', step: 'any' })}
+      </FormSection>
+      <FormSection icon="image" title="Photos & videos" description="Build a clear view of the stone. Choose a cover photo and add optional videos to show its movement in the light.">
+        <GemMediaEditor form={form} setForm={setForm} onBusyChange={(value) => { uploadGuard.current = value; setUploading(value); }} disabled={busy} apiBase={API_URL} />
+      </FormSection>
+      <FormSection icon="shield" title="Certification">
+        <label className="admin-checkbox admin-span-full"><input name="hasCertificate" type="checkbox" checked={Boolean(form.hasCertificate)} onChange={update} /><span><strong>Has certificate</strong><small>Display the certificate information with this gemstone.</small></span></label>
+        {input('certificateImage', 'Certificate image URL', { full: true })}
+        <AdminField label="Certificate details" className="admin-span-full"><textarea name="certificateDetails" rows={2} value={form.certificateDetails} onChange={update} /></AdminField>
+      </FormSection>
+      <FormSection icon="eye" title="Website presentation">
+        <label className="admin-checkbox"><input name="isFeatured" type="checkbox" checked={Boolean(form.isFeatured)} onChange={update} /><span><strong>Featured gemstone</strong><small>Include this piece in the featured selection.</small></span></label>
+        <label className="admin-checkbox"><input name="isTopGem" type="checkbox" checked={Boolean(form.isTopGem)} onChange={update} /><span><strong>Homepage top gem</strong><small>Include this piece in the homepage selection.</small></span></label>
+        {input('homePagePosition', 'Homepage position', { type: 'number', step: '1', hint: 'Keep your existing display order; 0 is supported.' })}
+      </FormSection>
+    </fieldset>
+    <footer className="admin-form-actions"><button type="button" className="admin-button" onClick={onClose} disabled={busy}>Cancel</button><button type="submit" className="admin-button is-primary" disabled={busy}>{busy ? <span className="admin-spinner" /> : <AdminIcon name="check" />}{saving ? 'Saving gemstone...' : editing ? 'Save changes' : 'Create gemstone'}</button></footer>
+  </form></AdminModal>;
+}
+
+function InventoryTable({ stones, categories, onEdit, onDelete, deleting }) {
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [sort, setSort] = useState('default');
+  const [page, setPage] = useState(1);
+  const names = useMemo(() => new Map(categories.map((category) => [category._id, category.title])), [categories]);
+  const filtered = useMemo(() => {
+    const result = stones.filter((stone) => {
+      const weight = Number.parseFloat(stone.weight); const price = stone.price == null || stone.price === '' ? NaN : Number(stone.price);
+      return `${stone.title || ''} ${stone.stoneId || ''}`.toLowerCase().includes(filters.search.trim().toLowerCase()) && (!filters.categoryId || categoryId(stone) === filters.categoryId) && (!filters.color || String(stone.color || '').toLowerCase().includes(filters.color.toLowerCase())) && (!filters.shape || String(stone.shape || '').toLowerCase().includes(filters.shape.toLowerCase())) && (!filters.certificate || Boolean(stone.hasCertificate) === (filters.certificate === 'yes')) && (filters.minWeight === '' || weight >= Number(filters.minWeight)) && (filters.maxWeight === '' || weight <= Number(filters.maxWeight)) && (filters.minPrice === '' || price >= Number(filters.minPrice)) && (filters.maxPrice === '' || price <= Number(filters.maxPrice));
+    });
+    if (sort === 'name') result.sort((a, b) => String(a.title).localeCompare(String(b.title)));
+    if (sort === 'weight') result.sort((a, b) => (Number.parseFloat(b.weight) || 0) - (Number.parseFloat(a.weight) || 0));
+    if (sort === 'quantity') result.sort((a, b) => number(b.quantity) - number(a.quantity));
+    return result;
+  }, [stones, filters, sort]);
+  const update = (name, value) => { setFilters((current) => ({ ...current, [name]: value })); setPage(1); };
+  const active = Object.values(filters).some((value) => value !== '');
+  const pages = Math.max(1, Math.ceil(filtered.length / 20));
+  const currentPage = Math.min(page, pages);
+  const visible = filtered.slice((currentPage - 1) * 20, currentPage * 20);
+  return <>
+    <div className="admin-toolbar"><div className="admin-search"><AdminIcon name="search" /><input aria-label="Search gemstones" placeholder="Search gem name or ID..." value={filters.search} onChange={(event) => update('search', event.target.value)} /></div><div className="admin-inventory-toolbar-end"><select aria-label="Filter by category" value={filters.categoryId} onChange={(event) => update('categoryId', event.target.value)}><option value="">All categories</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.title}</option>)}</select><select aria-label="Sort gemstones" value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }}><option value="default">Default order</option><option value="name">Gem name: A to Z</option><option value="weight">Weight: high to low</option><option value="quantity">Quantity: high to low</option></select></div></div>
+    <div className="admin-filter-grid">
+      <AdminField label="Color"><input value={filters.color} placeholder="Any color" onChange={(event) => update('color', event.target.value)} /></AdminField>
+      <AdminField label="Shape"><input value={filters.shape} placeholder="Any shape" onChange={(event) => update('shape', event.target.value)} /></AdminField>
+      <AdminField label="Certificate"><select value={filters.certificate} onChange={(event) => update('certificate', event.target.value)}><option value="">Any certificate status</option><option value="yes">With certificate</option><option value="no">Without certificate</option></select></AdminField>
+      {[['minWeight', 'Minimum weight', 'Min weight'], ['maxWeight', 'Maximum weight', 'Max weight'], ['minPrice', 'Minimum price', 'Min price'], ['maxPrice', 'Maximum price', 'Max price']].map(([name, label, placeholder]) => <AdminField key={name} label={label}><input type="number" step="any" value={filters[name]} placeholder={placeholder} onChange={(event) => update(name, event.target.value)} /></AdminField>)}
+    </div>
+    <div className="admin-filter-actions"><p><strong>{filtered.length}</strong> {filtered.length === 1 ? 'gemstone' : 'gemstones'}{active ? ` matching your filters · ${stones.length} total` : ' in your collection'}</p><button type="button" className="admin-button is-small" onClick={() => { setFilters(EMPTY_FILTERS); setPage(1); }} disabled={!active}>Clear filters<AdminIcon name="close" size={13} /></button></div>
+    <section className="admin-panel">
+      {visible.length ? <div className="admin-table-wrap" tabIndex={0} role="region" aria-label="Gem inventory table"><table className="admin-table" style={{ minWidth: 850 }}><thead><tr><th scope="col">Gemstone</th><th scope="col">Gem ID</th><th scope="col">Weight</th><th scope="col">Quantity</th><th scope="col">Price</th><th scope="col">Presentation</th><th scope="col">Actions</th></tr></thead><tbody>{visible.map((stone) => <tr key={stone._id}><td><div className="admin-product-cell"><AdminImage src={stone.image} alt="" /><div><strong>{stone.title}</strong><small>{names.get(categoryId(stone)) || 'Uncategorized'}{stone.shape ? ` / ${stone.shape}` : ''}</small></div></div></td><td><span className="admin-table-id">{stone.stoneId || '—'}</span></td><td>{stone.weight ? `${stone.weight}${/ct|carat/i.test(String(stone.weight)) ? '' : ' ct'}` : '—'}</td><td><span className={`admin-badge ${number(stone.quantity) > 0 ? 'is-success' : ''}`}>{number(stone.quantity)} {number(stone.quantity) === 1 ? 'piece' : 'pieces'}</span></td><td>{stone.price !== '' && stone.price != null ? number(stone.price).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}</td><td><div className="admin-presentation-badges">{stone.hasCertificate && <span className="admin-badge"><AdminIcon name="shield" />Certified</span>}{stone.isFeatured && <span className="admin-badge is-warning">Featured</span>}{stone.isTopGem && <span className="admin-badge">Homepage</span>}{!stone.hasCertificate && !stone.isFeatured && !stone.isTopGem && <span className="admin-table-id">Standard</span>}</div></td><td><div className="admin-table-actions"><button type="button" className="admin-icon-button" onClick={() => onEdit(stone)} aria-label={`Edit ${stone.title}`} title="Edit gemstone"><AdminIcon name="edit" /></button><button type="button" className="admin-icon-button is-danger" onClick={() => onDelete(stone)} disabled={Boolean(deleting)} aria-label={`Delete ${stone.title}`} title="Delete gemstone">{deleting === stone._id ? <span className="admin-spinner" /> : <AdminIcon name="trash" />}</button></div></td></tr>)}</tbody></table></div> : <AdminEmptyState icon="gem" title={active ? 'No gemstones match these filters' : 'Your collection starts here'} description={active ? 'Try a different search or clear the filters to see your collection.' : 'Add your first gemstone with its details, images and availability.'} action={active ? <button type="button" className="admin-button" onClick={() => { setFilters(EMPTY_FILTERS); setPage(1); }}>Reset search</button> : undefined} />}
+      <footer className="admin-pagination"><span>{filtered.length ? `${(currentPage - 1) * 20 + 1}–${Math.min(currentPage * 20, filtered.length)} of ${filtered.length} gemstones` : '0 gemstones'}</span><div><button type="button" className="admin-icon-button" aria-label="Previous inventory page" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><AdminIcon name="chevron-left" /></button><span>Page {currentPage} of {pages}</span><button type="button" className="admin-icon-button" aria-label="Next inventory page" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}><AdminIcon name="chevron-right" /></button></div></footer>
+    </section>
+  </>;
+}
+
+export default function AdminInventory() {
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const current = VIEWS.find((view) => view.id === params.get('view')) || VIEWS[0];
+  const [analytics, setAnalytics] = useState(null);
+  const [stones, setStones] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [feedback, setFeedback] = useState([]);
+  const [workshop, setWorkshop] = useState([]);
+  const [settings, setSettings] = useState({ home: {}, contact: {} });
+  const [dirtyPages, setDirtyPages] = useState({});
+  const [failures, setFailures] = useState({});
+  const [ready, setReady] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [modal, setModal] = useState(null);
+  const [deleting, setDeleting] = useState('');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const sidebar = useRef(null);
+  const mobileToggle = useRef(null);
+  const refreshGuard = useRef(false);
+  const refreshAgain = useRef(false);
+  const versions = useRef({});
+  const deleteGuard = useRef(false);
+  const settingsDirty = useRef({});
+  const mounted = useRef(true);
+  const loadAll = useCallback(async function loadWorkspace() {
+    if (!mounted.current) return;
+    if (refreshGuard.current) { refreshAgain.current = true; return; }
+    refreshGuard.current = true; setRefreshing(true);
+    const snapshot = { ...versions.current };
+    const keys = ['analytics', 'inventory', 'categories', 'contact', 'home', 'feedback', 'workshop'];
+    const paths = ['/api/analytics/dashboard-stats', '/api/inventory/stones?limit=1000', '/api/inventory/categories', '/api/contact', '/api/home', '/api/feedback', '/api/workshop'];
+    const results = await Promise.allSettled(paths.map((path) => request(path)));
+    if (!mounted.current) { refreshGuard.current = false; return; }
+    const errors = {};
+    const loaded = {};
+    results.forEach((result, index) => { if (result.status === 'fulfilled') loaded[keys[index]] = true; });
+    results.forEach((result, index) => { if (result.status === 'rejected') errors[keys[index]] = result.reason.message; });
+    const unchanged = (key) => snapshot[key] === versions.current[key];
+    const value = (index) => results[index].status === 'fulfilled' && unchanged(keys[index]) ? results[index].value : undefined;
+    const inventoryData = value(1); const categoryData = value(2);
+    if (inventoryData !== undefined) setStones(array(inventoryData.stones || inventoryData));
+    if (categoryData !== undefined) setCategories(array(categoryData));
+    if (value(0) !== undefined) setAnalytics(value(0));
+    else if (unchanged('analytics') && inventoryData !== undefined && categoryData !== undefined) { setAnalytics(summarise(array(inventoryData.stones || inventoryData), array(categoryData))); delete errors.analytics; loaded.analytics = true; }
+    ['contact', 'home'].forEach((type, index) => { const data = value(index + 3); if (data !== undefined && !settingsDirty.current[type]) setSettings((previous) => ({ ...previous, [type]: data || {} })); });
+    if (value(5) !== undefined) setFeedback(array(value(5)));
+    if (value(6) !== undefined) setWorkshop(array(value(6)));
+    setReady((previous) => ({ ...previous, ...loaded }));
+    setFailures(errors); setLoading(false); setRefreshing(false); refreshGuard.current = false;
+    if (refreshAgain.current) { refreshAgain.current = false; window.setTimeout(loadWorkspace, 0); }
+  }, []);
+  useEffect(() => { mounted.current = true; const timer = window.setTimeout(loadAll, 0); return () => { mounted.current = false; window.clearTimeout(timer); }; }, [loadAll]);
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const previous = document.activeElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    sidebar.current?.querySelector('[aria-current="page"]')?.focus();
+    const keydown = (event) => {
+      if (event.key === 'Escape') { setMobileOpen(false); return; }
+      if (event.key === 'Tab') { const items = [...sidebar.current.querySelectorAll('button:not(:disabled),a[href]')].filter((item) => item.getClientRects().length); const first = items[0]; const last = items.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); } }
+    };
+    const resize = () => { if (window.innerWidth >= 1024) setMobileOpen(false); };
+    document.addEventListener('keydown', keydown); window.addEventListener('resize', resize);
+    return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', keydown); window.removeEventListener('resize', resize); previous?.focus(); };
+  }, [mobileOpen]);
+  const go = (view) => { setParams((previous) => { const next = new URLSearchParams(previous); next.set('view', view); return next; }); setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'instant' }); };
+  const refresh = () => { loadAll(); window.dispatchEvent(new Event('admin-refresh')); };
+  const signOut = () => { localStorage.removeItem('adminToken'); navigate('/admin-login', { replace: true }); };
+  const success = (message) => setNotice({ type: 'success', message });
+  const invalidate = (...keys) => { keys.forEach((key) => { versions.current[key] = (versions.current[key] || 0) + 1; }); };
+  const saved = (message) => { invalidate('inventory', 'analytics'); setModal(null); success(message); loadAll(); };
+  const removeStone = async (stone) => {
+    if (deleteGuard.current || !window.confirm(`Delete ${stone.title}? This cannot be undone.`)) return;
+    deleteGuard.current = true; setDeleting(stone._id);
+    try { await request(`/api/inventory/stones/${stone._id}`, { method: 'DELETE' }); invalidate('inventory', 'analytics'); setStones((items) => items.filter((item) => item._id !== stone._id)); success('Gemstone deleted.'); loadAll(); }
+    catch (error) { setNotice({ type: 'error', message: error.message }); }
+    finally { deleteGuard.current = false; setDeleting(''); }
+  };
+  const updateSettings = (type, field, value) => { invalidate(type); settingsDirty.current = { ...settingsDirty.current, [type]: true }; setDirtyPages(settingsDirty.current); setSettings((previous) => ({ ...previous, [type]: { ...previous[type], [field]: value } })); };
+  const saveSettings = async (type) => {
+    if (!ready[type]) throw new Error('These settings could not be loaded. Refresh the data before saving.');
+    const saveVersion = versions.current[type];
+    await request(`/api/${type}`, { method: 'PUT', body: JSON.stringify(settings[type]) });
+    const unchanged = saveVersion === versions.current[type];
+    invalidate(type);
+    if (unchanged) { settingsDirty.current = { ...settingsDirty.current, [type]: false }; setDirtyPages(settingsDirty.current); }
+  };
+  const approveReview = async (id) => { await request(`/api/feedback/${id}/approve`, { method: 'PUT' }); invalidate('feedback'); setFeedback((items) => items.map((item) => item._id === id ? { ...item, isApproved: true } : item)); };
+  const deleteReview = async (id) => { await request(`/api/feedback/${id}`, { method: 'DELETE' }); invalidate('feedback'); setFeedback((items) => items.filter((item) => item._id !== id)); };
+  const saveWorkshop = async (post) => { const data = await request(post._id ? `/api/workshop/${post._id}` : '/api/workshop', { method: post._id ? 'PUT' : 'POST', body: JSON.stringify(post) }); invalidate('workshop'); const item = data.post || data; if (item._id) setWorkshop((items) => post._id ? items.map((old) => old._id === post._id ? item : old) : [item, ...items]); else loadAll(); };
+  const deleteWorkshop = async (id) => { await request(`/api/workshop/${id}`, { method: 'DELETE' }); invalidate('workshop'); setWorkshop((items) => items.filter((item) => item._id !== id)); };
+  const pending = feedback.filter((review) => !review.approved && !review.isApproved).length;
+  const resources = current.id === 'settings' ? ['home', 'contact'] : current.id === 'inventory' ? ['inventory', 'categories'] : [current.id];
+  const blockedKey = resources.find((key) => failures[key] && !ready[key]);
+  const blocked = blockedKey ? failures[blockedKey] : '';
+  const refreshIssue = !blocked && resources.find((key) => failures[key]);
+
+  return <div className="admin-app">
+    {mobileOpen && <button type="button" className="admin-mobile-backdrop" onClick={() => setMobileOpen(false)} aria-label="Close navigation" tabIndex={-1} />}
+    <aside ref={sidebar} id="admin-sidebar" className={`admin-sidebar ${mobileOpen ? 'is-open' : ''}`} aria-label="Administration sidebar"><Link to="/admin" onClick={() => setMobileOpen(false)} className="admin-brand" aria-label="Pinnawala Gems admin overview"><span className="admin-brand-icon"><AdminIcon name="gem" size={25} /></span><span><strong>Pinnawala Gems</strong><small>ADMIN WORKSPACE</small></span></Link><nav aria-label="Admin navigation">{VIEWS.map((view) => <div key={view.id}>{view.group && <p className="admin-nav-section">{view.group}</p>}<button type="button" className="admin-nav-button" aria-label={view.label} aria-current={current.id === view.id ? 'page' : undefined} onClick={() => go(view.id)}><AdminIcon name={view.icon} /><span>{view.label}</span>{view.id === 'feedback' && pending > 0 && <span className="admin-nav-count" aria-label={`${pending} pending reviews`}>{pending}</span>}</button></div>)}</nav><div className="admin-sidebar-bottom"><Link to="/" target="_blank" rel="noreferrer" className="admin-sidebar-site"><AdminIcon name="external" size={17} />View website<AdminIcon name="arrow" /></Link><div className="admin-sidebar-account"><span className="admin-avatar">A</span><div><strong>Administrator</strong><small>Management access</small></div><button type="button" onClick={signOut} aria-label="Sign out" title="Sign out"><AdminIcon name="logout" size={17} /></button></div></div></aside>
+    <main id="main-content" tabIndex={-1} className="admin-main"><header className="admin-topbar"><div className="admin-topbar-leading"><button ref={mobileToggle} type="button" className="admin-icon-button admin-mobile-toggle" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} aria-controls="admin-sidebar" onClick={() => setMobileOpen((open) => !open)}><AdminIcon name="menu" /></button><div className="admin-breadcrumb"><span>Workspace</span><AdminIcon name="chevron-right" /><strong>{current.label}</strong></div></div><div className="admin-topbar-actions"><span className="admin-workspace-badge"><AdminIcon name="shield" />Private workspace</span><span className="admin-topbar-divider" /><button type="button" className="admin-button is-small" onClick={refresh} disabled={refreshing} aria-label="Refresh data"><AdminIcon name="refresh" className={refreshing ? 'admin-is-spinning' : ''} />Refresh<span className="admin-desktop-label"> data</span></button><span className="admin-avatar" aria-label="Administrator">A</span></div></header>
+      <div className="admin-content"><div className="admin-page-heading"><div><p className="admin-eyebrow">PINNAWALA GEMS / ADMINISTRATION</p><h1>{current.label}</h1><p>{current.description}</p></div>{current.id === 'inventory' && <div className="admin-heading-actions"><button type="button" className="admin-button is-primary" onClick={() => setModal({ stone: null })} disabled={loading || Boolean(failures.categories || failures.inventory)}><AdminIcon name="plus" />Add gemstone</button></div>}</div>
+        <Notice value={notice} onDismiss={() => setNotice(null)} />
+        {refreshIssue && <Notice value={{ type: 'error', message: `Unable to refresh this section. Your current data and edits are still shown. ${failures[refreshIssue]}` }} />}
+        {loading && !['operations', 'planner'].includes(current.id) ? <div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Loading your workspace...</div> : blocked ? <section className="admin-panel"><AdminEmptyState icon="refresh" title="This section could not be loaded" description={blocked} action={<button type="button" className="admin-button" disabled={refreshing} onClick={refresh}>Try again</button>} /></section> : <>
+          {current.id === 'analytics' && <AdminDashboard analytics={analytics || {}} pendingReviews={pending} categoriesCount={categories.length} onNavigate={go} />}
+          {current.id === 'inventory' && <InventoryTable stones={stones} categories={categories} onEdit={(stone) => setModal({ stone })} onDelete={removeStone} deleting={deleting} />}
+          {current.id === 'operations' && <AdminOperations />}
+          {current.id === 'planner' && <AdminPlanner />}
+          {current.id === 'settings' && <WebsiteSettings settings={settings} dirtyPages={dirtyPages} onChange={updateSettings} onSave={saveSettings} />}
+          {current.id === 'feedback' && <FeedbackPanel feedback={feedback} onApprove={approveReview} onDelete={deleteReview} />}
+          {current.id === 'workshop' && <WorkshopPanel workshop={workshop} onSave={saveWorkshop} onDelete={deleteWorkshop} />}
+        </>}
+        <footer className="admin-workspace-footer"><span>Pinnawala Gems</span><span>Collection & website management</span></footer>
+      </div>
+    </main>
+    {modal && <GemEditor stone={modal.stone} categories={categories} onClose={() => setModal(null)} onSaved={saved} />}
+  </div>;
+}
