@@ -15,6 +15,8 @@ import {
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import { apiRequest } from './api';
 import './ContactForm.css';
+import ResponsiveImage from './ResponsiveImage';
+import ContactMedia from './ContactMedia';
 
 /* ─── constants ────────────────────────────────────────────────────── */
 const GOOGLE_MAPS_EMBED_URL = BUSINESS.mapsEmbedUrl;
@@ -165,14 +167,7 @@ function Contact() {
       ════════════════════════════════════════════ */}
       <section className="relative overflow-hidden" style={{ paddingBottom: '130px' }}>
         {/* ── FULL QUALITY background — no opacity reduction on the image itself ── */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: 'url(/contact-hero-v2.png)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center right',
-          }}
-        />
+        <ResponsiveImage className="absolute inset-0 h-full w-full object-cover object-right" src="/contact-hero-v2.png" width="1774" height="887" maxWidth={1774} sizes="(max-width:599px) 1100px,100vw" alt="" loading="eager" fetchPriority="high" />
 
         {/* ── ONLY a top-to-bottom gradient so text is readable
               but the bottom of the image (gem) shows with ZERO dimming ── */}
@@ -564,6 +559,7 @@ function Contact() {
               </div>
             </div>
           </section>
+          <ContactMedia photos={contactInfo.contactImages} video={contactInfo.contactVideo} />
         </main>
       )}
     </div>

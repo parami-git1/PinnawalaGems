@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { useRemoteResource } from './hooks/useRemoteResource';
 import CollectionBanner from './CollectionBanner';
+import ResponsiveImage from './ResponsiveImage';
 import './CollectionPolish.css';
 
 const EMPTY_FILTERS = { search: '', shape: '', cut: '', origin: '', color: '', certificate: '', min: '', max: '' };
@@ -26,9 +27,8 @@ function Icon({ type = 'arrow', ...props }) {
 }
 
 function GemImage({ src, title = '', className = '', thumbnail = false }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) return <span className={`collection-image-fallback ${className}`}><Icon type="gem" />{!thumbnail && <span>Image unavailable</span>}</span>;
-  return <img className={className} src={src} alt={title} loading="lazy" decoding="async" onError={() => setFailed(true)} />;
+  if (!src) return <span className={`collection-image-fallback ${className}`}><Icon type="gem" />{!thumbnail && <span>Image unavailable</span>}</span>;
+  return <ResponsiveImage className={className} src={src} alt={title} width={thumbnail ? 60 : 480} height={thumbnail ? 60 : 480} maxWidth={thumbnail ? 160 : 640} sizes={thumbnail ? '56px' : '(max-width: 599px) 46vw, (max-width: 1023px) 30vw, 18vw'} />;
 }
 
 function FilterSelect({ label, value, onChange, options, placeholder }) {

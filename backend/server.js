@@ -5,7 +5,7 @@ if (require.main === module) require('dotenv').config();
 
 const cloudinary = require('cloudinary').v2;
 const requireAdmin = require('./middleware/adminAuth');
-const { configureProxy, configuredOrigins, secureHeaders, corsPolicy, apiLimiter, uploadLimiter, apiErrorHandler } = require('./middleware/security');
+const { configureProxy, configuredOrigins, secureHeaders, corsPolicy, apiCaching, apiLimiter, uploadLimiter, apiErrorHandler } = require('./middleware/security');
 
 cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
 
@@ -13,10 +13,11 @@ const app = express();
 app.disable('x-powered-by');
 configureProxy(app);
 app.use(secureHeaders);
+app.use('/api', apiCaching);
 app.use(corsPolicy);
 app.use('/api', apiLimiter);
 app.use(express.json({ limit: '100kb', strict: true, inflate: false }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { dotfiles: 'deny' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { dotfiles: 'deny', maxAge: '1d', etag: true }));
 
 const mediaRoutes = require('./routes/mediaRoutes');
 app.post('/api/upload', requireAdmin, uploadLimiter, mediaRoutes.legacyImageUpload);

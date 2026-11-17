@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useRemoteResource } from './hooks/useRemoteResource';
-import { useCriticalImages } from './hooks/useCriticalImages';
+import ResponsiveImage from './ResponsiveImage';
 import HomeLoading from './HomeLoading';
 import GemShowcase from './GemShowcase';
 import CustomerGallery from './CustomerGallery';
@@ -13,6 +13,7 @@ import './HomeFinal.css';
 
 const HERO_IMAGE = '/images/home-ceylon-ivory-hero-v1.webp';
 const HERO_MOBILE = '/images/home-ceylon-ivory-hero-mobile-v1.webp';
+let initialHomeRevealed = false;
 
 function isDefaultHeroImage(source) {
   if (typeof source !== 'string' || !source.trim()) return true;
@@ -62,13 +63,8 @@ function deliveryImage(src, width = 800) {
     : src;
 }
 
-function Image({ src, alt, className = '', fallback = '/gem.png', ...props }) {
-  return <img src={deliveryImage(src) || fallback} alt={alt} className={className} loading="lazy" decoding="async"
-    onError={(event) => {
-      if (event.currentTarget.dataset.fallback) return;
-      event.currentTarget.dataset.fallback = 'true';
-      event.currentTarget.src = fallback;
-    }} {...props} />;
+function Image({ src, alt, className = '', ...props }) {
+  return <ResponsiveImage src={src} alt={alt} className={className} sizes="(max-width: 599px) 90vw, (max-width: 1023px) 46vw, 600px" {...props} />;
 }
 
 // A single observer reveals newly loaded content once, without scroll handlers.
@@ -120,11 +116,10 @@ function SectionIntro({ number, label, title, children, link, to = '/catalog', s
 
 function CategoryCard({ category, index }) {
   const source = category.coverImage || category.mainImage || category.image;
-  const [imageFailed, setImageFailed] = useState(false);
   return <div data-reveal data-delay={index * 45}>
     <Link className={`pg-category pg-category--${category.tone || 'sapphire'}`} to={`/collections/${categorySlug(category)}`}>
       <div className="pg-category-visual"><span className="pg-category-number">0{index + 1}</span>
-        {source && !imageFailed ? <img src={deliveryImage(source, 640)} alt={category.title} width="640" height="720" loading="lazy" decoding="async" onError={() => setImageFailed(true)} /> : <Facet className="pg-category-facet" />}
+        {source ? <ResponsiveImage src={source} alt={category.title} width="640" height="720" maxWidth={640} sizes="(max-width: 599px) 44vw, 23vw" /> : <Facet className="pg-category-facet" />}
         <span className="pg-category-explore"><Arrow diagonal /></span>
       </div>
       <div className="pg-category-caption"><h3>{category.title}</h3><p>{category.description || 'Explore the collection'}</p></div>
@@ -140,7 +135,7 @@ function GemCard({ gem, index }) {
     <Link to={`/gem/${gem._id}`} className="pg-gem-link">
       <div className="pg-gem-visual"><div className="pg-gem-label"><span>The Pinnawala edit</span><span>{String(index + 1).padStart(2, '0')}</span></div>
         <Image src={gem.image} alt={title} width="600" height="600" className="pg-gem-primary" />
-        {secondary && <Image src={secondary} alt={`${title}, alternate view`} width="400" height="400" className="pg-gem-alternate" fallback={gem.image || '/gem.png'} />}
+        {secondary && <Image src={secondary} alt={`${title}, alternate view`} width="400" height="400" maxWidth={600} className="pg-gem-alternate" fade={false} fallback={gem.image || '/gem.png'} />}
         <span className="pg-gem-view"><Arrow diagonal /></span>
       </div>
       <div className="pg-gem-meta">
@@ -237,9 +232,8 @@ export default function Home() {
   const [showFilm, setShowFilm] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [failedHeroImage, setFailedHeroImage] = useState('');
-  const [modelStatus, setModelStatus] = useState('loading');
-  const [showLoader, setShowLoader] = useState(true);
-  const [minimumElapsed, setMinimumElapsed] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
+  const [showLoader, setShowLoader] = useState(() => !initialHomeRevealed);
   const [deadlineReached, setDeadlineReached] = useState(false);
   useScrollReveals(root);
   const loadedCategories = Array.isArray(categoriesResource.data) ? categoriesResource.data.filter((category) => category && typeof category.title === 'string' && category.title.trim()) : [];
@@ -253,35 +247,23 @@ export default function Home() {
   const whatsapp = BUSINESS.whatsapp;
   const customHeroImage = isDefaultHeroImage(homeData.heroImage) ? '' : deliveryImage(homeData.heroImage, 1800);
   const useDefaultHero = !customHeroImage || customHeroImage === failedHeroImage;
-  const resourcesSettled = [home, categoriesResource, gemsResource, eventsResource].every((resource) => resource.status !== 'loading');
-  const criticalImages = [
-    useDefaultHero ? window.innerWidth < 600 ? HERO_MOBILE : HERO_IMAGE : customHeroImage,
-    ...categories.map((category) => deliveryImage(category.coverImage || category.mainImage || category.image, 640)),
-    ...(Array.isArray(gemsResource.data) ? gemsResource.data.slice(0, 3).map((gem) => deliveryImage(gem?.image) || '/gem.png') : []),
-    ...photos.slice(0, 2).map((photo) => deliveryImage(photo)),
-    ...events.slice(0, 2).map((event) => deliveryImage(event.image)),
-  ];
-  const imagesSettled = useCriticalImages(criticalImages);
-  const readyToReveal = minimumElapsed && (deadlineReached || (resourcesSettled && imagesSettled && modelStatus !== 'loading'));
+  const readyToReveal = heroReady || deadlineReached;
   useEffect(() => {
     if (!showLoader) return undefined;
-    const minimum = window.setTimeout(() => setMinimumElapsed(true), 350);
-    const deadline = window.setTimeout(() => setDeadlineReached(true), 12000);
-    return () => { window.clearTimeout(minimum); window.clearTimeout(deadline); };
+    const deadline = window.setTimeout(() => setDeadlineReached(true), 6000);
+    return () => window.clearTimeout(deadline);
   }, [showLoader]);
   useEffect(() => {
     if (!readyToReveal || !showLoader) return undefined;
-    const reveal = window.setTimeout(() => setShowLoader(false), 220);
+    initialHomeRevealed = true;
+    const reveal = window.setTimeout(() => setShowLoader(false), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180);
     return () => window.clearTimeout(reveal);
   }, [readyToReveal, showLoader]);
-  const loadingMessage = !resourcesSettled ? 'Preparing your collection' : !imagesSettled ? 'Bringing the details into focus' : modelStatus === 'loading' ? 'Adding a little brilliance' : 'Ready to explore';
+  const loadingMessage = heroReady ? 'Ready to explore' : 'Bringing the details into focus';
 
   return <>{showLoader && <HomeLoading leaving={readyToReveal} message={loadingMessage} />}<main id="main-content" className="pg-home" ref={root}>
     <section className={`pg-hero${useDefaultHero ? ' pg-hero--ivory' : ''}`} aria-labelledby="pg-hero-title">
-      <picture className="pg-hero-picture">
-        {useDefaultHero && <source media="(max-width: 599px)" srcSet={HERO_MOBILE} />}
-        <img src={useDefaultHero ? HERO_IMAGE : customHeroImage} width="1774" height="887" alt={useDefaultHero ? 'Ceylon gemstones on ivory silk with Sigiriya and a white Sri Lankan stupa in the misty background' : 'Pinnawala Gems featured collection'} fetchPriority="high" loading="eager" decoding="async" onError={() => { if (!useDefaultHero) setFailedHeroImage(customHeroImage); }} />
-      </picture>
+      <div className="pg-hero-picture"><ResponsiveImage src={useDefaultHero ? HERO_IMAGE : customHeroImage} mobileSrc={useDefaultHero ? HERO_MOBILE : undefined} width="1774" height="887" maxWidth={1800} sizes="100vw" alt={useDefaultHero ? 'Ceylon gemstones on ivory silk with Sigiriya and a white Sri Lankan stupa in the misty background' : 'Pinnawala Gems featured collection'} fetchPriority="high" loading="eager" preservePrevious onReady={() => setHeroReady(true)} onError={() => { if (!useDefaultHero) setFailedHeroImage(customHeroImage); }} /></div>
       <div className="pg-hero-shade" />
       <div className="pg-container pg-hero-inner"><div className="pg-hero-copy">
         <p className="pg-eyebrow pg-hero-enter">{BUSINESS.name}</p>
@@ -299,7 +281,7 @@ export default function Home() {
 
     <FeaturedCollection resource={gemsResource} />
 
-    <GemShowcase preload onSettled={setModelStatus} />
+    <GemShowcase />
 
     <section className="pg-craft pg-section" aria-labelledby="pg-craft-title">
       <div className="pg-container">

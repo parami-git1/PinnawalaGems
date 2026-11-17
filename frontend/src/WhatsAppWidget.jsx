@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import './WhatsAppWidget.css';
+import ResponsiveImage from './ResponsiveImage';
 
 function ChatIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M20 11.6a8 8 0 0 1-11.8 7L4 20l1.3-4.1A8 8 0 1 1 20 11.6Z" /><path d="M8.4 7.7c-.9 1.9 2 5.7 4.5 6.7 1.2.5 2-.3 2.3-1.1l-2-1-.9.8c-1.2-.6-2-1.4-2.6-2.6l.7-.9-1-1.9Z" strokeLinejoin="round" /></svg>;
@@ -63,7 +64,7 @@ function WhatsAppWidget({ contactData = {} }) {
     </div>}
     {!isOpen && <span className="pg-whatsapp__caption" aria-hidden="true"><strong>Ayubowan.</strong><span>Let us help you find your gem.</span></span>}
     <button ref={triggerRef} type="button" aria-label={isOpen ? 'Close WhatsApp assistance' : 'Open WhatsApp assistance'} aria-haspopup="dialog" aria-expanded={isOpen} aria-controls={isOpen ? dialogId : undefined} onClick={() => setIsOpen((current) => !current)} className="pg-whatsapp__trigger">
-      <img src="/assistant.png" alt="" width="408" height="612" className="pg-whatsapp__assistant" loading="lazy" decoding="async" />
+      <ResponsiveImage src="/assistant.png" alt="" width="408" height="612" maxWidth={408} sizes="(max-width:599px) 88px,112px" className="pg-whatsapp__assistant" />
       <span className="pg-whatsapp__badge" aria-hidden="true"><ChatIcon /></span>
     </button>
   </div>;

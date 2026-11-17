@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useOutletContext } from 'react-router-dom';
 import { FaWhatsapp } from 'react-icons/fa';
 import { MdEmail, MdVerified } from 'react-icons/md';
 import './GemDetailsPolish.css';
@@ -11,7 +11,8 @@ function GemDetails() {
   /* ── All existing state — untouched ─────────────────────────────────── */
   const { stoneId } = useParams();
   const [gem, setGem] = useState(null);
-  const [contactInfo, setContactInfo] = useState(() => withBusinessDetails());
+  const { home } = useOutletContext();
+  const contactInfo = withBusinessDetails(home?.data);
   const [loading, setLoading] = useState(true);
   const [loadedStoneId, setLoadedStoneId] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -24,11 +25,6 @@ function GemDetails() {
       .then(data => { if (!controller.signal.aborted) { setGem(data); setLoadError(null); setLoadedStoneId(stoneId); setLoading(false); } })
       .catch((error) => { if (!controller.signal.aborted) { setGem(null); setLoadError(error); setLoadedStoneId(stoneId); setLoading(false); } });
 
-    apiRequest('home', { signal: controller.signal }, { auth: false })
-      .then(data => {
-        if (!controller.signal.aborted) setContactInfo(withBusinessDetails(data));
-      })
-      .catch(() => {});
     return () => controller.abort();
   }, [stoneId, attempt]);
 
@@ -112,7 +108,7 @@ function GemDetails() {
             {/* Specs grid */}
             <div className="gem-detail-specs grid grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 mb-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
               {[
-                gem.weight && ['Weight', `${gem.weight} ct`],
+                gem.weight && ['Weight', `${String(gem.weight).replace(/\s*(?:cts?\.?|carats?)\s*$/i, '').trim()} ct`],
                 gem.shape  && ['Shape',  gem.shape],
                 gem.cut    && ['Cut',    gem.cut],
                 gem.color  && ['Color',  gem.color],

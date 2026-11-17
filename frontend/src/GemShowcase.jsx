@@ -1,11 +1,12 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import './GemShowcase.css';
+import ResponsiveImage from './ResponsiveImage';
 
 const GemScene = lazy(() => import('./GemScene'));
 
 function GemPoster({ unavailable = false }) {
   return <div className="pg-gem-studio__poster" role="status">
-    <img src="/gem.png" width="300" height="300" alt="A royal blue sapphire" />
+    <ResponsiveImage src="/gem.png" width="300" height="300" maxWidth={300} sizes="300px" alt="A royal blue sapphire" />
     <p>{unavailable ? 'The Pinnawala signature sapphire' : 'Preparing your sapphire…'}</p>
   </div>;
 }
@@ -41,10 +42,10 @@ export default function GemShowcase({ preload = false, onSettled }) {
   const finish = useCallback(() => { setReady(true); onSettled?.('ready'); }, [onSettled]);
   const fallback = useCallback(() => { setUnavailable(true); onSettled?.('unavailable'); }, [onSettled]);
   useEffect(() => {
-    if (ready || unavailable) return undefined;
+    if (!near || ready || unavailable) return undefined;
     const deadline = window.setTimeout(fallback, 11000);
     return () => window.clearTimeout(deadline);
-  }, [ready, unavailable, fallback]);
+  }, [near, ready, unavailable, fallback]);
 
   useEffect(() => {
     const element = viewer.current;

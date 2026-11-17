@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import './Footer.css';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
+import ResponsiveImage from './ResponsiveImage';
 
 const PAGES = [
   ['/', 'Home'],
@@ -35,7 +36,7 @@ export default function Footer({ contactData = {} }) {
       <div className="pg-footer__main">
         <div className="pg-footer__brand-column">
           <Link to="/" className="pg-footer__brand" aria-label={`${BUSINESS.name} home`}>
-            <span className="pg-footer__logo"><img src="/logo.png" width="48" height="36" alt="" /></span>
+            <span className="pg-footer__logo"><ResponsiveImage src="/logo.png" width="48" height="36" maxWidth={160} sizes="48px" alt="" /></span>
             <span className="pg-footer__brand-name">{BUSINESS.name}<span>{BUSINESS.shipping}</span></span>
           </Link>
           <p className="pg-footer__description">{BUSINESS.tagline}<br />{BUSINESS.license}</p>

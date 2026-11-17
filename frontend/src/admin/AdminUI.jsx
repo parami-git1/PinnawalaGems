@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import ResponsiveImage from '../ResponsiveImage';
 
 const ICONS = {
   grid: 'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
@@ -81,5 +82,5 @@ export function AdminField({ label, hint, required = false, id, error, children,
 }
 
 export function AdminImage({ src, alt = '', className = '' }) {
-  return src ? <img src={src} alt={alt} className={className} loading="lazy" onLoad={(event) => { event.currentTarget.style.visibility = 'visible'; }} onError={(event) => { event.currentTarget.style.visibility = 'hidden'; }} /> : <span className={`admin-image-placeholder ${className}`}><AdminIcon name="gem" /></span>;
+  return src ? <ResponsiveImage src={src} alt={alt} className={className} maxWidth={320} sizes="160px" width="160" height="160" /> : <span className={`admin-image-placeholder ${className}`}><AdminIcon name="gem" /></span>;
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BUSINESS } from './businessDetails';
 import './Navbar.css';
+import ResponsiveImage from './ResponsiveImage';
 
 const COLLECTION_ITEMS = [
   { title: 'Blue Sapphire', to: '/collections/blue-sapphire' },
@@ -123,7 +124,7 @@ function Navbar({ adminSlot = null, categories = null }) {
     <nav ref={navRef} className="pg-nav" aria-label="Main navigation">
       <div className="pg-nav__inner">
         <Link to="/" onClick={closeMenus} className="pg-nav__brand" aria-label={`${BUSINESS.name} home`}>
-          <img src="/logo.png" alt="" width="78" height="54" />
+          <ResponsiveImage src="/logo.png" alt="" width="78" height="54" maxWidth={320} sizes="78px" loading="eager" fetchPriority="high" />
           <span className="pg-nav__wordmark">
             <span>Pinnawala Gems<span className="pg-nav__brand-dot">.</span></span>
           </span>

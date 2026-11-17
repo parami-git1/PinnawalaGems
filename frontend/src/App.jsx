@@ -1,13 +1,13 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import Footer from './Footer';
-import Home from './Home';
 import Navbar from './Navbar';
 import WhatsAppWidget from './WhatsAppWidget';
 import NotFound from './NotFound';
 import { useRemoteResource } from './hooks/useRemoteResource';
 
 const AdminInventory = lazy(() => import('./AdminInventory'));
+const Home = lazy(() => import('./Home'));
 const CategoryView = lazy(() => import('./CategoryView'));
 const Contact = lazy(() => import('./Contact'));
 const Feedback = lazy(() => import('./Feedback'));

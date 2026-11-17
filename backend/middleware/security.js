@@ -48,6 +48,18 @@ function configureProxy(app) {
   app.set('trust proxy', hops || false);
 }
 
+function apiCaching(req, res, next) {
+  res.set('Cache-Control', 'no-store');
+  res.vary('Authorization');
+  const publicRead = req.method === 'GET' && !req.headers.authorization && /^\/(?:home|contact|feedback|workshop|event-ads|inventory\/(?:categories(?:\/[^/]+\/stones)?|stones(?:\/[^/]+)?|top-gems))\/?$/.test(req.path);
+  const send = res.json;
+  res.json = function (body) {
+    if (publicRead && this.statusCode >= 200 && this.statusCode < 300) this.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    return send.call(this, body);
+  };
+  next();
+}
+
 function apiErrorHandler(error, _req, res, next) {
   if (res.headersSent) return next(error);
   let status = Number(error.status || error.statusCode) || 500;
@@ -58,4 +70,4 @@ function apiErrorHandler(error, _req, res, next) {
   res.status(status).json({ message });
 }
 
-module.exports = { allowedOrigin, configuredOrigins, configureProxy, secureHeaders, corsPolicy, apiLimiter, loginIpLimiter, loginAccountLimiter, feedbackLimiter, uploadLimiter, apiErrorHandler };
+module.exports = { allowedOrigin, configuredOrigins, configureProxy, secureHeaders, corsPolicy, apiCaching, apiLimiter, loginIpLimiter, loginAccountLimiter, feedbackLimiter, uploadLimiter, apiErrorHandler };

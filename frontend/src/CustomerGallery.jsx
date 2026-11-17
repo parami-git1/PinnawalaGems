@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CustomerGallery.css';
+import ResponsiveImage from './ResponsiveImage';
 
 function Arrow({ previous = false }) {
   return (
@@ -10,14 +11,7 @@ function Arrow({ previous = false }) {
   );
 }
 
-function photoUrl(src) {
-  return src.startsWith('https://res.cloudinary.com/') && src.includes('/image/upload/') && !src.includes('/s--')
-    ? src.replace('/image/upload/', '/image/upload/f_auto,q_auto,c_limit,w_900/')
-    : src;
-}
-
 const GalleryPhoto = memo(function GalleryPhoto({ src, index, total, clone = false }) {
-  const [failed, setFailed] = useState(false);
   return (
     <figure
       className={`pg-community__slide${clone ? ' pg-community__slide--clone' : ''}`}
@@ -28,18 +22,15 @@ const GalleryPhoto = memo(function GalleryPhoto({ src, index, total, clone = fal
       aria-label={clone ? undefined : `${index + 1} of ${total}`}
     >
       <div className="pg-community__photo">
-        {failed ? <span className="pg-community__image-fallback">A moment at<br /><em>Pinnawala.</em></span> : (
-          <img
-            src={photoUrl(src)}
+          <ResponsiveImage
+            src={src}
             alt={clone ? '' : `A shared moment at Pinnawala Gems, photo ${index + 1}`}
             width="640"
             height="700"
-            loading="lazy"
-            decoding="async"
+            maxWidth={900}
+            sizes="(max-width:599px) 80vw,(max-width:1023px) 45vw,28vw"
             draggable="false"
-            onError={() => setFailed(true)}
           />
-        )}
         <span className="pg-community__photo-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
       </div>
     </figure>

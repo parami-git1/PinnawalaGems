@@ -74,6 +74,7 @@ test('CORS permits configured/local origins and rejects unrelated origins', asyn
   assert.equal((await api('/api/health', { headers: { Origin: 'http://localhost:5173' } })).status, 503);
   const denied = await api('/api/health', { headers: { Origin: 'https://unrelated.example.test' } });
   assert.equal(denied.status, 403); assert.equal(denied.headers.get('access-control-allow-origin'), null);
+  assert.equal(denied.headers.get('cache-control'), 'no-store');
   const preflight = await api('/api/media/upload', { method: 'OPTIONS', headers: { Origin: 'https://shop.example.test', 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'authorization,content-type' } });
   assert.equal(preflight.status, 204);
   const previous = process.env.NODE_ENV; process.env.NODE_ENV = 'production';
@@ -105,7 +106,11 @@ test('public reviews are trimmed, bounded, integer-rated and cannot self-approve
   const created = await api('/api/feedback', { method: 'POST', body: { name: '  Test customer  ', review: '  A thoughtful experience.  ', rating: 5, isApproved: true } });
   assert.equal(created.status, 201); assert.equal(created.data.name, 'Test customer'); assert.equal(created.data.review, 'A thoughtful experience.'); assert.equal(created.data.isApproved, false);
   const publicReviews = await api('/api/feedback'); assert.deepEqual(publicReviews.data, []);
-  assert.equal((await api('/api/feedback', { auth: true })).data.length, 1);
+  assert.equal(publicReviews.headers.get('cache-control'), 'public, max-age=30, stale-while-revalidate=60');
+  assert.match(publicReviews.headers.get('vary'), /Authorization/);
+  const privateReviews = await api('/api/feedback', { auth: true });
+  assert.equal(privateReviews.data.length, 1);
+  assert.equal(privateReviews.headers.get('cache-control'), 'no-store');
 });
 test('invalid public reviews and bot fields are rejected before storage', async () => {
   for (const body of [{ name: '  ', review: 'content', rating: 5 }, { name: 'Test', review: '   ', rating: 5 }, { name: 'Test', review: 'content', rating: 4.5 }, { name: 'x'.repeat(101), review: 'content', rating: 5 }, { name: 'Test', review: 'content', rating: 5, website: 'bot-field' }]) assert.equal((await api('/api/feedback', { method: 'POST', body })).status, 400);

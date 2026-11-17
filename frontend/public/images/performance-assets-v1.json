@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "date": "2026-11-17",
+  "notice": "Format conversion and proportional resizing of existing supplied assets with Sharp. No generative edits, recolouring, composition changes or cropping. Original files remain unchanged. WebP outputs preserve transparency where present.",
+  "assets": [
+    {
+      "source": "/workshop-hero.png",
+      "original": {
+        "width": 1774,
+        "height": 887,
+        "bytes": 1867027,
+        "sha256": "833e8e5178cb6768b9d08a0b70e2a627e010a778a0768001a47584e153006ec5",
+        "alpha": false
+      },
+      "variants": [
+        {
+          "src": "/images/perf-workshop-hero-640-v1.webp",
+          "width": 640,
+          "height": 320,
+          "bytes": 22072,
+          "reductionPercent": 98.8,
+          "sha256": "b38f2c6b51bd36797675b7d95f7c827872157d1ee1294731fed766d7cd8a773d",
+          "encoding": "WebP quality 85"
+        },
+        {
+          "src": "/images/perf-workshop-hero-1280-v1.webp",
+          "width": 1280,
+          "height": 640,
+          "bytes": 60964,
+          "reductionPercent": 96.7,
+          "sha256": "62e973e994d1c41120b1604651519aad7f6226fc9adcb3305dff747207770e6c",
+          "encoding": "WebP quality 85"
+        },
+        {
+          "src": "/images/perf-workshop-hero-1774-v1.webp",
+          "width": 1774,
+          "height": 887,
+          "bytes": 94110,
+          "reductionPercent": 95,
+          "sha256": "92ac278c88d32aa39a5cebd2252cdaf0822fafc7ae56cc90d5e9d3d67ab3d87e",
+          "encoding": "WebP quality 85"
+        }
+      ]
+    },
+    {
+      "source": "/contact-hero-v2.png",
+      "original": {
+        "width": 1774,
+        "height": 887,
+        "bytes": 1762057,
+        "sha256": "70baf41a9b3bae6bf086153d0434e4fcef5b03ead1bc39f6004823ed5be397b6",
+        "alpha": false
+      },
+      "variants": [
+        {
+          "src": "/images/perf-contact-hero-640-v1.webp",
+          "width": 640,
+          "height": 320,
+          "bytes": 17056,
+          "reductionPercent": 99,
+          "sha256": "71041e18e97d84be72080192c2a4f84f18a1f3fe06e249bcb0fbef9b367cb69b",
+          "encoding": "WebP quality 85"
+        },
+        {
+          "src": "/images/perf-contact-hero-1280-v1.webp",
+          "width": 1280,
+          "height": 640,
+          "bytes": 47018,
+          "reductionPercent": 97.3,
+          "sha256": "f0dbe477a2c87fea8400256dfe32eb3df505fc895ad66e9123e66c6464618b28",
+          "encoding": "WebP quality 85"
+        },
+        {
+          "src": "/images/perf-contact-hero-1774-v1.webp",
+          "width": 1774,
+          "height": 887,
+          "bytes": 73632,
+          "reductionPercent": 95.8,
+          "sha256": "ca2e5f646e275a85c90f8fb98332491b042723233da1976ec27a30b09da89d2b",
+          "encoding": "WebP quality 85"
+        }
+      ]
+    },
+    {
+      "source": "/gem.png",
+      "original": {
+        "width": 300,
+        "height": 300,
+        "bytes": 90380,
+        "sha256": "eecfb298389cb3ddffb8d33887025814b2aa431ec7038b28a3c3ae514afd8d39",
+        "alpha": true
+      },
+      "variants": [
+        {
+          "src": "/images/perf-gem-300-v1.webp",
+          "width": 300,
+          "height": 300,
+          "bytes": 18208,
+          "reductionPercent": 79.9,
+          "sha256": "e75f3df4ef773a556083bbae07ca539a5a34a65a25027de89be1dff921146094",
+          "encoding": "WebP quality 92"
+        }
+      ]
+    },
+    {
+      "source": "/logo.png",
+      "original": {
+        "width": 653,
+        "height": 382,
+        "bytes": 121899,
+        "sha256": "e12a992e84077e3967e391e2945ee2c3fcb0a8c73df2093f1c00592515f10dca",
+        "alpha": true
+      },
+      "variants": [
+        {
+          "src": "/images/perf-logo-160-v1.webp",
+          "width": 160,
+          "height": 94,
+          "bytes": 8220,
+          "reductionPercent": 93.3,
+          "sha256": "013eee0310e34e5306bc38b48e198af5a2108090fbe8cd716f05e0eeb8c56bca",
+          "encoding": "WebP lossless after resize"
+        },
+        {
+          "src": "/images/perf-logo-320-v1.webp",
+          "width": 320,
+          "height": 187,
+          "bytes": 23240,
+          "reductionPercent": 80.9,
+          "sha256": "07acacb5cf75415d65dc48f6e88603ef6c67f2f4b605247caad317bfa4541c63",
+          "encoding": "WebP lossless after resize"
+        }
+      ]
+    },
+    {
+      "source": "/assistant.png",
+      "original": {
+        "width": 408,
+        "height": 612,
+        "bytes": 273020,
+        "sha256": "f6290e6c563ab15659bb21d4ebe538b3dde1b2e5fc0c190364cd9a753f1d52bf",
+        "alpha": true
+      },
+      "variants": [
+        {
+          "src": "/images/perf-assistant-224-v1.webp",
+          "width": 224,
+          "height": 336,
+          "bytes": 17222,
+          "reductionPercent": 93.7,
+          "sha256": "d7a506790ae92cb21a4a1f1a4ce42567f773f44d4fb5a4e7ba9cbcacd6e24ec1",
+          "encoding": "WebP quality 90"
+        },
+        {
+          "src": "/images/perf-assistant-408-v1.webp",
+          "width": 408,
+          "height": 612,
+          "bytes": 33084,
+          "reductionPercent": 87.9,
+          "sha256": "db363154a20d4fbcf8ddfb25feb139e6177d401859964b8793d2ccabfe01dc40",
+          "encoding": "WebP quality 90"
+        }
+      ]
+    },
+    {
+      "source": "/image_27d308.png",
+      "original": {
+        "width": 1024,
+        "height": 1024,
+        "bytes": 23684,
+        "sha256": "6ba6a44ecb2143e26ac7c1ea9a5df88621db1657c7b02dee8f9f5e0e595acad3",
+        "alpha": false
+      },
+      "variants": [
+        {
+          "src": "/images/perf-admin-brand-192-v1.webp",
+          "width": 192,
+          "height": 192,
+          "bytes": 4950,
+          "reductionPercent": 79.1,
+          "sha256": "bec7301bae2e701d4f4b4cd896b5646991c3e6bbd82c1cf1e03f4aba0a20b222",
+          "encoding": "WebP lossless after resize"
+        }
+      ]
+    }
+  ]
+}

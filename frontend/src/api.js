@@ -1,3 +1,5 @@
+import { invalidatePublicResources } from './resourceCache';
+
 export function normalizeApiBase(value) {
   const server = String(value || 'https://pinnawalagems.onrender.com').trim().replace(/\/+$/, '');
   return /\/api$/i.test(server) ? server : `${server}/api`;
@@ -36,6 +38,7 @@ export async function apiRequest(path, options = {}, { auth = true, timeout = 15
     try { data = raw ? JSON.parse(raw) : {}; }
     catch { throw new ApiError('The configured service did not return JSON API data. Please check the backend address and deployment.', response.status, 'INVALID_RESPONSE'); }
     if (!response.ok) throw new ApiError(typeof data?.message === 'string' ? data.message : `The request failed (HTTP ${response.status}). Please try again.`, response.status);
+    if (auth && options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method.toUpperCase())) invalidatePublicResources(path);
     return data;
   } catch (error) {
     if (timedOut) throw new ApiError('The request took too long. Your changes are still here; please try again.', 0, 'TIMEOUT');

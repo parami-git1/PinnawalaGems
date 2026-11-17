@@ -1,6 +1,7 @@
 import { useState, useEffect, useId, useRef } from 'react';
 import { useRemoteResource } from './hooks/useRemoteResource';
 import './WorkshopDialog.css';
+import ResponsiveImage from './ResponsiveImage';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -21,16 +22,15 @@ const workshopEvents = [
 ];
 
 const ImagePlaceholder = ({ src, alt }) => {
-  const [hasError, setHasError] = useState(false);
-
   return (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#101b38] shadow-[0_24px_60px_rgba(5,12,32,.22)] group">
-      {src && !hasError ? (
-        <img
+      {src ? (
+        <ResponsiveImage
           src={src}
           alt={alt}
-          loading="lazy"
-          onError={() => setHasError(true)}
+          maxWidth={1000}
+          sizes="(max-width:599px) 90vw,48vw"
+          width="800" height="600"
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
       ) : (
@@ -89,8 +89,10 @@ function Workshop() {
   return (
     <div ref={pageRef} className="relative min-h-screen overflow-hidden bg-[#F7F5F0] font-inter text-[#101936]">
       <section className="relative isolate min-h-[520px] overflow-hidden bg-[#08132F]">
-        <img
+        <ResponsiveImage
           src="/workshop-hero.png"
+          maxWidth={1774} sizes="(max-width:599px) 1100px,100vw" loading="eager" fetchPriority="high"
+          width="1774" height="887"
           alt="A master craftsman shaping a sapphire in the atelier"
           className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
         />

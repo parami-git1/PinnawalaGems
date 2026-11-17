@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../api';
+import { publicResourceCache as cache, subscribeResourceInvalidation } from '../resourceCache';
 
 export { API_BASE } from '../api';
-const cache = new Map();
 const CACHE_AGE = 60000;
 const cachedState = (path) => ({ path, data: cache.get(path)?.data ?? null, status: cache.has(path) ? 'success' : 'loading', refreshing: false });
 
@@ -11,6 +11,7 @@ export function useRemoteResource(path) {
   const [attempt, setAttempt] = useState(0);
   const [resource, setResource] = useState(() => cachedState(path));
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  useEffect(() => subscribeResourceInvalidation((prefix) => { if (path.startsWith(prefix)) retry(); }), [path, retry]);
 
   useEffect(() => {
     const saved = cache.get(path);
@@ -29,18 +30,19 @@ export function useRemoteResource(path) {
         let data;
         for (let round = 0; round < 2; round += 1) {
           try {
-            const response = await fetch(`${API_BASE}/${path}`, { signal: controller.signal });
+            const response = await fetch(`${API_BASE}/${path}`, { signal: controller.signal, cache: 'no-cache' });
             if (!response.ok) { const error = new Error(`Request failed: ${response.status}`); error.status = response.status; throw error; }
             data = await response.json();
             break;
           } catch (error) {
-            if (round || controller.signal.aborted || (error.status && error.status < 500 && ![408, 429].includes(error.status))) throw error;
+            if (round || controller.signal.aborted || (error.status && error.status < 500 && error.status !== 408)) throw error;
             await new Promise((resolve) => window.setTimeout(resolve, 400));
             if (controller.signal.aborted) throw error;
           }
         }
         if (mounted) {
           cache.set(path, { data, updatedAt: Date.now() });
+          if (cache.size > 120) cache.delete(cache.keys().next().value);
           setResource({ path, data, status: 'success', refreshing: false });
         }
       } catch {

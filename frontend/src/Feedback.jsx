@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom';
 import { API_BASE, useRemoteResource } from './hooks/useRemoteResource';
 import './Feedback.css';
+import ResponsiveImage from './ResponsiveImage';
 
 const DEFAULT_PHOTOS = [
   'https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?q=80&w=1400&auto=format&fit=crop',
@@ -179,7 +180,7 @@ export default function Feedback() {
     <div className="feedback-shell">
       <section className="feedback-hero" aria-labelledby="feedback-title">
         <div className="feedback-gallery" aria-label="Pinnawala Gems photo gallery" aria-roledescription="carousel" onMouseEnter={() => setPhotoHovered(true)} onMouseLeave={() => setPhotoHovered(false)} onFocusCapture={() => setPhotoFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPhotoFocused(false); }}>
-          {photos.map((photo, index) => <img key={photo} src={photo} alt={index === activeSlide ? 'At Pinnawala Gems' : ''} aria-hidden={index !== activeSlide} loading={index === 0 ? 'eager' : 'lazy'} decoding="async" className={`feedback-gallery-photo${index === activeSlide ? ' is-active' : ''}`} onError={(event) => { if (!event.currentTarget.dataset.fallback) { event.currentTarget.dataset.fallback = 'true'; event.currentTarget.src = '/images/collection-atelier-editorial-v1.webp'; } }} />)}
+          {photos.map((photo, index) => <ResponsiveImage key={photo} src={index === activeSlide ? photo : undefined} alt={index === activeSlide ? 'At Pinnawala Gems' : ''} aria-hidden={index !== activeSlide} loading={index === activeSlide ? 'eager' : 'lazy'} maxWidth={1000} sizes="(max-width:1023px) 90vw,46vw" fade={false} className={`feedback-gallery-photo${index === activeSlide ? ' is-active' : ''}`} fallback="/images/collection-atelier-editorial-v1.webp" />)}
           <div className="feedback-gallery-shade" />
           <div className="feedback-gallery-caption"><p className="feedback-eyebrow">The Pinnawala Journal</p><h1 id="feedback-title">A Legacy of<br /><em>Brilliance</em></h1><span className="feedback-caption-rule" /><p className="feedback-gallery-description">Every stone carries a story. We are honoured to hear the moments, memories, and meaning our clients discover with us.</p>
             {photos.length > 1 && <div className="feedback-photo-dots">{photos.map((_, index) => <button key={index} type="button" className={index === activeSlide ? 'is-active' : ''} aria-label={`Photo ${index + 1} of ${photos.length}`} aria-current={index === activeSlide ? 'true' : undefined} onClick={() => setSlideIndex(index)}><span /></button>)}</div>}
