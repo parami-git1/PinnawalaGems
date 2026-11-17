@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { API_BASE } from '../api';
 
-const server = (import.meta.env.VITE_API_URL || 'https://pinnawalagems.onrender.com').replace(/\/+$/, '');
-export const API_BASE = server.endsWith('/api') ? server : `${server}/api`;
+export { API_BASE } from '../api';
 const cache = new Map();
 const CACHE_AGE = 60000;
 const cachedState = (path) => ({ path, data: cache.get(path)?.data ?? null, status: cache.has(path) ? 'success' : 'loading', refreshing: false });

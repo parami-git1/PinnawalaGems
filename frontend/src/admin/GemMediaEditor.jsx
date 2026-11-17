@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { AdminField, AdminIcon } from './AdminUI';
 import { GEM_MEDIA_LIMITS, IMAGE_TYPES, VIDEO_TYPES, mediaUrls } from '../mediaPolicy';
 import './GemMediaEditor.css';
+import { apiUrl } from '../api';
 
-function uploadFile(file, apiBase, onProgress, requestRef) {
+function uploadFile(file, onProgress, requestRef) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     requestRef.current = xhr;
-    xhr.open('POST', `${apiBase.replace(/\/+$/, '').replace(/\/api$/, '')}/api/media/upload`);
+    xhr.open('POST', apiUrl('/media/upload'));
     xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('adminToken')}`);
     xhr.timeout = 120000;
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(Math.round(event.loaded / event.total * 100)); };
@@ -26,7 +27,7 @@ function uploadFile(file, apiBase, onProgress, requestRef) {
   });
 }
 
-export default function GemMediaEditor({ form, setForm, onBusyChange, disabled, apiBase }) {
+export default function GemMediaEditor({ form, setForm, onBusyChange, disabled }) {
   const [queue, setQueue] = useState([]);
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState('');
@@ -60,7 +61,7 @@ export default function GemMediaEditor({ form, setForm, onBusyChange, disabled, 
         if (!mounted.current) break;
         updateRow(row.id, { status: 'uploading' });
         try {
-          const result = await uploadFile(row.file, apiBase, (progress) => updateRow(row.id, { progress, status: progress === 100 ? 'processing' : 'uploading' }), request);
+          const result = await uploadFile(row.file, (progress) => updateRow(row.id, { progress, status: progress === 100 ? 'processing' : 'uploading' }), request);
           if (result.resourceType && result.resourceType !== kind) throw new Error('The uploaded file did not match the selected media type.');
           if (!mounted.current) break;
           setForm((current) => {

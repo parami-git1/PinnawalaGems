@@ -1,0 +1,20 @@
+.pg-workshop-dialog { width: min(900px,calc(100vw - 30px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow: hidden; border: 1px solid #ded9cd; border-radius: 20px; background: #f7f5f0; color: #14243a; box-shadow: 0 30px 100px rgb(4 14 30 / .3); }
+.pg-workshop-dialog[open] { display: flex; flex-direction: column; }
+.pg-workshop-dialog::backdrop { background: rgb(8 19 47 / .8); backdrop-filter: blur(6px); }
+.pg-workshop-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 15px; flex-shrink: 0; padding: 14px 19px; border-bottom: 1px solid #e2dccf; }
+.pg-workshop-dialog > header > span { font-size: 9px; text-transform: uppercase; letter-spacing: .17em; color: #91733c; }
+.pg-workshop-dialog > header button { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border: 1px solid #ddd5c3; border-radius: 50%; color: #14243a; background: white; font-size: 23px; line-height: 1; }
+.pg-workshop-dialog > article { display: grid; grid-template-columns: .95fr 1.05fr; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.pg-workshop-dialog__photo { min-width: 0; padding: 24px; background: #101b38; }
+.pg-workshop-dialog__photo > div { box-shadow: none; border-radius: 12px; }
+.pg-workshop-dialog__copy { min-width: 0; padding: 39px 32px; }
+.pg-workshop-dialog__eyebrow { font-size: 9px; text-transform: uppercase; letter-spacing: .2em; color: #91733c; }
+.pg-workshop-dialog__rule { display: block; width: 39px; height: 1px; margin: 20px 0; background: #b29454; }
+.pg-workshop-dialog h2 { font: 500 clamp(32px,4vw,46px)/1.04 'Cormorant Garamond',Georgia,serif; color: #14243a; overflow-wrap: anywhere; }
+.pg-workshop-dialog__description { margin-top: 24px; font-size: 14px; line-height: 1.95; color: #657184; white-space: pre-line; overflow-wrap: anywhere; }
+.pg-workshop-dialog__signature { margin-top: 27px; padding-top: 19px; border-top: 1px solid #dfdacd; text-transform: uppercase; font-size: 8px; letter-spacing: .17em; color: #9a8660; }
+.pg-workshop-dialog button:focus-visible { outline: 2px solid #a58a53; outline-offset: 3px; }
+.pg-workshop-status { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 22px; padding: 14px 18px; border: 1px solid #e2d8c3; border-radius: 8px; color: #6d6049; background: #fbf8ef; font-size: 12px; }
+.pg-workshop-status button { padding: 9px 12px; flex-shrink: 0; border: 1px solid #d5c5a3; border-radius: 5px; color: #705d35; background: #fff; }
+.workshop-event-copy > p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+@media(max-width:767px) { .pg-workshop-dialog { width: calc(100vw - 22px); max-height: calc(100dvh - 24px); border-radius: 15px; } .pg-workshop-dialog > article { grid-template-columns: 1fr; } .pg-workshop-dialog__photo { padding: 18px; } .pg-workshop-dialog__photo > div { max-height: 260px; } .pg-workshop-dialog__copy { padding: 27px 24px; } .pg-workshop-dialog > header { padding: 11px 15px; } .pg-workshop-status { flex-wrap: wrap; } }

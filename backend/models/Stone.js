@@ -1,29 +1,20 @@
 const mongoose = require('mongoose');
-
+const { carats } = require('../utils/catalogData');
 const stoneSchema = new mongoose.Schema({
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'GemCategory', required: true },
-  stoneId: { type: String }, // අර කලින් හදපු ID එක
-  title: { type: String, required: true }, // අනිවාර්යයි
-  image: { type: String, required: true }, // අනිවාර්යයි
-  quantity: { type: Number, default: 1 },  // නොදුන්නොත් 1යි
-  description: { type: String, required: false }, // Optional
-  weight: { type: String, required: false }, // 🔹 String කළා (එතකොට '5.2 ct' වගේ සේව් කරන්න ලේසියි)
-  color: { type: String, required: false },  // Optional
-  shape: { type: String, required: false },  // Optional
-  cut: { type: String, default: '' },        // 🔹 අලුතින් එකතු කළ Cut එක
-  price: { type: Number, required: false },  // Optional
-  hasCertificate: { type: Boolean, default: false },
-  certificateDetails: { type: String, required: false },
-  certificateImage: { type: String, required: false },
-  isFeatured: { type: Boolean, default: false },
-  origin: { type: String, default: '' },
-  additionalImages: [{ type: String }],      // පින්තූර 5ක් දාන්න
-  
-  // 🔹 අලුත් Top 10 Gems වලට අදාළ කෑලි 2 🔹
-  videos: { type: [String], default: [] },
-  isTopGem: { type: Boolean, default: false },
-  homePagePosition: { type: Number, default: 0 }
-  
+  stoneId: { type: String, immutable: true },
+  title: { type: String, required: true, trim: true, maxlength: 200 },
+  image: { type: String, required: true },
+  quantity: { type: Number, default: 1, min: 0, validate: Number.isInteger },
+  description: { type: String, maxlength: 10000 },
+  weight: { type: String, default: '' },
+  caratWeight: { type: Number, min: 0, default: null },
+  color: { type: String, trim: true }, shape: { type: String, trim: true }, cut: { type: String, default: '', trim: true },
+  price: { type: Number, min: 0 }, hasCertificate: { type: Boolean, default: false },
+  certificateDetails: { type: String, maxlength: 10000 }, certificateImage: { type: String }, isFeatured: { type: Boolean, default: false },
+  origin: { type: String, default: '', trim: true }, additionalImages: [{ type: String }], videos: { type: [String], default: [] },
+  isTopGem: { type: Boolean, default: false }, homePagePosition: { type: Number, default: 0, min: 0, validate: Number.isInteger },
 }, { timestamps: true });
-
+stoneSchema.pre('validate', function normalizeCarats() { if (this.isModified('weight')) this.caratWeight = carats(this.weight); });
+// Generated references derive from unique ObjectIds; legacy references are not rewritten.
 module.exports = mongoose.model('Stone', stoneSchema);

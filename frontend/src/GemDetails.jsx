@@ -5,7 +5,7 @@ import { MdEmail, MdVerified } from 'react-icons/md';
 import './GemDetailsPolish.css';
 import GemMediaGallery from './GemMediaGallery';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
-import { API_BASE } from './hooks/useRemoteResource';
+import { apiRequest } from './api';
 
 function GemDetails() {
   /* ── All existing state — untouched ─────────────────────────────────── */
@@ -14,26 +14,23 @@ function GemDetails() {
   const [contactInfo, setContactInfo] = useState(() => withBusinessDetails());
   const [loading, setLoading] = useState(true);
   const [loadedStoneId, setLoadedStoneId] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   /* ── All existing fetches — untouched ───────────────────────────────── */
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${API_BASE}/inventory/stones/${stoneId}`, { signal: controller.signal })
-      .then(res => {
-        if (!res.ok) throw new Error("Stone not found");
-        return res.json();
-      })
-      .then(data => { if (!controller.signal.aborted) { setGem(data); setLoadedStoneId(stoneId); setLoading(false); } })
-      .catch(() => { if (!controller.signal.aborted) { setGem(null); setLoadedStoneId(stoneId); setLoading(false); } });
+    apiRequest(`inventory/stones/${encodeURIComponent(stoneId)}`, { signal: controller.signal }, { auth: false })
+      .then(data => { if (!controller.signal.aborted) { setGem(data); setLoadError(null); setLoadedStoneId(stoneId); setLoading(false); } })
+      .catch((error) => { if (!controller.signal.aborted) { setGem(null); setLoadError(error); setLoadedStoneId(stoneId); setLoading(false); } });
 
-    fetch(`${API_BASE}/home`, { signal: controller.signal })
-      .then(res  => res.json())
+    apiRequest('home', { signal: controller.signal }, { auth: false })
       .then(data => {
         if (!controller.signal.aborted) setContactInfo(withBusinessDetails(data));
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [stoneId]);
+  }, [stoneId, attempt]);
 
   /* ── All existing handlers — untouched ──────────────────────────────── */
   const handleWhatsAppInquiry = () => {
@@ -50,31 +47,32 @@ function GemDetails() {
   /* ── Loading / not found ─────────────────────────────────────────────── */
   if (loading || loadedStoneId !== stoneId) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <main id="main-content" className="min-h-screen bg-white flex items-center justify-center">
         <p className="font-playfair text-blue-950/40 text-2xl tracking-widest uppercase animate-pulse">
           Loading…
         </p>
-      </div>
+      </main>
     );
   }
 
   if (!gem) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-blue-950">
-        <h2 className="font-playfair text-3xl mb-5 tracking-tight">Gemstone Not Found</h2>
+      <main id="main-content" className="min-h-screen bg-white flex flex-col items-center justify-center text-blue-950 px-6 text-center">
+        <h2 className="font-playfair text-3xl mb-5 tracking-tight">{loadError?.status === 404 ? 'Gemstone Not Found' : 'Unable to open this gemstone'}</h2>
+        {loadError?.status !== 404 && <><p className="max-w-sm text-sm leading-7 text-slate-500 mb-5">{loadError?.code === 'TIMEOUT' ? 'This gemstone is taking a little longer to load. Please try again.' : 'We couldn’t load this gemstone. Please try again, or speak with our team.'}</p><button type="button" className="mb-6 rounded-md border border-amber-300 px-5 py-3 text-xs" onClick={() => { setLoadedStoneId(null); setAttempt((value) => value + 1); }}>Try again</button></>}
         <Link to="/catalog" className="font-inter text-sm font-semibold tracking-[0.2em] uppercase
                                        border-b border-blue-950 pb-0.5
                                        hover:text-amber-500 hover:border-amber-500 transition-colors duration-300">
           Return to Collection
         </Link>
-      </div>
+      </main>
     );
   }
 
   return (
     <div className="gem-detail-polish min-h-screen bg-white font-inter text-blue-950 flex flex-col">
 
-      <main className="gem-detail-main flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-16 sm:pb-20 w-full">
+      <main id="main-content" className="gem-detail-main flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-16 sm:pb-20 w-full">
         <div className="mb-6 flex justify-start">
           <Link
             to="/catalog"

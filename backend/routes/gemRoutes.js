@@ -1,80 +1,26 @@
 const express = require('express');
-const router = express.Router();
-const Gem = require('../models/Gem'); // Import the Gem schema we created earlier
+const Gem = require('../models/Gem');
 const requireAdmin = require('../middleware/adminAuth');
-
-// ==========================================
-// 1. ADD A NEW GEM (Admin Only) - POST Request
-// Route: POST /api/gems
-// ==========================================
-router.post('/', requireAdmin, async (req, res) => {
-  try {
-    // req.body eken ena details (title, price, variations) aragena aluth Gem ekak hadanawa
-    const newGem = new Gem(req.body); 
-    
-    // Eka database eke save karanawa
-    const savedGem = await newGem.save(); 
-    
-    // Save unata passe, save una data tika response ekak widihata yawanawa (Status 201 = Created)
-    res.status(201).json(savedGem); 
-  } catch (error) {
-    // Monawa hari waradunoth error message eka yawanawa
-    res.status(500).json({ message: 'Error adding gem', error: error.message });
+const { pick, string, url, carats, invalid, objectId, routeError } = require('../utils/catalogData');
+const router = express.Router();
+function payload(body) {
+  const result = pick(body, ['title','description','category','primaryColor','mainImage','variations']);
+  for (const key of ['title','description','category','primaryColor']) if (key in result) result[key] = string(result[key], key, { required: true, max: key === 'description' ? 10000 : 200 });
+  if ('mainImage' in result) result.mainImage = url(result.mainImage, 'Main image');
+  if ('variations' in result) {
+    if (!Array.isArray(result.variations) || result.variations.length > 30) throw invalid('Use up to 30 variations.');
+    result.variations = result.variations.map((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) throw invalid('Each variation must contain its weight and image URLs.');
+      const weight = carats(item.weight); if (weight == null) throw invalid('Each variation requires a weight.');
+      if (!Array.isArray(item.images) || item.images.length > 10) throw invalid('Each variation supports up to 10 image URLs.');
+      return { weight: String(item.weight).trim(), designName: string(item.designName || '', 'Design name', { max: 200 }), images: [...new Set(item.images.map((image) => url(image, 'Variation image')))] };
+    });
   }
-});
-
-// ==========================================
-// 2. GET ALL GEMS (Public Catalog) - GET Request
-// Route: GET /api/gems
-// ==========================================
-router.get('/', async (req, res) => {
-  try {
-    // Database eke thiyena okkoma gems tika gannawa. 
-    // .sort({ createdAt: -1 }) dapu nisa aluthinma add karapu gems mulin enawa
-    const gems = await Gem.find().sort({ createdAt: -1 }); 
-    
-    // Gems tika frontend ekata yawanawa (Status 200 = OK)
-    res.status(200).json(gems);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching gems', error: error.message });
-  }
-});
-
-// DELETE a gem by ID
-router.delete('/:id', requireAdmin, async (req, res) => {
-  try {
-    const deletedGem = await Gem.findByIdAndDelete(req.params.id);
-    if (!deletedGem) {
-      return res.status(404).json({ message: "Gem not found" });
-    }
-    res.status(200).json({ message: "Gem deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting gem", error });
-  }
-});
-
-// Update a legacy gem by ID
-router.put('/:id', requireAdmin, async (req, res) => {
-  try {
-    const updatedGem = await Gem.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!updatedGem) return res.status(404).json({ message: 'Gem not found' });
-    res.json(updatedGem);
-  } catch (error) {
-    res.status(400).json({ message: 'Error updating gem', error: error.message });
-  }
-});
-
-// GET a single gem by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const gem = await Gem.findById(req.params.id);
-    if (!gem) {
-      return res.status(404).json({ message: "Gem not found" });
-    }
-    res.status(200).json(gem);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching gem", error });
-  }
-});
-
+  return result;
+}
+router.post('/', requireAdmin, async (req, res) => { try { const gem = new Gem(payload(req.body)); await gem.save(); res.status(201).json(gem); } catch (error) { routeError(res, error); } });
+router.get('/', async (_req, res) => { try { res.json(await Gem.find().sort({ createdAt: -1, _id: -1 })); } catch (error) { routeError(res, error); } });
+router.get('/:id', async (req, res) => { try { const gem = await Gem.findById(objectId(req.params.id)); if (!gem) return res.status(404).json({ message: 'Gem not found' }); res.json(gem); } catch (error) { routeError(res, error); } });
+router.put('/:id', requireAdmin, async (req, res) => { try { const gem = await Gem.findByIdAndUpdate(objectId(req.params.id), { $set: payload(req.body) }, { new: true, runValidators: true }); if (!gem) return res.status(404).json({ message: 'Gem not found' }); res.json(gem); } catch (error) { routeError(res, error); } });
+router.delete('/:id', requireAdmin, async (req, res) => { try { if (!await Gem.findByIdAndDelete(objectId(req.params.id))) return res.status(404).json({ message: 'Gem not found' }); res.json({ message: 'Gem deleted.' }); } catch (error) { routeError(res, error); } });
 module.exports = router;

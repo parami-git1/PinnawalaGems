@@ -53,7 +53,7 @@ export default function CustomerGallery({ photos = [] }) {
   const track = useRef(null);
   const activeRef = useRef(0);
   const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(() => typeof window === 'undefined' || !('IntersectionObserver' in window));
   const [pageVisible, setPageVisible] = useState(() => typeof document === 'undefined' || !document.hidden);
   const [interacting, setInteracting] = useState(false);
   const [interactionVersion, setInteractionVersion] = useState(0);
@@ -119,10 +119,7 @@ export default function CustomerGallery({ photos = [] }) {
   useEffect(() => {
     const element = track.current;
     if (!element) return undefined;
-    if (!('IntersectionObserver' in window)) {
-      setVisible(true);
-      return undefined;
-    }
+    if (!('IntersectionObserver' in window)) return undefined;
     const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { threshold: 0.15 });
     observer.observe(element);
     return () => observer.disconnect();

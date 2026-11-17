@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
+import { useRemoteResource } from './hooks/useRemoteResource';
+import './WorkshopDialog.css';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -41,128 +43,34 @@ const ImagePlaceholder = ({ src, alt }) => {
   );
 };
 
+function WorkshopDetails({ event, onClose }) {
+  const dialog = useRef(null);
+  const titleId = useId();
+  useEffect(() => {
+    const element = dialog.current;
+    const focused = document.activeElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    element.showModal();
+    return () => { element.close(); document.body.style.overflow = overflow; focused?.focus({ preventScroll: true }); };
+  }, []);
+  return <dialog ref={dialog} className="pg-workshop-dialog" aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); onClose(); }} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <header><span>Pinnawala Gems atelier</span><button type="button" onClick={onClose} aria-label="Close details">×</button></header>
+    <article><div className="pg-workshop-dialog__photo"><ImagePlaceholder src={event.image} alt={event.title} /></div><div className="pg-workshop-dialog__copy"><p className="pg-workshop-dialog__eyebrow">{event.eyebrow}</p><span className="pg-workshop-dialog__rule" /><h2 id={titleId}>{event.title}</h2><p className="pg-workshop-dialog__description">{event.description}</p><p className="pg-workshop-dialog__signature">The art behind every stone.</p></div></article>
+  </dialog>;
+}
+
 function Workshop() {
   const pageRef = useRef(null);
   const workshopTrackRef = useRef(null);
-  const [sections, setSections] = useState([]);
-  const isAdmin = false;
-  const [showModal,     setShowModal]     = useState(false);
-  const [isEditing,     setIsEditing]     = useState(false);
-  const [editSectionId, setEditSectionId] = useState(null);
-  const [formData, setFormData] = useState({ title: '', description: '', imageUrl: '', layoutType: 'left-text' });
-  const [isUploading, setIsUploading] = useState(false);
-  const [isLoadingSections, setIsLoadingSections] = useState(true);
+  const resource = useRemoteResource('workshop');
+  const sections = Array.isArray(resource.data) ? resource.data : [];
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [activeEventIndex, setActiveEventIndex] = useState(0);
-
-  useEffect(() => {
-    fetchWorkshopSections();
-  }, []);
-
   useGSAP(() => {
-    gsap.fromTo('.workshop-header',
-      { autoAlpha: 0, y: 32 },
-      { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' }
-    );
-
-    gsap.utils.toArray('.workshop-event').forEach((event) => {
-      const image = event.querySelector('.workshop-event-image');
-      const copy = event.querySelector('.workshop-event-copy');
-
-      gsap.fromTo(image,
-        { autoAlpha: 0, x: event.dataset.direction === 'left' ? -48 : 48 },
-        {
-          autoAlpha: 1,
-          x: 0,
-          duration: 1,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: event, start: 'top 82%', once: true },
-        }
-      );
-      gsap.fromTo(copy,
-        { autoAlpha: 0, y: 24 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.8,
-          delay: 0.16,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: event, start: 'top 82%', once: true },
-        }
-      );
-    });
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    gsap.fromTo('.workshop-header', { autoAlpha: 0, y: 32 }, { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' });
   }, { scope: pageRef });
-
-  /* ── All existing handlers — untouched ──────────────────────────────── */
-  const fetchWorkshopSections = async () => {
-    setIsLoadingSections(true);
-    try {
-      const res  = await fetch('https://pinnawalagems.onrender.com/api/workshop');
-      const data = await res.json();
-      if (Array.isArray(data)) setSections(data);
-    } catch (err) { console.log(err); }
-    finally { setIsLoadingSections(false); }
-  };
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const uploadData = new FormData();
-    uploadData.append('image', file);
-    setIsUploading(true);
-    try {
-      const res = await fetch('https://pinnawalagems.onrender.com/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }, body: uploadData });
-      if (res.ok) {
-        const data = await res.json();
-        setFormData(prev => ({ ...prev, imageUrl: data.imageUrl }));
-      }
-    } catch (err) { alert('Image upload failed'); }
-    finally { setIsUploading(false); }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.title || !formData.imageUrl) return alert("Title and Image are required!");
-    const url    = isEditing ? `https://pinnawalagems.onrender.com/api/workshop/${editSectionId}` : 'https://pinnawalagems.onrender.com/api/workshop';
-    const method = isEditing ? 'PUT' : 'POST';
-    try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
-        body: JSON.stringify(formData)
-      });
-      if (res.ok) {
-        alert(isEditing ? "Workshop Section Updated! 🛠️" : "Workshop Section Added! 🛠️");
-        setShowModal(false);
-        setIsEditing(false);
-        setEditSectionId(null);
-        setFormData({ title: '', description: '', imageUrl: '', layoutType: 'left-text' });
-        fetchWorkshopSections();
-      } else { alert("Failed to save workshop section."); }
-    } catch (err) { console.log(err); }
-  };
-
-  const handleEdit = (section) => {
-    setFormData({ title: section.title || '', description: section.description || '', imageUrl: section.imageUrl || '', layoutType: section.layoutType || 'left-text' });
-    setEditSectionId(section._id);
-    setIsEditing(true);
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this workshop section?")) {
-      try {
-        const res = await fetch(`https://pinnawalagems.onrender.com/api/workshop/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
-        });
-        if (res.ok) fetchWorkshopSections();
-      } catch (err) { console.log(err); }
-    }
-  };
-
-  const labelCls = 'block font-inter text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-1.5';
-  const inputCls = 'w-full bg-white border border-slate-200 text-blue-950 font-inter text-sm p-3 focus:outline-none focus:border-blue-950 transition-colors duration-300';
   const displayEvents = [
     ...workshopEvents.map((event, index) => ({
       ...event,
@@ -210,7 +118,7 @@ function Workshop() {
       </section>
 
       {/* ── Workshop Sections ────────────────────────────────────────────── */}
-      <main className="relative z-10 mx-auto w-full max-w-7xl px-6 py-20 md:px-12 md:py-28">
+      <main id="main-content" className="relative z-10 mx-auto w-full max-w-7xl px-6 py-20 md:px-12 md:py-28">
         <div className="mb-12 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[.35em] text-[#B8901F]">Past sessions & showcases</p>
@@ -219,6 +127,7 @@ function Workshop() {
           <p className="max-w-sm text-sm leading-6 text-slate-500 md:text-right">Stories, skills, and shared knowledge from the people who bring each stone to life.</p>
         </div>
 
+        {resource.status === 'error' && <div className="pg-workshop-status" role="status"><p>We could not refresh the workshop archive. Your stories are still available below.</p><button type="button" onClick={resource.retry}>Try again</button></div>}
         <div className="relative -mx-1 px-1 md:px-12">
         <div ref={workshopTrackRef} className="workshop-track relative h-[610px] overflow-hidden sm:h-[640px] md:h-[680px]">
           {displayEvents.map((event, idx) => (
@@ -252,12 +161,7 @@ function Workshop() {
                   <span className="text-[#D9B64A] transition-transform duration-300 group-hover:translate-x-1">Read more →</span>
                 </div>
 
-                {isAdmin && sections[idx] && (
-                  <div className="absolute right-6 top-6 flex gap-2 opacity-60 transition-opacity duration-300 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-                    <button onClick={() => handleEdit(sections[idx])} className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[.15em] text-white backdrop-blur-sm hover:bg-white/20">Edit</button>
-                    <button onClick={() => handleDelete(sections[idx]._id)} className="rounded-full border border-red-300/30 bg-red-500/10 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[.15em] text-red-200 hover:bg-red-500/20">Delete</button>
-                  </div>
-                )}
+
               </div>
             </article>
           ))}
@@ -269,71 +173,7 @@ function Workshop() {
         </div>
       </main>
 
-      {selectedEvent && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#08132F]/75 p-4 backdrop-blur-md" onClick={() => setSelectedEvent(null)}>
-          <article className="relative grid w-full max-w-4xl overflow-hidden rounded-[2rem] border border-white/20 bg-[#F7F5F0] shadow-[0_35px_100px_rgba(5,12,32,.4)] md:grid-cols-[.95fr_1.05fr]" onClick={(e) => e.stopPropagation()}>
-            <div className="relative min-h-[280px] bg-[#0B1330] md:min-h-[480px]">
-              <ImagePlaceholder src={selectedEvent.image} alt={selectedEvent.title} />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1330]/55 via-transparent to-transparent" />
-            </div>
-            <div className="flex flex-col justify-center px-7 py-10 md:px-12 md:py-14">
-              <button type="button" onClick={() => setSelectedEvent(null)} className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full border border-[#dfe4ee] bg-white text-lg text-[#0B1330] transition-colors hover:border-[#c9a227] hover:text-[#806512]" aria-label="Close details">×</button>
-              <p className="text-[9px] font-semibold uppercase tracking-[.3em] text-[#b8901f]">{selectedEvent.eyebrow}</p>
-              <span className="my-5 h-px w-12 bg-[#c9a227]" />
-              <h2 className="font-[Cormorant_Garamond,serif] text-5xl leading-[.95] text-[#0B1330]">{selectedEvent.title}</h2>
-              <p className="mt-6 text-sm leading-7 text-slate-600">{selectedEvent.description}</p>
-              <div className="mt-8 flex items-center gap-3 border-t border-[#e3e0d8] pt-5 text-[9px] font-semibold uppercase tracking-[.22em] text-slate-400"><span className="h-1.5 w-1.5 rounded-full bg-[#c9a227]" /> Pinnawala Gems atelier</div>
-            </div>
-          </article>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-[#F7F5F0] shadow-[0_30px_90px_rgba(11,19,48,.35)]">
-
-            <div className="flex items-center justify-between bg-[#0B1330] px-6 py-5">
-              <h2 className="font-[Cormorant_Garamond,serif] text-2xl text-white">
-                {isEditing ? 'Edit Workshop Section' : 'Add New Workshop Section'}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="text-white/60 hover:text-white text-sm transition-colors duration-200">✕</button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              <div>
-                <label className={labelCls}>Section Title</label>
-                <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Precision Gem Cutting" className={inputCls} required />
-              </div>
-              <div>
-                <label className={labelCls}>Description</label>
-                <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the workshop process…" rows="4" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Workshop Image</label>
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="text-xs text-slate-500 w-full" />
-                {isUploading && <p className="font-inter text-[10px] text-blue-600 font-semibold mt-1">Uploading…</p>}
-                {formData.imageUrl && <img src={formData.imageUrl} alt="Preview" className="h-20 mt-2 object-cover border border-slate-200" />}
-              </div>
-              <div className="flex gap-3 border-t border-[#E8E3D3] pt-4">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="w-1/2 bg-slate-100 text-slate-700 font-inter font-bold text-[10px] uppercase
-                             tracking-[0.18em] py-3 hover:bg-white transition-colors duration-200">
-                  Cancel
-                </button>
-                <button type="submit" disabled={isUploading || !formData.title || !formData.imageUrl}
-                  className="w-1/2 bg-[#0B1330] text-white font-inter font-bold text-[10px] uppercase
-                             tracking-[0.18em] py-3 hover:bg-[#162452] disabled:bg-slate-300
-                             transition-colors duration-200">
-                  {isEditing ? 'Update Section' : 'Publish Section'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
+      {selectedEvent && <WorkshopDetails event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
     </div>
   );
 }

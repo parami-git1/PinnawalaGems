@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const stockCategorySchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String },
+  title: { type: String, required: true, trim: true, maxlength: 150 },
+  description: { type: String, maxlength: 10000 },
   mainImage: { type: String, required: true }
 }, { timestamps: true });
 

@@ -13,9 +13,36 @@ import {
   FaWhatsapp,
 } from 'react-icons/fa';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
+import { apiRequest } from './api';
+import './ContactMedia.css';
 
 /* ─── constants ────────────────────────────────────────────────────── */
 const GOOGLE_MAPS_EMBED_URL = BUSINESS.mapsEmbedUrl;
+
+function safeMediaUrl(value) {
+  if (typeof value !== 'string') return '';
+  const clean = value.trim();
+  if (/^\/(?!\/)/.test(clean)) return clean;
+  try { const url = new URL(clean); return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : ''; } catch { return ''; }
+}
+
+function contactVideo(value) {
+  const url = safeMediaUrl(value);
+  if (!url) return null;
+  if (/\.(mp4|webm)(?:[?#]|$)/i.test(url)) return { src: url, kind: 'file' };
+  try {
+    const parsed = new URL(url);
+    if (['youtube.com', 'www.youtube.com', 'youtu.be', 'www.youtube-nocookie.com'].includes(parsed.hostname)) {
+      const id = parsed.hostname === 'youtu.be' ? parsed.pathname.slice(1) : parsed.pathname.startsWith('/embed/') ? parsed.pathname.split('/')[2] : parsed.searchParams.get('v');
+      if (/^[a-zA-Z0-9_-]{11}$/.test(id || '')) return { src: `https://www.youtube-nocookie.com/embed/${id}`, kind: 'embed' };
+    }
+    if (['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'].includes(parsed.hostname)) {
+      const id = parsed.pathname.split('/').filter(Boolean).at(-1);
+      if (/^\d+$/.test(id || '')) return { src: `https://player.vimeo.com/video/${id}`, kind: 'embed' };
+    }
+  } catch { /* Unsupported media is omitted rather than embedded as arbitrary HTML. */ }
+  return null;
+}
 
 /* ─── tiny gem-facet SVG decoration ────────────────────────────────── */
 /* ─── shared input class ────────────────────────────────────────────── */
@@ -38,10 +65,10 @@ function Contact() {
 
   /* fetch live contact data */
   useEffect(() => {
-    fetch('https://pinnawalagems.onrender.com/api/contact')
-      .then((r) => r.json())
+    const controller = new AbortController();
+    apiRequest('contact', { signal: controller.signal }, { auth: false })
       .then((data) => {
-        if (data)
+        if (data && !controller.signal.aborted)
           setContactInfo(withBusinessDetails({
             ...data,
             facebookLink:     data.facebookLink     || '',
@@ -50,7 +77,8 @@ function Contact() {
             contactImages:    data.contactImages    || (data.contactImage ? [data.contactImage] : []),
           }, 'contact'));
       })
-      .catch((err) => console.log('Error fetching contact info:', err));
+      .catch(() => {});
+    return () => controller.abort();
   }, []);
 
   /* inject fonts */
@@ -79,7 +107,7 @@ function Contact() {
   const handleChange = (e) => setContactInfo({ ...contactInfo, [e.target.name]: e.target.value });
   const handleSave   = async () => {
     try {
-      const response = await fetch('https://pinnawalagems.onrender.com/api/contact', {
+      await apiRequest('contact', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -87,13 +115,15 @@ function Contact() {
         },
         body: JSON.stringify(contactInfo),
       });
-      if (response.ok) alert('Contact page updated successfully! ✨');
+      alert('Contact page updated successfully!');
     } catch (error) {
       console.log(error);
     }
   };
 
   const phone = BUSINESS.phoneDisplay;
+  const photographs = [...new Set((Array.isArray(contactInfo.contactImages) ? contactInfo.contactImages : []).map(safeMediaUrl).filter(Boolean))];
+  const video = contactVideo(contactInfo.contactVideo);
 
   /* info cards data */
   const infoCards = [
@@ -264,7 +294,7 @@ function Contact() {
           MAIN CONTENT
       ════════════════════════════════════════════ */}
       {!isEditing && (
-        <main className="relative mx-auto max-w-6xl px-5 pb-28 md:px-10">
+        <main id="main-content" className="relative mx-auto max-w-6xl px-5 pb-28 md:px-10">
 
           {/* ── two-column white card — sits on top of the wave ── */}
           <section className="pg-reveal relative z-10 -mt-16 overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_28px_80px_rgba(11,19,48,.16)] md:-mt-24 md:grid md:grid-cols-[.9fr_1.1fr]">
@@ -396,7 +426,7 @@ function Contact() {
                 </div>
               ) : (
                 /* form */
-                <form onSubmit={submitForm} className="mt-8 grid gap-4 sm:grid-cols-2">
+                <form onSubmit={submitForm} className="contact-enquiry-form mt-8 grid gap-4 sm:grid-cols-2">
                   {/* Name */}
                   <label className="text-[9px] font-semibold uppercase tracking-[.2em] text-slate-500">
                     Name
@@ -519,6 +549,11 @@ function Contact() {
           {/* ════════════════════════════════════════════
               MAP SECTION
           ════════════════════════════════════════════ */}
+          {(photographs.length > 0 || video) && <section className="pg-contact-media" aria-labelledby="pg-contact-media-title">
+            <header className="pg-contact-media__heading"><p>A welcome to our world</p><h2 id="pg-contact-media-title">A little closer to Pinnawala.</h2></header>
+            {photographs.length > 0 && <div className="pg-contact-media__photos">{photographs.map((src, index) => <figure key={src}><img src={src} alt={`Pinnawala Gems, visit photograph ${index + 1}`} loading="lazy" decoding="async" /></figure>)}</div>}
+            {video && <div className="pg-contact-media__video">{video.kind === 'file' ? <video src={video.src} controls playsInline preload="metadata" aria-label="A visit to Pinnawala Gems" /> : <iframe src={video.src} title="A visit to Pinnawala Gems" loading="lazy" allow="fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />}</div>}
+          </section>}
           <section className="relative mt-20 md:mt-28">
             {/* section header */}
             <div className="mb-8 flex flex-wrap items-end justify-between gap-6">

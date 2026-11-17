@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import './AdminPlanner.css';
+import { API_ORIGIN, apiRequest } from './api';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'https://pinnawalagems.onrender.com').trim().replace(/\/+$/, '');
+const API_URL = API_ORIGIN;
 const API_HOST = (() => { try { return new URL(API_URL).host; } catch { return API_URL; } })();
 const appointmentDefaults = { customerName: '', email: '', phone: '', date: '', time: '10:00', durationMinutes: 60, type: 'Viewing', status: 'Requested', purpose: '', internalNotes: '' };
 const noteDefaults = { title: '', content: '', category: 'General', tags: '', color: 'slate', isPinned: false, isArchived: false, reminderAt: '', customerName: '', appointmentId: '' };
@@ -33,21 +34,16 @@ const actionErrorMessage = (error) => error.status === 404
   : error.message || 'The request could not be completed. Your changes are still here; please try again.';
 
 async function api(path, options = {}) {
-  let response;
   try {
-    response = await fetch(`${API_URL}${path}`, { ...options, headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${localStorage.getItem('adminToken')}`, ...(options.headers || {}) } });
-  } catch {
-    throw new PlannerApiError('The backend could not be reached. Check the connection and try again.', 0, path, 'CONNECTION');
+    return await apiRequest(path, options);
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
+    throw new PlannerApiError(error.message, error.status || 0, path, error.code || 'CONNECTION');
   }
-  const data = await response.json().catch(() => null);
-  if (response.status === 401) { localStorage.removeItem('adminToken'); window.location.assign('/admin-login'); }
-  if (!response.ok) throw new PlannerApiError(data?.message || `The request failed (HTTP ${response.status}).`, response.status, path);
-  if (data === null) throw new PlannerApiError('The connected address did not return JSON API data. Check that the backend address is correct.', response.status, path, 'INVALID_RESPONSE');
-  return data;
 }
 
-async function apiList(path) {
-  const data = await api(path);
+async function apiList(path, options) {
+  const data = await api(path, options);
   if (!Array.isArray(data)) throw new PlannerApiError('The connected backend returned an unexpected response. Check that the backend address and deployment are correct.', 200, path, 'INVALID_RESPONSE');
   return data;
 }
@@ -120,7 +116,7 @@ export default function AdminPlanner() {
   const [showArchived, setShowArchived] = useState(false);
   const [status, setStatus] = useState(null);
   const [loadErrors, setLoadErrors] = useState({ appointments: null, notes: null });
-  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState({ appointments: true, notes: true, notifications: true });
   const [busy, setBusy] = useState('');
   const actionRef = useRef(false);
   const loadVersion = useRef(0);
@@ -129,30 +125,36 @@ export default function AdminPlanner() {
   const appointmentFormRef = useRef(null);
   const noteFormRef = useRef(null);
   const latestLoad = useRef(null);
+  const activeLoad = useRef(null);
 
   const load = useCallback(async () => {
+    activeLoad.current?.abort();
+    const controller = new AbortController(); activeLoad.current = controller;
     const version = ++loadVersion.current;
-    setLoading(true);
-    const results = await Promise.allSettled([
-      apiList(`/api/appointments?search=${encodeURIComponent(appointmentSearch)}${appointmentStatus ? `&status=${encodeURIComponent(appointmentStatus)}` : ''}`),
-      apiList(`/api/admin-notes?search=${encodeURIComponent(noteSearch)}&archived=${showArchived}`),
-      api('/api/planner/notifications'),
-    ]);
-    if (version !== loadVersion.current) return;
-    const [appointmentData, noteData, notificationData] = results;
-    if (appointmentData.status === 'fulfilled') setAppointments(array(appointmentData.value));
-    if (noteData.status === 'fulfilled') setNotes(array(noteData.value));
-    if (notificationData.status === 'fulfilled') {
-      const value = notificationData.value || {};
-      setNotifications({ todayAppointments: array(value.todayAppointments), dueNotes: array(value.dueNotes), upcomingNotes: array(value.upcomingNotes), counts: value.counts || emptyNotifications.counts });
-    }
-    setNotificationsError(notificationData.status === 'rejected' ? notificationData.reason : null);
-    setLoadErrors({ appointments: appointmentData.status === 'rejected' ? appointmentData.reason : null, notes: noteData.status === 'rejected' ? noteData.reason : null });
-    setLoading(false);
+    const current = () => version === loadVersion.current && !controller.signal.aborted;
+    setPending({ appointments: true, notes: true, notifications: true });
+    const definitions = [
+      ['appointments', () => apiList(`/api/appointments?search=${encodeURIComponent(appointmentSearch)}${appointmentStatus ? `&status=${encodeURIComponent(appointmentStatus)}` : ''}`, { signal: controller.signal })],
+      ['notes', () => apiList(`/api/admin-notes?search=${encodeURIComponent(noteSearch)}&archived=${showArchived}`, { signal: controller.signal })],
+      ['notifications', () => api('/api/planner/notifications', { signal: controller.signal })],
+    ];
+    await Promise.allSettled(definitions.map(async ([key, fetcher]) => {
+      try {
+        const data = await fetcher();
+        if (!current()) return;
+        if (key === 'appointments') setAppointments(array(data));
+        else if (key === 'notes') setNotes(array(data));
+        else { const value = data || {}; setNotifications({ todayAppointments: array(value.todayAppointments), dueNotes: array(value.dueNotes), upcomingNotes: array(value.upcomingNotes), counts: value.counts || emptyNotifications.counts }); }
+        if (key === 'notifications') setNotificationsError(null); else setLoadErrors((previous) => ({ ...previous, [key]: null }));
+      } catch (error) {
+        if (current()) { if (key === 'notifications') setNotificationsError(error); else setLoadErrors((previous) => ({ ...previous, [key]: error })); }
+      } finally { if (current()) setPending((previous) => ({ ...previous, [key]: false })); }
+    }));
+    if (current()) activeLoad.current = null;
   }, [appointmentSearch, appointmentStatus, noteSearch, showArchived]);
 
   useEffect(() => { latestLoad.current = load; }, [load]);
-  useEffect(() => { const timer = window.setTimeout(load, 220); return () => { window.clearTimeout(timer); loadVersion.current += 1; }; }, [load]);
+  useEffect(() => { const timer = window.setTimeout(load, 220); return () => { window.clearTimeout(timer); loadVersion.current += 1; activeLoad.current?.abort(); }; }, [load]);
   useEffect(() => {
     const refresh = () => load();
     window.addEventListener('admin-refresh', refresh);
@@ -167,6 +169,7 @@ export default function AdminPlanner() {
     return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', key); };
   }, [showNotifications]);
 
+  const loading = view === 'appointments' ? pending.appointments : pending.notes;
   const change = (setter) => (event) => { const { name, value, type, checked } = event.target; setter((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value })); };
   const runAction = async (key, action, message) => {
     if (actionRef.current) return;

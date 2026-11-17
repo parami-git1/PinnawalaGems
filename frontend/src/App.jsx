@@ -4,6 +4,7 @@ import Footer from './Footer';
 import Home from './Home';
 import Navbar from './Navbar';
 import WhatsAppWidget from './WhatsAppWidget';
+import NotFound from './NotFound';
 import { useRemoteResource } from './hooks/useRemoteResource';
 
 const AdminInventory = lazy(() => import('./AdminInventory'));
@@ -62,6 +63,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/category/:categoryId" element={<CategoryView />} />
           <Route path="/gem/:stoneId" element={<GemDetails />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/admin-login" element={<Login />} />
         <Route element={<AdminProtectedRoute />}>

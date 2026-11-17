@@ -14,9 +14,9 @@ const text = (value) => typeof value === 'string' ? value.trim() : '';
 
 function validateReview({ name, review, rating }) {
   return {
-    name: text(name) ? '' : 'Please enter your name.',
+    name: !text(name) ? 'Please enter your name.' : text(name).length < 2 || text(name).length > 100 ? 'Please use 2–100 characters for your name.' : '',
     rating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? '' : 'Please select a rating from 1 to 5.',
-    review: text(review) ? '' : 'Please tell us about your experience.',
+    review: !text(review) ? 'Please tell us about your experience.' : text(review).length < 3 || text(review).length > 4000 ? 'Please use 3–4000 characters for your review.' : '',
   };
 }
 
@@ -154,14 +154,19 @@ export default function Feedback() {
     const timeout = window.setTimeout(() => controller.abort(), 15000);
     try {
       const response = await fetch(`${API_BASE}/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal });
-      if (!response.ok) throw new Error('submission');
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        const error = new Error(typeof result.message === 'string' ? result.message : response.status === 429 ? 'Please wait a little before submitting another review.' : 'Submission failed — please try again.');
+        error.fromServer = true;
+        throw error;
+      }
       setToast({ type: 'success', message: 'Thank you for sharing your experience! Your review has been submitted and is awaiting approval.' });
       setFormData(EMPTY_FORM);
       setHoverRating(0);
       setTouched({});
       setSubmitAttempted(false);
     } catch (error) {
-      setToast({ type: 'error', message: error.message === 'submission' ? 'Submission failed — please try again.' : 'We couldn’t send your review. Your words are saved here; please try again.' });
+      setToast({ type: 'error', message: error.fromServer ? error.message : 'We couldn’t send your review. Your words are saved here; please try again.' });
     } finally {
       window.clearTimeout(timeout);
       submittingRef.current = false;
@@ -200,7 +205,7 @@ export default function Feedback() {
               <label htmlFor="feedback-name">Your name <span className="feedback-required" aria-hidden="true">*</span></label>
               <div className="feedback-field-control">
                 <Icon name="user" />
-                <input ref={nameRef} id="feedback-name" name="name" value={formData.name} onChange={handleChange} onBlur={handleBlur} autoComplete="name" placeholder="Enter your name" required disabled={isSubmitting} aria-invalid={Boolean(nameError)} aria-describedby={nameError ? 'feedback-name-error' : undefined} />
+                <input ref={nameRef} id="feedback-name" name="name" value={formData.name} onChange={handleChange} onBlur={handleBlur} autoComplete="name" placeholder="Enter your name" minLength={2} maxLength={100} required disabled={isSubmitting} aria-invalid={Boolean(nameError)} aria-describedby={nameError ? 'feedback-name-error' : undefined} />
               </div>
               {nameError && <p className="feedback-field-error" id="feedback-name-error">{nameError}</p>}
             </div>
@@ -225,7 +230,7 @@ export default function Feedback() {
               <label htmlFor="feedback-review">Your review <span className="feedback-required" aria-hidden="true">*</span></label>
               <div className="feedback-field-control feedback-field-control--review">
                 <Icon name="edit" />
-                <textarea ref={reviewRef} id="feedback-review" name="review" value={formData.review} onChange={handleChange} onBlur={handleBlur} placeholder="Tell us about your experience with Pinnawala Gems..." rows="4" required disabled={isSubmitting} aria-invalid={Boolean(reviewError)} aria-describedby={reviewError ? 'feedback-review-error' : undefined} />
+                <textarea ref={reviewRef} id="feedback-review" name="review" value={formData.review} onChange={handleChange} onBlur={handleBlur} placeholder="Tell us about your experience with Pinnawala Gems..." rows="4" minLength={3} maxLength={4000} required disabled={isSubmitting} aria-invalid={Boolean(reviewError)} aria-describedby={reviewError ? 'feedback-review-error' : undefined} />
               </div>
               {reviewError && <p className="feedback-field-error" id="feedback-review-error">{reviewError}</p>}
             </div>

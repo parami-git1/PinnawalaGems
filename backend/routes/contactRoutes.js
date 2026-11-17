@@ -1,35 +1,9 @@
 const express = require('express');
-const router = express.Router();
 const ContactData = require('../models/ContactData');
 const requireAdmin = require('../middleware/adminAuth');
-
-// Get Contact Details
-router.get('/', async (req, res) => {
-  try {
-    let data = await ContactData.findOne();
-    if (!data) {
-      data = await ContactData.create({});
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Update Contact Details (Admin Only)
-router.put('/', requireAdmin, async (req, res) => {
-  try {
-    let data = await ContactData.findOne();
-    if (!data) {
-      data = new ContactData(req.body);
-      await data.save();
-    } else {
-      data = await ContactData.findOneAndUpdate({}, req.body, { new: true });
-    }
-    res.json(data);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
+const { readContent, saveContent } = require('../utils/singletonContent');
+const { routeError } = require('../utils/catalogData');
+const router = express.Router();
+router.get('/', async (_req, res) => { try { res.json(await readContent(ContactData)); } catch (error) { routeError(res, error); } });
+router.put('/', requireAdmin, async (req, res) => { try { res.json(await saveContent(ContactData, req.body)); } catch (error) { routeError(res, error); } });
 module.exports = router;

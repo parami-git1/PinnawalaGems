@@ -6,20 +6,25 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const cloudinary = require('cloudinary').v2;
 const requireAdmin = require('../middleware/adminAuth');
+const { uploadLimiter } = require('../middleware/security');
 const { MEDIA_LIMITS, MEDIA_TYPES, mediaError, matchesSignature } = require('../utils/gemMedia');
 
 const router = express.Router();
-const upload = multer({
+function uploader(field, imageOnly) { return multer({
   storage: multer.diskStorage({
     destination: (req, _file, done) => done(null, req.mediaTempDir),
     filename: (_req, _file, done) => done(null, randomUUID()),
   }),
-  // Multer 2.2 emits its limit event at the boundary; check the exact limit below.
-  limits: { fileSize: MEDIA_LIMITS.videoBytes + 1, files: 1, fields: 0, parts: 2 },
-  fileFilter: (_req, file, done) => done(MEDIA_TYPES[file.mimetype] ? null : mediaError('Choose a JPEG, PNG, WebP, MP4 or WebM file.'), Boolean(MEDIA_TYPES[file.mimetype])),
-}).single('file');
+  limits: { fileSize: imageOnly ? MEDIA_LIMITS.imageBytes : MEDIA_LIMITS.videoBytes, files: 1, fields: 0, parts: 2 },
+  fileFilter: (_req, file, done) => {
+    const allowed = MEDIA_TYPES[file.mimetype] && (!imageOnly || MEDIA_TYPES[file.mimetype] === 'image');
+    done(allowed ? null : mediaError(imageOnly ? 'Choose a JPEG, PNG or WebP photo.' : 'Choose a JPEG, PNG, WebP, MP4 or WebM file.'), Boolean(allowed));
+  },
+}).single(field); }
 
-router.post('/upload', requireAdmin, async (req, res) => {
+function uploadHandler({ field = 'file', imageOnly = false } = {}) {
+ const upload = uploader(field, imageOnly);
+ return async (req, res) => {
   let temporaryDirectory;
   const cleanup = async () => {
     if (temporaryDirectory) await fs.rm(temporaryDirectory, { recursive: true, force: true }).catch(() => {});
@@ -44,14 +49,18 @@ router.post('/upload', requireAdmin, async (req, res) => {
     } catch { throw mediaError('The media upload could not be completed. Please try this file again.', 502); }
     if (!uploaded?.secure_url) throw mediaError('The media upload did not return a URL. Please try again.', 502);
     await cleanup();
-    res.status(201).json({ url: uploaded.secure_url, resourceType, bytes: req.file.size, publicId: uploaded.public_id, width: uploaded.width, height: uploaded.height, ...(resourceType === 'video' ? { duration: uploaded.duration } : {}) });
+    res.status(imageOnly ? 200 : 201).json({ ...(imageOnly ? { imageUrl: uploaded.secure_url } : {}), url: uploaded.secure_url, resourceType, bytes: req.file.size, publicId: uploaded.public_id, width: uploaded.width, height: uploaded.height, ...(resourceType === 'video' ? { duration: uploaded.duration } : {}) });
   } catch (error) {
     await cleanup();
     if (res.destroyed) return;
-    if (error.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: 'Each video must be 50 MB or smaller; each photo must be 8 MB or smaller.' });
+    if (error.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: imageOnly ? 'Each photo must be 8 MB or smaller.' : 'Each video must be 50 MB or smaller; each photo must be 8 MB or smaller.' });
     if (error instanceof multer.MulterError) return res.status(400).json({ message: 'Upload one file per request. Select multiple files in the gallery to upload them in sequence.' });
     res.status(error.status || 500).json({ message: error.status ? error.message : 'Unable to prepare the upload. Please try again.' });
   } finally { res.removeListener('close', cleanup); await cleanup(); }
-});
+ };
+}
+
+router.post('/upload', requireAdmin, uploadLimiter, uploadHandler());
+router.legacyImageUpload = uploadHandler({ field: 'image', imageOnly: true });
 
 module.exports = router;

@@ -9,7 +9,7 @@ function requireAdmin(req, res, next) {
   }
 
   try {
-    req.admin = jwt.verify(token, process.env.JWT_SECRET);
+    req.admin = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'], maxAge: '8h', clockTolerance: 5 });
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid or expired admin token' });

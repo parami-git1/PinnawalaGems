@@ -1,320 +1,83 @@
 const express = require('express');
-const router = express.Router();
+const mongoose = require('mongoose');
 const GemCategory = require('../models/GemCategory');
 const Stone = require('../models/Stone');
-const cloudinary = require('cloudinary').v2; 
 const requireAdmin = require('../middleware/adminAuth');
-const { normalizeGemMedia, deleteVideoMedia } = require('../utils/gemMedia');
-
-// 1. Categories ගන්න API එක
-router.get('/categories', async (req, res) => {
-  try {
-    const categories = await GemCategory.find().sort({ createdAt: -1 });
-    res.json(categories);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+const { normalizeGemMedia } = require('../utils/gemMedia');
+const { stonePayload, categoryPayload, generatedReference, objectId, routeError, catalogPage } = require('../utils/catalogData');
+const { deleteAssets, deleteStoneAssets } = require('../utils/assetCleanup');
+const router = express.Router();
+router.get('/categories', async (_req, res) => {
+  try { res.json(await GemCategory.find().sort({ createdAt: -1, _id: -1 })); } catch (error) { routeError(res, error); }
 });
-
-// 2. අලුත් Category එකක් හදන API එක
 router.post('/categories', requireAdmin, async (req, res) => {
-  try {
-    const newCategory = new GemCategory(req.body);
-    await newCategory.save();
-    res.status(201).json(newCategory);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+  try { const category = new GemCategory(categoryPayload(req.body)); await category.save(); res.status(201).json(category); } catch (error) { routeError(res, error); }
 });
-
-// 3. සර්ච් සහ ෆිල්ටර් පහසුකම් සහිතව ගල් ලබා ගැනීමේ API එක
 router.get('/categories/:categoryId/stones', async (req, res) => {
-  const { page = 1, limit = 12, stoneId, color, shape, minWeight, maxWeight, minPrice, maxPrice, hasCertificate } = req.query; 
-
-  try {
-    let findQuery = { categoryId: req.params.categoryId };
-
-    if (stoneId) findQuery.stoneId = { $regex: stoneId, $options: 'i' }; 
-    if (color) findQuery.color = { $regex: color, $options: 'i' }; 
-    if (shape) findQuery.shape = { $regex: shape, $options: 'i' };
-
-    if (minWeight || maxWeight) {
-      findQuery.weight = {};
-      if (minWeight) findQuery.weight.$gte = parseFloat(minWeight);
-      if (maxWeight) findQuery.weight.$lte = parseFloat(maxWeight);
-    }
-
-    if (minPrice || maxPrice) {
-      findQuery.price = {};
-      if (minPrice) findQuery.price.$gte = parseFloat(minPrice);
-      if (maxPrice) findQuery.price.$lte = parseFloat(maxPrice);
-    }
-
-    if (hasCertificate === 'true') {
-      findQuery.hasCertificate = true;
-    }
-
-    const stones = await Stone.find(findQuery)
-      .sort({ isFeatured: -1, weight: 1 }) 
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-    
-    const count = await Stone.countDocuments(findQuery);
-    
-    res.json({ stones, totalPages: Math.ceil(count / limit), currentPage: Number(page) });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  try { res.json(await catalogPage(Stone, req.query, req.params.categoryId)); } catch (error) { routeError(res, error); }
 });
-
-// 4. අලුත් ගලක් එකතු කිරීම (Top Gems සහ Cut Fields ඇතුළුව)
+router.get('/stones', async (req, res) => {
+  try { res.json(await catalogPage(Stone, req.query)); } catch (error) { routeError(res, error); }
+});
 router.post('/stones', requireAdmin, async (req, res) => {
   try {
-    const media = normalizeGemMedia(req.body);
-    const { 
-      categoryId, title, description, weight, color, shape, cut, price, 
-      hasCertificate, certificateDetails, certificateImage, image, 
-      isFeatured, quantity, origin, additionalImages, isTopGem, homePagePosition 
-    } = req.body;
-    
-    const category = await GemCategory.findById(categoryId);
+    const payload = { ...stonePayload(req.body), ...normalizeGemMedia(req.body) };
+    const category = await GemCategory.findById(payload.categoryId);
     if (!category) return res.status(400).json({ message: 'Choose an existing gemstone category.' });
-    const prefix = category.title.toLowerCase().replace(/\s+/g, '-');
-    
-    const lastStone = await Stone.findOne({ categoryId }).sort({ _id: -1 });
-    let nextNumber = 1;
-    if (lastStone && lastStone.stoneId) {
-      const parts = lastStone.stoneId.split('-');
-      const lastNum = parseInt(parts[parts.length - 1]);
-      if (!isNaN(lastNum)) nextNumber = lastNum + 1;
-    }
-    
-    const stoneId = `${prefix}-${nextNumber}`; 
-    
-    const newStone = new Stone({ 
-      categoryId, title, description, weight, color, shape, cut: cut || '', price, 
-      hasCertificate, certificateDetails, certificateImage, image, isFeatured, stoneId,
-      quantity: quantity || 1,
-      origin: origin || '', 
-      additionalImages: additionalImages || [],
-      isTopGem: isTopGem || false,
-      homePagePosition: homePagePosition || 0,
-      ...media
-    });
-    
-    await newStone.save();
-    res.status(201).json(newStone);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+    const id = new mongoose.Types.ObjectId();
+    const stone = new Stone({ ...payload, _id: id, quantity: payload.quantity ?? 1, stoneId: generatedReference(category, id) });
+    await stone.save(); res.status(201).json(stone);
+  } catch (error) { routeError(res, error); }
 });
-
-// 5. ගලක් Featured/Unfeatured කිරීම
+router.get('/stones/:stoneId', async (req, res) => {
+  try { const stone = await Stone.findById(objectId(req.params.stoneId)); if (!stone) return res.status(404).json({ message: 'Stone not found' }); res.json(stone); } catch (error) { routeError(res, error); }
+});
 router.put('/stones/:stoneId/feature', requireAdmin, async (req, res) => {
   try {
-    const stone = await Stone.findById(req.params.stoneId);
-    stone.isFeatured = !stone.isFeatured;
-    await stone.save();
-    res.json(stone);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    const current = await Stone.findById(objectId(req.params.stoneId));
+    if (!current) return res.status(404).json({ message: 'Stone not found' });
+    res.json(await Stone.findByIdAndUpdate(req.params.stoneId, { $set: { isFeatured: !current.isFeatured } }, { new: true, runValidators: true }));
+  } catch (error) { routeError(res, error); }
 });
-
-// 6. Category එකක තියෙන "ගල් ඔක්කොම එකපාර මකන" Route එක
-router.delete('/categories/:categoryId/stones', requireAdmin, async (req, res) => {
-  try {
-    const stones = await Stone.find({ categoryId: req.params.categoryId });
-    
-    for (const stone of stones) {
-      await deleteVideoMedia(stone.videos);
-      if (stone.image && stone.image.includes('cloudinary')) {
-        const publicId = stone.image.split('/').slice(-2).join('/').split('.')[0];
-        await cloudinary.uploader.destroy(publicId);
-      }
-      if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
-        const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
-        await cloudinary.uploader.destroy(certPublicId);
-      }
-      if (stone.additionalImages && stone.additionalImages.length > 0) {
-        for (const img of stone.additionalImages) {
-          if (img.includes('cloudinary')) {
-            const pubId = img.split('/').slice(-2).join('/').split('.')[0];
-            await cloudinary.uploader.destroy(pubId);
-          }
-        }
-      }
-    }
-
-    await Stone.deleteMany({ categoryId: req.params.categoryId });
-    
-    res.json({ message: 'All stones in this category have been deleted successfully.' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// 7. ප්‍රධාන Category එක මකා දැමීම 
-router.delete('/categories/:categoryId', requireAdmin, async (req, res) => {
-  try {
-    const category = await GemCategory.findById(req.params.categoryId);
-    if (!category) return res.status(404).json({ message: 'Category not found' });
-
-    let catImageUrl = category.mainImage || category.image;
-    if (catImageUrl && catImageUrl.includes('cloudinary')) {
-      const catPublicId = catImageUrl.split('/').slice(-2).join('/').split('.')[0];
-      await cloudinary.uploader.destroy(catPublicId);
-    }
-    
-    if (category.coverImage && category.coverImage.includes('cloudinary')) {
-      const coverPublicId = category.coverImage.split('/').slice(-2).join('/').split('.')[0];
-      await cloudinary.uploader.destroy(coverPublicId);
-    }
-
-    const stones = await Stone.find({ categoryId: req.params.categoryId });
-    for (const stone of stones) {
-      await deleteVideoMedia(stone.videos);
-      if (stone.image && stone.image.includes('cloudinary')) {
-        const publicId = stone.image.split('/').slice(-2).join('/').split('.')[0];
-        await cloudinary.uploader.destroy(publicId);
-      }
-      if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
-        const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
-        await cloudinary.uploader.destroy(certPublicId);
-      }
-      if (stone.additionalImages && stone.additionalImages.length > 0) {
-        for (const img of stone.additionalImages) {
-          if (img.includes('cloudinary')) {
-            const pubId = img.split('/').slice(-2).join('/').split('.')[0];
-            await cloudinary.uploader.destroy(pubId);
-          }
-        }
-      }
-    }
-
-    await Stone.deleteMany({ categoryId: req.params.categoryId });
-    await GemCategory.findByIdAndDelete(req.params.categoryId);
-    
-    res.json({ message: 'Category and all related stones deleted completely' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// 8. තනි ගලක් මකා දැමීම
-router.delete('/stones/:stoneId', requireAdmin, async (req, res) => {
-  try {
-    const stone = await Stone.findById(req.params.stoneId);
-    if (!stone) return res.status(404).json({ message: 'Stone not found' });
-    await deleteVideoMedia(stone.videos);
-
-    if (stone.image && stone.image.includes('cloudinary')) {
-      const publicId = stone.image.split('/').slice(-2).join('/').split('.')[0];
-      await cloudinary.uploader.destroy(publicId);
-    }
-    if (stone.certificateImage && stone.certificateImage.includes('cloudinary')) {
-      const certPublicId = stone.certificateImage.split('/').slice(-2).join('/').split('.')[0];
-      await cloudinary.uploader.destroy(certPublicId);
-    }
-    if (stone.additionalImages && stone.additionalImages.length > 0) {
-      for (const img of stone.additionalImages) {
-        if (img.includes('cloudinary')) {
-          const pubId = img.split('/').slice(-2).join('/').split('.')[0];
-          await cloudinary.uploader.destroy(pubId);
-        }
-      }
-    }
-
-    await Stone.findByIdAndDelete(req.params.stoneId);
-    res.json({ message: 'Stone deleted and Cloudinary images removed' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// 9. තනි ගලක් ලබා ගැනීම
-router.get('/stones/:stoneId', async (req, res) => {
-  try {
-    const stone = await Stone.findById(req.params.stoneId);
-    if (!stone) return res.status(404).json({ message: 'Stone not found' });
-    res.json(stone);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// 10. Global Search API
-router.get('/stones', async (req, res) => {
-  const { page = 1, limit = 12, stoneId, gemType, color, shape, minWeight, maxWeight, minPrice, maxPrice, hasCertificate } = req.query; 
-
-  try {
-    let findQuery = {}; 
-
-    if (stoneId) findQuery.stoneId = { $regex: stoneId, $options: 'i' }; 
-    if (gemType) findQuery.title = { $regex: gemType, $options: 'i' }; 
-    if (color) findQuery.color = { $regex: color, $options: 'i' };
-    if (shape) findQuery.shape = { $regex: shape, $options: 'i' };
-
-    if (minWeight || maxWeight) {
-      findQuery.weight = {};
-      if (minWeight) findQuery.weight.$gte = parseFloat(minWeight);
-      if (maxWeight) findQuery.weight.$lte = parseFloat(maxWeight);
-    }
-
-    if (minPrice || maxPrice) {
-      findQuery.price = {};
-      if (minPrice) findQuery.price.$gte = parseFloat(minPrice);
-      if (maxPrice) findQuery.price.$lte = parseFloat(maxPrice);
-    }
-
-    if (hasCertificate === 'true') {
-      findQuery.hasCertificate = true;
-    }
-
-    const stones = await Stone.find(findQuery).sort({ isFeatured: -1, weight: 1 }).limit(limit * 1).skip((page - 1) * limit);
-    const count = await Stone.countDocuments(findQuery);
-    
-    res.json({ stones, totalPages: Math.ceil(count / limit), currentPage: Number(page) });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// 11. Category Edit කිරීම
-router.put('/categories/:categoryId', requireAdmin, async (req, res) => {
-  try {
-    const updatedCategory = await GemCategory.findByIdAndUpdate(req.params.categoryId, req.body, { new: true });
-    res.json(updatedCategory);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// 12. ගලක් Edit කිරීම (isTopGem වෙනස් කිරීම ඇතුළුව)
 router.put('/stones/:stoneId', requireAdmin, async (req, res) => {
   try {
-    const currentStone = await Stone.findById(req.params.stoneId);
-    if (!currentStone) return res.status(404).json({ message: 'Stone not found' });
-    const media = normalizeGemMedia(req.body, currentStone);
-    const updatedStone = await Stone.findByIdAndUpdate(
-      req.params.stoneId, 
-      { $set: { ...req.body, ...media } },
-      { new: true }
-    );
-    res.json(updatedStone);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
+    const current = await Stone.findById(objectId(req.params.stoneId));
+    if (!current) return res.status(404).json({ message: 'Stone not found' });
+    const payload = { ...stonePayload(req.body, { existing: current }), ...normalizeGemMedia(req.body, current) };
+    if (payload.categoryId && !await GemCategory.findById(payload.categoryId)) return res.status(400).json({ message: 'Choose an existing gemstone category.' });
+    res.json(await Stone.findByIdAndUpdate(req.params.stoneId, { $set: payload }, { new: true, runValidators: true }));
+  } catch (error) { routeError(res, error); }
 });
-
-// 🔹 Home Page එකට විතරක් Top Gems ටික අරන් දෙන විශේෂ API එක 🔹
-router.get('/top-gems', async (req, res) => {
+router.delete('/stones/:stoneId', requireAdmin, async (req, res) => {
   try {
-    const topStones = await Stone.find({ isTopGem: true }).sort({ homePagePosition: 1 }).limit(10);
-    res.json(topStones);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    const stone = await Stone.findById(objectId(req.params.stoneId)); if (!stone) return res.status(404).json({ message: 'Stone not found' });
+    await deleteStoneAssets(stone); await Stone.findByIdAndDelete(req.params.stoneId); res.json({ message: 'Stone and its uploaded media deleted.' });
+  } catch (error) { routeError(res, error); }
 });
-
+router.put('/categories/:categoryId', requireAdmin, async (req, res) => {
+  try {
+    const category = await GemCategory.findByIdAndUpdate(objectId(req.params.categoryId), { $set: categoryPayload(req.body) }, { new: true, runValidators: true });
+    if (!category) return res.status(404).json({ message: 'Category not found' }); res.json(category);
+  } catch (error) { routeError(res, error); }
+});
+router.delete('/categories/:categoryId/stones', requireAdmin, async (req, res) => {
+  try {
+    const categoryId = objectId(req.params.categoryId, 'Category');
+    if (!await GemCategory.findById(categoryId)) return res.status(404).json({ message: 'Category not found' });
+    for (const stone of await Stone.find({ categoryId })) await deleteStoneAssets(stone);
+    await Stone.deleteMany({ categoryId }); res.json({ message: 'All stones in this category deleted.' });
+  } catch (error) { routeError(res, error); }
+});
+router.delete('/categories/:categoryId', requireAdmin, async (req, res) => {
+  try {
+    const categoryId = objectId(req.params.categoryId, 'Category'); const category = await GemCategory.findById(categoryId);
+    if (!category) return res.status(404).json({ message: 'Category not found' });
+    await deleteAssets([category.mainImage, category.coverImage]);
+    for (const stone of await Stone.find({ categoryId })) await deleteStoneAssets(stone);
+    await Stone.deleteMany({ categoryId }); await GemCategory.findByIdAndDelete(categoryId); res.json({ message: 'Category and its stones deleted.' });
+  } catch (error) { routeError(res, error); }
+});
+router.get('/top-gems', async (_req, res) => {
+  try { res.json(await Stone.find({ isTopGem: true }).sort({ homePagePosition: 1, _id: 1 }).limit(10)); } catch (error) { routeError(res, error); }
+});
 module.exports = router;

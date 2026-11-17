@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
+const { loginIpLimiter, loginAccountLimiter } = require('../middleware/security');
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -14,14 +15,15 @@ function getAllowedEmails() {
 }
 
 function matchesSecret(value, expected) {
-  if (!value || !expected) return false;
-  const actualBuffer = Buffer.from(value);
-  const expectedBuffer = Buffer.from(expected);
-  return actualBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(actualBuffer, expectedBuffer);
+  if (typeof value !== 'string' || typeof expected !== 'string' || !value || !expected) return false;
+  const actualBuffer = crypto.createHash('sha256').update(value).digest();
+  const expectedBuffer = crypto.createHash('sha256').update(expected).digest();
+  return crypto.timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
-router.post('/login', (req, res) => {
+router.post('/login', loginIpLimiter, loginAccountLimiter, (req, res) => {
   const { username, password } = req.body || {};
+  if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password || username.length > 256 || password.length > 1024) return res.status(400).json({ message: 'Enter a valid admin username and password.' });
   const configuredUsername = process.env.ADMIN_USERNAME;
   const configuredPassword = process.env.ADMIN_PASSWORD;
 
@@ -29,7 +31,7 @@ router.post('/login', (req, res) => {
     return res.status(503).json({ message: 'Password authentication is not configured' });
   }
 
-  if (!matchesSecret(username, configuredUsername) || !matchesSecret(password, configuredPassword)) {
+  if (!matchesSecret(username.trim(), configuredUsername) || !matchesSecret(password, configuredPassword)) {
     return res.status(401).json({ message: 'Invalid admin username or password' });
   }
 
@@ -42,10 +44,10 @@ router.post('/login', (req, res) => {
   res.json({ token, admin: { username: configuredUsername } });
 });
 
-router.post('/google-login', async (req, res) => {
+router.post('/google-login', loginIpLimiter, async (req, res) => {
   try {
-    const { credential } = req.body;
-    if (!credential || !process.env.GOOGLE_CLIENT_ID || !process.env.JWT_SECRET) {
+    const { credential } = req.body || {};
+    if (typeof credential !== 'string' || !credential || credential.length > 10000 || !process.env.GOOGLE_CLIENT_ID || !process.env.JWT_SECRET) {
       return res.status(400).json({ message: 'Google authentication is not configured' });
     }
 

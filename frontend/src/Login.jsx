@@ -1,7 +1,8 @@
 import { GoogleLogin } from '@react-oauth/google';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './AdminLogin.css';
+import { apiRequest } from './api';
 
 function LoginIcon({ type = 'shield' }) {
   const paths = {
@@ -24,15 +25,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState('');
   const submittingRef = useRef(false);
+  const activeRequest = useRef(null);
+  const mounted = useRef(true);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://pinnawalagems.onrender.com';
-
-  const readResponse = async (response) => {
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) return response.json();
-    const body = await response.text();
-    throw new Error(body.startsWith('<!DOCTYPE') ? 'The admin service is not available at the configured address.' : body || 'Unexpected server response. Please try again.');
-  };
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; activeRequest.current?.abort(); }; }, []);
 
   const signIn = async (path, payload, method) => {
     if (submittingRef.current) return;
@@ -40,20 +36,19 @@ export default function Login() {
     setErrorMsg('');
     setSubmitting(method);
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 20000);
+    activeRequest.current = controller;
     try {
-      const response = await fetch(`${apiUrl}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal });
-      const data = await readResponse(response);
-      if (!response.ok) throw new Error(data.message || (method === 'google' ? 'This Google account is not authorised as an admin.' : 'Invalid admin credentials. Please try again.'));
+      const data = await apiRequest(path, { method: 'POST', body: JSON.stringify(payload), signal: controller.signal }, { auth: false, timeout: 20000 });
+      if (!mounted.current) return;
       if (typeof data.token !== 'string' || !data.token) throw new Error('The server did not return an admin session. Please try again.');
       localStorage.setItem('adminToken', data.token);
       navigate('/admin', { replace: true });
     } catch (error) {
-      setErrorMsg(error.name === 'AbortError' ? 'The sign-in request took too long. Please try again.' : error.message || 'Unable to sign in. Please check your connection and try again.');
+      if (mounted.current && !controller.signal.aborted) setErrorMsg(error.message || 'Unable to sign in. Please check your connection and try again.');
     } finally {
-      window.clearTimeout(timeout);
       submittingRef.current = false;
-      setSubmitting('');
+      activeRequest.current = null;
+      if (mounted.current) setSubmitting('');
     }
   };
   const handlePasswordLogin = (event) => { event.preventDefault(); signIn('/api/admin/login', { username, password }, 'password'); };

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { useRemoteResource } from './hooks/useRemoteResource';
 import CollectionBanner from './CollectionBanner';
@@ -9,7 +9,7 @@ const PAGE_SIZE = 30;
 const clean = (value) => String(value ?? '').trim();
 const slugify = (value) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '-');
 const categoryIdOf = (gem) => clean(gem.categoryId?._id || gem.categoryId || gem.category?._id);
-const certified = (gem) => Boolean(gem.hasCertificate || clean(gem.certificateDetails) || clean(gem.certificateImage));
+const certified = (gem) => gem.hasCertificate === true;
 const weightLabel = (value) => clean(value) ? `${clean(value).replace(/\s*(?:cts?\.?|carats?)\s*$/i, '').trim()} ct` : '';
 
 function Icon({ type = 'arrow', ...props }) {
@@ -59,62 +59,51 @@ function GemCard({ gem, category }) {
 export default function CategoryView() {
   const { categorySlug, categoryId } = useParams();
   const { categoriesResource } = useOutletContext();
-  const stonesResource = useRemoteResource('inventory/stones?limit=500');
   const categories = useMemo(() => Array.isArray(categoriesResource.data) ? categoriesResource.data : [], [categoriesResource.data]);
-  const stones = useMemo(() => Array.isArray(stonesResource.data?.stones) ? stonesResource.data.stones : [], [stonesResource.data]);
   const [localCategory, setLocalCategory] = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState('featured');
   const [isFiltersOpen, setIsFiltersOpen] = useState(() => window.matchMedia('(min-width: 600px)').matches);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [pagination, setPagination] = useState({ key: '', page: 1 });
   const routeKey = `${categorySlug || ''}/${categoryId || ''}`;
-  const routeCategory = categoryId || (categorySlug ? categories.find((category) => slugify(category.title) === categorySlug.toLowerCase())?._id || 'unknown' : 'all');
+  const routeCategory = categoryId || (categorySlug ? categories.find((category) => (category.slug || slugify(category.title)) === categorySlug.toLowerCase())?._id || 'unknown' : 'all');
   const selectedCategory = localCategory?.routeKey === routeKey ? localCategory.id : routeCategory;
   const activeCategory = categories.find((category) => category._id === selectedCategory);
   const allCategories = selectedCategory === 'all';
+  const selectionKey = JSON.stringify([routeKey, selectedCategory, filters, sortOrder]);
+  const requestedPage = pagination.key === selectionKey ? pagination.page : 1;
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(filters.search.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [filters.search]);
+  const query = new URLSearchParams({ page: String(requestedPage), limit: String(PAGE_SIZE), sort: sortOrder });
+  if (!allCategories && selectedCategory !== 'unknown') query.set('categoryId', selectedCategory);
+  if (search) query.set('search', search);
+  for (const key of ['shape', 'cut', 'origin', 'color']) if (filters[key]) query.set(key, filters[key]);
+  if (filters.certificate) query.set('hasCertificate', String(filters.certificate === 'certified'));
+  if (filters.min !== '') query.set('minWeight', filters.min);
+  if (filters.max !== '') query.set('maxWeight', filters.max);
+  const stonesResource = useRemoteResource(`inventory/stones?${query}`);
+  const stones = useMemo(() => Array.isArray(stonesResource.data?.stones) ? stonesResource.data.stones : [], [stonesResource.data]);
   const isLoading = stonesResource.status === 'loading' || categoriesResource.status === 'loading';
   const hasError = stonesResource.status === 'error' || categoriesResource.status === 'error';
   const unknownCategory = !allCategories && !activeCategory && !isLoading && !hasError;
 
-  const categoryCounts = useMemo(() => stones.reduce((counts, gem) => {
-    const id = categoryIdOf(gem);
-    counts[id] = (counts[id] || 0) + 1;
-    return counts;
-  }, {}), [stones]);
-  const categoryStones = useMemo(() => allCategories ? stones : stones.filter((gem) => categoryIdOf(gem) === selectedCategory), [stones, allCategories, selectedCategory]);
+  const categoryCounts = useMemo(() => Array.isArray(stonesResource.data?.categoryCounts)
+    ? Object.fromEntries(stonesResource.data.categoryCounts.map(({ categoryId: id, count }) => [id, Number(count) || 0]))
+    : {}, [stonesResource.data]);
+  const allCount = Object.values(categoryCounts).reduce((sum, count) => sum + count, 0);
   const filterOptions = useMemo(() => {
-    const values = (key) => [...new Map(stones.map((gem) => clean(gem[key])).filter(Boolean).map((value) => [value.toLowerCase(), value])).values()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-    return { shapes: values('shape'), cuts: values('cut'), origins: values('origin'), colors: values('color') };
-  }, [stones]);
-
-  const displayedStones = useMemo(() => {
-    const query = filters.search.trim().toLowerCase();
-    const min = Number.parseFloat(filters.min);
-    const max = Number.parseFloat(filters.max);
-    return categoryStones.filter((gem) => {
-      const categoryName = categories.find((category) => category._id === categoryIdOf(gem))?.title;
-      const searchable = [gem.title, gem.stoneId, categoryName, gem.category?.title, gem.shape, gem.cut, gem.origin, gem.color].filter(Boolean).join(' ').toLowerCase();
-      const weight = Number.parseFloat(gem.weight);
-      return (!query || searchable.includes(query))
-        && ['shape', 'cut', 'origin', 'color'].every((key) => !filters[key] || clean(gem[key]).toLowerCase() === filters[key].toLowerCase())
-        && (!filters.certificate || (filters.certificate === 'certified' ? certified(gem) : !certified(gem)))
-        && (!filters.min || (Number.isFinite(min) && Number.isFinite(weight) && weight >= min))
-        && (!filters.max || (Number.isFinite(max) && Number.isFinite(weight) && weight <= max));
-    }).sort((a, b) => {
-      if (sortOrder === 'weight-low') return (Number.parseFloat(a.weight) || 0) - (Number.parseFloat(b.weight) || 0);
-      if (sortOrder === 'weight-high') return (Number.parseFloat(b.weight) || 0) - (Number.parseFloat(a.weight) || 0);
-      if (sortOrder === 'name') return clean(a.title).localeCompare(clean(b.title));
-      const featuredDifference = Number(Boolean(b.isFeatured || b.isTopGem)) - Number(Boolean(a.isFeatured || a.isTopGem));
-      const position = (gem) => Number.isFinite(Number(gem.homePagePosition)) && gem.homePagePosition !== null && gem.homePagePosition !== '' ? Number(gem.homePagePosition) : 999;
-      return featuredDifference || position(a) - position(b);
-    });
-  }, [categoryStones, categories, filters, sortOrder]);
-
-  const selectionKey = JSON.stringify([routeKey, selectedCategory, filters, sortOrder]);
-  const totalPages = Math.max(1, Math.ceil(displayedStones.length / PAGE_SIZE));
-  const currentPage = pagination.key === selectionKey ? Math.min(pagination.page, totalPages) : 1;
-  const visibleStones = displayedStones.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const options = stonesResource.data?.filterOptions;
+    const values = (key) => Array.isArray(options?.[key]) ? options[key].filter((value) => typeof value === 'string' && value.trim()) : [];
+    return { shapes: values('shapes'), cuts: values('cuts'), origins: values('origins'), colors: values('colors') };
+  }, [stonesResource.data]);
+  const totalResults = unknownCategory ? 0 : Math.max(0, Number(stonesResource.data?.total) || stones.length);
+  const totalPages = Math.max(1, Number(stonesResource.data?.totalPages) || Math.ceil(totalResults / PAGE_SIZE));
+  const currentPage = Number(stonesResource.data?.currentPage) || requestedPage;
+  const visibleStones = unknownCategory ? [] : stones;
   const filterLabels = { search: 'Search', shape: 'Shape', cut: 'Cut', origin: 'Origin', color: 'Colour', certificate: 'Certification', min: 'Min carats', max: 'Max carats' };
   const activeFilters = Object.entries(filters).filter(([, value]) => value !== '');
   const resetPage = () => setPagination({ key: '', page: 1 });
@@ -148,7 +137,7 @@ export default function CategoryView() {
               <button type="button" className={`gem-category-option${allCategories ? ' is-active' : ''}`} onClick={() => chooseCategory('all')} aria-label="All gemstones" aria-pressed={allCategories}>
                 <span className="gem-category-photo gem-category-photo--all"><Icon type="gem" /></span>
                 <span className="gem-category-name">All gemstones</span>
-                <span className="gem-category-count" aria-hidden="true">{isLoading ? '—' : stones.length}</span>
+                <span className="gem-category-count" aria-hidden="true">{isLoading ? '—' : allCount || totalResults}</span>
               </button>
               {categories.map((category) => (
                 <button key={category._id} type="button" className={`gem-category-option${selectedCategory === category._id ? ' is-active' : ''}`} onClick={() => chooseCategory(category._id)} aria-label={category.title} aria-pressed={selectedCategory === category._id}>
@@ -168,7 +157,7 @@ export default function CategoryView() {
               </label>
               <div className="collection-controls__right">
                 <span className="collection-result-count" role="status" aria-live="polite">
-                  {isLoading ? 'Loading…' : hasError ? 'Unavailable' : <><strong>{displayedStones.length}</strong> {displayedStones.length === 1 ? 'gemstone' : 'gemstones'}</>}
+                  {isLoading ? 'Loading…' : hasError ? 'Unavailable' : <><strong>{totalResults}</strong> {totalResults === 1 ? 'gemstone' : 'gemstones'}</>}
                 </span>
                 <label className="collection-sort"><span className="sr-only">Sort collection</span>
                   <select aria-label="Sort collection" value={sortOrder} onChange={(event) => changeSort(event.target.value)}>
@@ -210,7 +199,7 @@ export default function CategoryView() {
                 </div>
               ) : hasError ? (
                 <div className="collection-empty" role="alert"><Icon type="gem" /><h2>Collection unavailable</h2><p>We couldn’t load the gemstones. Please try again.</p><button type="button" className="collection-button" onClick={retry}>Try again <Icon /></button></div>
-              ) : displayedStones.length === 0 ? (
+              ) : totalResults === 0 ? (
                 <div className="collection-empty">
                   <Icon type="gem" /><h2>{unknownCategory ? 'This collection couldn’t be found.' : 'No gemstones found'}</h2>
                   <p>{activeFilters.length > 0 ? 'Try another filter or reset your selection.' : 'Explore another category or contact us about a gemstone.'}</p>
@@ -221,7 +210,7 @@ export default function CategoryView() {
                 <>
                   <div className="gem-product-grid">{visibleStones.map((gem) => <GemCard key={gem._id} gem={gem} category={categories.find((category) => category._id === categoryIdOf(gem))} />)}</div>
                   <div className="collection-pagination">
-                    <span>Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, displayedStones.length)} of {displayedStones.length}</span>
+                    <span>Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min((currentPage - 1) * PAGE_SIZE + visibleStones.length, totalResults)} of {totalResults}</span>
                     {totalPages > 1 && <nav aria-label="Collection pages">
                       <button type="button" onClick={() => changePage(currentPage - 1)} disabled={currentPage === 1} aria-label="Previous page"><Icon className="collection-arrow-back" /></button>
                       <span>{currentPage} <i>/</i> {totalPages}</span>

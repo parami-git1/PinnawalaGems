@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import './AdminOperations.css';
+import { apiRequest, fetchAllGemstones, fetchAllRecords } from './api';
+import { GEM_MEDIA_LIMITS, IMAGE_TYPES } from './mediaPolicy';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://pinnawalagems.onrender.com';
 const emptyCategory = { title: '', description: '', mainImage: '', coverImage: '' };
 const emptyStockStone = { categoryId: '', title: '', image: '', quantity: 1, description: '', weight: '', color: '', shape: '', price: '', hasCertificate: false };
 const emptyAd = { title: '', image: '', layoutType: 'horizontal', description: '' };
@@ -14,29 +15,14 @@ const tabs = [
   ['legacy', 'Older gem catalog', 'Maintain entries and variations in your existing older catalog.'],
 ];
 
-function authHeaders(body) {
-  return { ...(body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${localStorage.getItem('adminToken')}` };
-}
-
-async function api(path, options = {}) {
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers: { ...authHeaders(options.body), ...(options.headers || {}) } });
-  const data = await response.json().catch(() => ({}));
-  if (response.status === 401) {
-    localStorage.removeItem('adminToken');
-    window.location.assign('/admin-login');
-  }
-  if (!response.ok) {
-    const error = new Error(data.message || `Request failed (${response.status}). Please try again.`);
-    error.status = response.status;
-    throw error;
-  }
-  return data;
-}
+const api = apiRequest;
 
 async function uploadImage(file) {
+  if (!IMAGE_TYPES.includes(file.type)) throw new Error('Choose a JPEG, PNG or WebP image.');
+  if (!file.size || file.size > GEM_MEDIA_LIMITS.imageBytes) throw new Error('Each photo must be 8 MB or smaller and cannot be empty.');
   const body = new FormData();
   body.append('image', file);
-  const data = await api('/api/upload', { method: 'POST', body });
+  const data = await apiRequest('/api/upload', { method: 'POST', body }, { timeout: 120000 });
   if (!data.imageUrl) throw new Error('The upload did not return an image. Please try again.');
   return data.imageUrl;
 }
@@ -61,7 +47,7 @@ function OpsIcon({ name = 'gem', ...props }) {
 function Field({ label, name, value, onChange, required = false, type = 'text', id, help, ...props }) {
   const generatedId = useId();
   const fieldId = id || generatedId;
-  return <div className="admin-field ops-field"><label htmlFor={fieldId}>{label}{required && <span className="ops-required" aria-hidden="true"> *</span>}</label><input id={fieldId} type={type} name={name} value={value ?? ''} onChange={onChange} required={required} aria-describedby={help ? `${fieldId}-help` : undefined} {...props} />{help && <p id={`${fieldId}-help`} className="ops-help">{help}</p>}</div>;
+  return <div className="admin-field ops-field"><label htmlFor={fieldId}>{label}{required && <span className="ops-required" aria-hidden="true"> *</span>}</label><input id={fieldId} type={type} name={name} value={value ?? ''} onChange={onChange} required={required} min={type === 'number' && ['quantity', 'weight', 'price'].includes(name) ? 0 : undefined} step={name === 'quantity' ? 1 : undefined} aria-describedby={help ? `${fieldId}-help` : undefined} {...props} />{help && <p id={`${fieldId}-help`} className="ops-help">{help}</p>}</div>;
 }
 
 function TextField({ label = 'Description', name = 'description', value, onChange, required = false, id, ...props }) {
@@ -149,33 +135,38 @@ function AdminOperations() {
   const [editingLegacyGem, setEditingLegacyGem] = useState(null);
   const [status, setStatus] = useState(null);
   const [loadErrors, setLoadErrors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState({ categories: true, stockCategories: true, stockStones: true, stones: true, ads: true, legacy: true });
+  const [loaded, setLoaded] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const busyRef = useRef(false);
   const uploadingRef = useRef(false);
   const mountedRef = useRef(true);
+  const activeLoad = useRef(null);
+  const loadVersion = useRef(0);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    const stockCategoryRequest = api('/api/stock/categories');
-    const stockStoneRequest = api('/api/stock/stones').catch(async (error) => {
-      if (error.status !== 404) throw error;
-      const list = await stockCategoryRequest;
-      const groups = await Promise.all((Array.isArray(list) ? list : []).map((category) => api(`/api/stock/categories/${category._id}/stones`).then((data) => data.stones || [])));
-      return { stones: groups.flat() };
-    });
-    const results = await Promise.allSettled([api('/api/inventory/categories'), stockCategoryRequest, stockStoneRequest, api('/api/inventory/stones?limit=1000'), api('/api/event-ads'), api('/api/gems')]);
-    if (!mountedRef.current) return;
-    const definitions = [['Gem categories', setCategories, false], ['Stock categories', setStockCategories, false], ['Stock stones', setStockStones, true], ['Homepage gemstones', setStones, true], ['Event advertisements', setAds, false], ['Older catalog gems', setLegacyGems, false]];
-    const errors = [];
-    results.forEach((result, index) => {
-      const [name, setter, nested] = definitions[index];
-      if (result.status === 'fulfilled') { const data = nested ? result.value?.stones : result.value; setter(Array.isArray(data) ? data : []); }
-      else errors.push(`${name}: ${result.reason?.message || 'Could not load records.'}`);
-    });
-    setLoadErrors(errors);
-    setLoading(false);
+    activeLoad.current?.abort();
+    const controller = new AbortController(); activeLoad.current = controller;
+    const version = ++loadVersion.current;
+    const current = () => mountedRef.current && version === loadVersion.current && !controller.signal.aborted;
+    const definitions = [
+      ['categories', 'Gem categories', setCategories, () => api('/api/inventory/categories', { signal: controller.signal })],
+      ['stockCategories', 'Stock categories', setStockCategories, () => api('/api/stock/categories', { signal: controller.signal })],
+      ['stockStones', 'Stock stones', setStockStones, () => fetchAllRecords('/stock/stones', { signal: controller.signal })],
+      ['stones', 'Homepage gemstones', setStones, () => fetchAllGemstones({ signal: controller.signal })],
+      ['ads', 'Event advertisements', setAds, () => api('/api/event-ads', { signal: controller.signal })],
+      ['legacy', 'Older catalog gems', setLegacyGems, () => api('/api/gems', { signal: controller.signal })],
+    ];
+    setRefreshing(true); setLoadErrors([]);
+    setPending(Object.fromEntries(definitions.map(([key]) => [key, true])));
+    await Promise.allSettled(definitions.map(async ([key, name, setter, fetcher]) => {
+      try { const data = await fetcher(); if (current()) { setter(Array.isArray(data) ? data : []); setLoaded((previous) => ({ ...previous, [key]: true })); } }
+      catch (error) { if (current()) setLoadErrors((previous) => [...previous, `${name}: ${error.message || 'Could not load records.'}`]); }
+      finally { if (current()) setPending((previous) => ({ ...previous, [key]: false })); }
+    }));
+    if (current()) { setRefreshing(false); activeLoad.current = null; }
   }, []);
 
   useEffect(() => {
@@ -183,7 +174,7 @@ function AdminOperations() {
     const timer = window.setTimeout(load, 0);
     const onRefresh = () => { if (!busyRef.current && !uploadingRef.current) load(); };
     window.addEventListener('admin-refresh', onRefresh);
-    return () => { mountedRef.current = false; window.clearTimeout(timer); window.removeEventListener('admin-refresh', onRefresh); };
+    return () => { mountedRef.current = false; loadVersion.current += 1; activeLoad.current?.abort(); window.clearTimeout(timer); window.removeEventListener('admin-refresh', onRefresh); };
   }, [load]);
 
   const save = async (action, successMessage) => {
@@ -193,7 +184,7 @@ function AdminOperations() {
     setStatus(null);
     try {
       await action();
-      if (mountedRef.current) { setStatus({ type: 'success', message: successMessage }); await load(); }
+      if (mountedRef.current) { setStatus({ type: 'success', message: successMessage }); load(); }
       return true;
     } catch (error) {
       if (mountedRef.current) setStatus({ type: 'error', message: error.message || 'Could not save changes. Please try again.' });
@@ -226,6 +217,8 @@ function AdminOperations() {
   };
   const saveStockStone = async (event) => {
     event.preventDefault();
+    if (!Number.isInteger(Number(stockStoneForm.quantity)) || Number(stockStoneForm.quantity) < 0) { setStatus({ type: 'error', message: 'Quantity must be a whole number of zero or more.' }); return; }
+    if (stockStoneForm.price !== '' && stockStoneForm.price != null && (!Number.isFinite(Number(stockStoneForm.price)) || Number(stockStoneForm.price) < 0)) { setStatus({ type: 'error', message: 'Price must be zero or more.' }); return; }
     const optionalNumber = (value) => value === '' || value === null || value === undefined ? undefined : Number(value);
     const payload = { ...stockStoneForm, quantity: Number(stockStoneForm.quantity), weight: optionalNumber(stockStoneForm.weight), price: optionalNumber(stockStoneForm.price) };
     if (await save(() => api(editingStockStone ? `/api/stock/stones/${editingStockStone._id}` : '/api/stock/stones', { method: editingStockStone ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Stock stone saved.')) { setStockStoneForm(emptyStockStone); setEditingStockStone(null); }
@@ -241,10 +234,12 @@ function AdminOperations() {
   };
   const toggleStone = (stone, field) => save(() => api(`/api/inventory/stones/${stone._id}`, { method: 'PUT', body: JSON.stringify({ [field]: !stone[field] }) }), `${field === 'isTopGem' ? 'Homepage gem' : 'Featured status'} updated.`);
   const disabled = busy || uploading;
+  const sectionResources = { catalog: ['categories', 'stones'], stock: ['stockCategories', 'stockStones'], ads: ['ads'], legacy: ['legacy'] };
+  const loading = sectionResources[section].some((key) => pending[key] && !loaded[key]);
   const activeTab = tabs.find(([id]) => id === section);
 
   return <div className="admin-operations">
-    <div className="ops-page-header"><div><p className="ops-kicker">Catalog management</p><h2>{activeTab[1]}</h2><p>{activeTab[2]}</p></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={loading || disabled}><OpsIcon name="refresh" />{loading ? 'Refreshing…' : 'Refresh records'}</button></div>
+    <div className="ops-page-header"><div><p className="ops-kicker">Catalog management</p><h2>{activeTab[1]}</h2><p>{activeTab[2]}</p></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={refreshing || disabled}><OpsIcon name="refresh" />{refreshing ? 'Refreshing…' : 'Refresh records'}</button></div>
     <nav className="admin-subnav ops-subnav" aria-label="Operations sections">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setSection(id)} className={section === id ? 'is-active' : ''} aria-pressed={section === id}>{label}</button>)}</nav>
     {status && <div className={`ops-notice is-${status.type}`} role={status.type === 'error' ? 'alert' : 'status'}><OpsIcon name={status.type === 'success' ? 'check' : 'close'} /><p>{status.message}</p><button type="button" onClick={() => setStatus(null)} aria-label="Dismiss message"><OpsIcon name="close" /></button></div>}
     {loadErrors.length > 0 && <div className="ops-notice is-error" role="alert"><div><strong>Some records could not be refreshed</strong><ul>{loadErrors.map((error) => <li key={error}>{error}</li>)}</ul></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={loading || disabled}>Try again</button></div>}
