@@ -2,7 +2,7 @@
 
 17 November 2026. **Prepared only: no staging, commit, push, deployment, secrets change or production write has been executed.**
 
-Reviewed base: `6d0f2a9919012fe6d5d214264bfa5ef3dade2bd7`. Local branch: `main`. Final release SHA: **PENDING** until an explicitly authorized commit. Files below include the earlier uncommitted readiness fixes and the final LCP/retry changes.
+Reviewed base: `e3409366e52cd9b6323b1880522cedd9a5c81978`. Local branch: `main`. Final release SHA: **PENDING** until an explicitly authorized commit. Files below include the earlier uncommitted readiness fixes and the final LCP/retry changes.
 
 Local cold-mobile LCP remains above 2.5s (normal-motion median 2.664s), so production sign-off remains PENDING. The operator must explicitly accept this documented limitation or request further measured work before authorizing release. Build/test success alone is insufficient.
 
@@ -25,21 +25,13 @@ git diff --stat
 $releaseFiles = @(
     'FINAL_GIT_RELEASE.md',
     'LCP_OPTIMIZATION_REPORT.md',
-    'PRODUCTION_READINESS_REPORT.md',
-    'RELEASE_CHECKLIST.md',
-    'backend/DEPLOYMENT.md',
-    'frontend/.env.example',
-    'frontend/DEPLOYMENT.md',
-    'frontend/index.html',
+    'frontend/artwork/workshop-banner-v3.md',
     'frontend/public/_headers',
-    'frontend/public/critical-assets-v2.js',
-    'frontend/public/images/perf-home-ceylon-ivory-hero-mobile-480-v1.webp',
-    'frontend/public/images/performance-assets-v1.json',
-    'frontend/src/AdminInventory.jsx',
-    'frontend/src/GemDetails.jsx',
-    'frontend/src/GemScene.jsx',
-    'frontend/src/Home.jsx',
-    'frontend/src/ResponsiveImage.jsx',
+    'frontend/public/images/workshop-atelier-editorial-v3-1000.webp',
+    'frontend/public/images/workshop-atelier-editorial-v3-1536.webp',
+    'frontend/public/images/workshop-atelier-editorial-v3-640.webp',
+    'frontend/src/Workshop.jsx',
+    'frontend/src/WorkshopHero.css',
     'frontend/src/imageDelivery.js',
     'frontend/vercel.json'
 )

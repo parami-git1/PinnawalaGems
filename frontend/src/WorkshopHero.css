@@ -1,0 +1,160 @@
+@font-face {
+  font-family: 'Pinnawala Workshop Serif';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond-latin-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pinnawala Workshop Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond-latin-italic.woff2') format('woff2');
+}
+
+.pg-workshop-hero {
+  position: relative;
+  isolation: isolate;
+  padding: 138px 0 54px;
+  background: #f7f5f0;
+  color: #101936;
+}
+
+.pg-workshop-hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(ellipse at 18% 42%, #fffdf7 0, transparent 57%);
+  content: '';
+}
+
+.pg-workshop-hero::after {
+  position: absolute;
+  right: max(24px, calc((100vw - 1184px) / 2));
+  bottom: 0;
+  left: max(24px, calc((100vw - 1184px) / 2));
+  height: 1px;
+  background: linear-gradient(90deg, #b9a27666, #ded8ca80 58%, transparent);
+  content: '';
+}
+
+.pg-workshop-hero__layout {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(36px, 5vw, 72px);
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.pg-workshop-hero__copy { min-width: 0; padding: 12px 0 18px; }
+.pg-workshop-hero__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 24px;
+  color: #8c7145;
+  font: 600 10px/1.6 'Inter', sans-serif;
+  letter-spacing: .19em;
+  text-transform: uppercase;
+}
+.pg-workshop-hero__eyebrow > span { width: 28px; height: 1px; flex-shrink: 0; background: #b49a68; }
+.pg-workshop-hero h1 {
+  margin: 0;
+  color: #14243a;
+  font: 500 clamp(60px, 5.8vw, 86px)/1.01 'Pinnawala Workshop Serif', Georgia, serif;
+  letter-spacing: -.035em;
+}
+.pg-workshop-hero h1 em { color: #977845; font-style: italic; font-weight: 400; }
+.pg-workshop-hero__description {
+  max-width: 390px;
+  margin: 26px 0 0;
+  color: #657078;
+  font: 400 14px/1.9 'Inter', sans-serif;
+}
+.pg-workshop-hero__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  min-height: 44px;
+  margin-top: 22px;
+  padding: 0 0 5px;
+  border-bottom: 1px solid #ae9261;
+  color: #182b40;
+  font: 600 11px/1.6 'Inter', sans-serif;
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+.pg-workshop-hero__link svg { width: 17px; height: 17px; transition: transform 180ms ease; }
+.pg-workshop-hero__link:hover svg { transform: translate(2px, 2px); }
+.pg-workshop-hero__link:focus-visible { outline: 2px solid #a88b50; outline-offset: 6px; }
+.pg-workshop-hero__disciplines {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 13px;
+  margin-top: 31px;
+  color: #7b807e;
+  font: 500 10px/1.5 'Inter', sans-serif;
+  letter-spacing: .035em;
+}
+.pg-workshop-hero__disciplines i { width: 1px; height: 10px; background: #c5bba5; }
+.pg-workshop-hero__figure { min-width: 0; margin: 0; }
+.pg-workshop-hero__photograph {
+  position: relative;
+  aspect-ratio: 1.28;
+  overflow: hidden;
+  background: #e5e1d7;
+  box-shadow: 0 18px 38px rgb(46 38 24 / .07);
+}
+.pg-workshop-hero__photograph > img { width: 100%; height: 100%; object-fit: cover; object-position: 55% 60%; }
+.pg-workshop-hero__photo-corner {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 23px;
+  height: 23px;
+  border-right: 1px solid rgb(247 239 214 / .7);
+  border-bottom: 1px solid rgb(247 239 214 / .7);
+  pointer-events: none;
+}
+.pg-workshop-hero figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 15px;
+  color: #81847e;
+  font: 400 10px/1.6 'Inter', sans-serif;
+}
+.pg-workshop-hero figcaption > span:last-child { color: #957b52; text-align: right; }
+
+@media (max-width: 959px) {
+  .pg-workshop-hero { padding: 122px 0 38px; }
+  .pg-workshop-hero__layout { grid-template-columns: 1fr; gap: 32px; padding: 0 32px; }
+  .pg-workshop-hero__copy { padding: 0; }
+  .pg-workshop-hero h1 { font-size: clamp(54px, 9vw, 76px); }
+  .pg-workshop-hero__description { max-width: 490px; margin-top: 20px; }
+  .pg-workshop-hero__disciplines { margin-top: 24px; }
+  .pg-workshop-hero__photograph { aspect-ratio: 1.85; }
+}
+
+@media (max-width: 599px) {
+  .pg-workshop-hero { padding: 108px 0 29px; }
+  .pg-workshop-hero__layout { gap: 27px; padding: 0 24px; }
+  .pg-workshop-hero__eyebrow { gap: 10px; margin-bottom: 19px; font-size: 9px; letter-spacing: .13em; }
+  .pg-workshop-hero__eyebrow > span { width: 22px; }
+  .pg-workshop-hero h1 { font-size: clamp(48px, 12vw, 64px); }
+  .pg-workshop-hero__description { margin-top: 18px; font-size: 13px; line-height: 1.85; }
+  .pg-workshop-hero__link { margin-top: 15px; }
+  .pg-workshop-hero__disciplines { gap: 11px; margin-top: 21px; font-size: 9px; }
+  .pg-workshop-hero__photograph { aspect-ratio: 1.55; }
+  .pg-workshop-hero figcaption { padding-top: 12px; font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-workshop-hero__link svg { transition: none; }
+}
