@@ -182,6 +182,27 @@
           "encoding": "WebP lossless after resize"
         }
       ]
+    },
+    {
+      "source": "/images/home-ceylon-ivory-hero-mobile-v1.webp",
+      "original": {
+        "width": 900,
+        "height": 1200,
+        "bytes": 123022,
+        "sha256": "4d274134995b0c741be63d54c85b527c942e873fb3e2cd671b8360b6c1daf3b1",
+        "alpha": false
+      },
+      "variants": [
+        {
+          "src": "/images/perf-home-ceylon-ivory-hero-mobile-480-v1.webp",
+          "width": 480,
+          "height": 640,
+          "bytes": 33020,
+          "reductionPercent": 73.2,
+          "sha256": "e59a33b6e7f08d0a66d056baaf9139e0df5798ff9f496cbdf8abd8ca660849b0",
+          "encoding": "WebP quality 85; proportional resize, same artwork"
+        }
+      ]
     }
   ]
 }

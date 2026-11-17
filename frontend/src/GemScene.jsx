@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Decal, Environment, MeshTransmissionMaterial, OrbitControls, useEnvironment, useGLTF, useTexture } from '@react-three/drei';
-import { Color } from 'three';
+import { Color, ShaderChunk } from 'three';
 
 const STUDIO_BACKGROUND = new Color('#faf8f3');
 const SPIN_RADIANS_PER_SECOND = 0.15;
@@ -42,6 +42,11 @@ function applyLogoSilhouette(shader) {
       diffuseColor.a *= texture2D(map, vMapUv).a;
     #endif
   `);
+  // Reuse the artwork's alpha as a shallow bevel for the gold inlay.
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <bumpmap_pars_fragment>',
+    ShaderChunk.bumpmap_pars_fragment.replaceAll(').x', ').a'),
+  );
 }
 
 function Sapphire({ floating, mobile }) {
@@ -75,14 +80,14 @@ function Sapphire({ floating, mobile }) {
 
   return <group ref={group} scale={1.02}>
     <mesh geometry={geometry} scale={1.3}>
-      <MeshTransmissionMaterial backside backsideThickness={1.2} transmission={0.96} thickness={1.1} ior={1.77} color="#c7dcff" attenuationColor="#316ed5" attenuationDistance={2.4} roughness={0.035} metalness={0} clearcoat={0.5} clearcoatRoughness={0.07} envMapIntensity={1.15} chromaticAberration={0.001} anisotropicBlur={0} distortion={0} temporalDistortion={0} samples={mobile ? 4 : 6} resolution={mobile ? 256 : 512} backsideResolution={mobile ? 256 : 512} background={STUDIO_BACKGROUND} flatShading />
+      <MeshTransmissionMaterial backside backsideThickness={1.2} transmission={0.96} thickness={1.1} ior={1.77} color="#bdd2f4" attenuationColor="#2d66ca" attenuationDistance={2.3} roughness={0.03} metalness={0} clearcoat={0.5} clearcoatRoughness={0.07} envMapIntensity={1.15} chromaticAberration={0.001} anisotropicBlur={0} distortion={0} temporalDistortion={0} samples={mobile ? 4 : 6} resolution={mobile ? 256 : 512} backsideResolution={mobile ? 256 : 512} background={STUDIO_BACKGROUND} flatShading />
       <Decal onBeforeRender={hideBrandFromTransmission} onAfterRender={restoreBrandMaterial} depthTest renderOrder={3} polygonOffsetFactor={-2} position={[0, tableHeight + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.92, 0.54, 0.018]}>
-        <meshPhysicalMaterial map={logo} onBeforeCompile={applyLogoSilhouette} transparent alphaTest={0.12} depthWrite={false} polygonOffset polygonOffsetFactor={-2} color="#dfb759" emissive="#785820" emissiveIntensity={0.08} metalness={0.7} roughness={0.29} />
+        <meshPhysicalMaterial map={logo} bumpMap={logo} bumpScale={0.006} onBeforeCompile={applyLogoSilhouette} transparent alphaTest={0.12} depthWrite={false} polygonOffset polygonOffsetFactor={-2} color="#ffda73" emissive="#ffce55" emissiveIntensity={0.18} metalness={0.82} roughness={0.2} envMapIntensity={2.2} clearcoat={0.4} clearcoatRoughness={0.13} />
       </Decal>
       {/* The signature gold ring sits inside the table facet, around the logo. */}
       <mesh onBeforeRender={hideBrandFromTransmission} onAfterRender={restoreBrandMaterial} position={[0, tableHeight + 0.009, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <torusGeometry args={[tableRadius - 0.027, 0.012, 10, 96]} />
-        <meshPhysicalMaterial color="#e2bd68" metalness={0.82} roughness={0.25} envMapIntensity={1.1} />
+        <meshPhysicalMaterial color="#f0c960" metalness={0.9} roughness={0.2} envMapIntensity={1.35} />
       </mesh>
     </mesh>
   </group>;

@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AdminOperations from './AdminOperations';
 import AdminPlanner from './AdminPlanner';
-import AdminDashboard from './admin/AdminDashboard';
 import GemMediaEditor from './admin/GemMediaEditor';
 import { FeedbackPanel, WebsiteSettings, WorkshopPanel } from './admin/AdminContent';
 import { AdminEmptyState, AdminField, AdminIcon, AdminImage, AdminModal } from './admin/AdminUI';
@@ -10,6 +9,8 @@ import { GEM_MEDIA_LIMITS, mediaUrls } from './mediaPolicy';
 import { apiRequest, fetchAllGemstones } from './api';
 import { editableSettings } from './admin/settingsPolicy';
 import './admin/Admin.css';
+
+const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
 
 const EMPTY_GEM = { title: '', categoryId: '', stoneId: '', image: '', weight: '', color: '', shape: '', cut: '', price: '', quantity: 1, description: '', hasCertificate: false, certificateDetails: '', certificateImage: '', isFeatured: false, origin: '', additionalImages: [], videos: [], isTopGem: false, homePagePosition: 0 };
 const EMPTY_FILTERS = { search: '', categoryId: '', color: '', shape: '', certificate: '', minWeight: '', maxWeight: '', minPrice: '', maxPrice: '' };
@@ -269,7 +270,7 @@ export default function AdminInventory() {
         <Notice value={notice} onDismiss={() => setNotice(null)} />
         {refreshIssue && <Notice value={{ type: 'error', message: `Unable to refresh this section. Your current data and edits are still shown. ${failures[refreshIssue]}` }} />}
         {loading && !['operations', 'planner'].includes(current.id) ? <div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Loading your workspace...</div> : blocked ? <section className="admin-panel"><AdminEmptyState icon="refresh" title="This section could not be loaded" description={blocked} action={<button type="button" className="admin-button" disabled={refreshing} onClick={refresh}>Try again</button>} /></section> : <>
-          {current.id === 'analytics' && <AdminDashboard analytics={analytics || summarise(stones, categories)} pendingReviews={pending} categoriesCount={categories.length} onNavigate={go} />}
+          {current.id === 'analytics' && <Suspense fallback={<div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Loading your workspace...</div>}><AdminDashboard analytics={analytics || summarise(stones, categories)} pendingReviews={pending} categoriesCount={categories.length} onNavigate={go} /></Suspense>}
           {current.id === 'inventory' && <InventoryTable stones={stones} categories={categories} onEdit={(stone) => setModal({ stone })} onDelete={removeStone} deleting={deleting} />}
           {current.id === 'operations' && <AdminOperations />}
           {current.id === 'planner' && <AdminPlanner />}

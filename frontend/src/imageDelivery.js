@@ -1,4 +1,5 @@
 const LOCAL_VARIANTS = {
+  '/images/home-ceylon-ivory-hero-mobile-v1.webp': [[480, '/images/perf-home-ceylon-ivory-hero-mobile-480-v1.webp'], [900, '/images/home-ceylon-ivory-hero-mobile-v1.webp']],
   '/gem.png': [[300, '/images/perf-gem-300-v1.webp']],
   '/logo.png': [[160, '/images/perf-logo-160-v1.webp'], [320, '/images/perf-logo-320-v1.webp']],
   '/assistant.png': [[224, '/images/perf-assistant-224-v1.webp'], [408, '/images/perf-assistant-408-v1.webp']],

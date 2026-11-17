@@ -1,12 +1,12 @@
 # Deploy the audited Pinnawala Gems backend
 
-The current package is `deliverables/pinnawala-audit-fixed-backend.zip` in the workspace. It includes the security, data-validation, catalogue-pagination, media-upload and API-cache fixes, along with the appointments, notes and planner APIs. Use this package in place of the earlier backend ZIPs. Updating the frontend alone cannot add these backend routes.
+Deploy the current Git source after explicit approval using [the production release checklist](../RELEASE_CHECKLIST.md). ZIP files from the earlier handoff are historical snapshots and are not required. The source includes security, data-validation, catalogue-pagination, media-upload and API-cache fixes, along with appointments, notes and planner APIs. Updating the frontend alone cannot add these backend routes.
 
 This handoff is prepared for manual deployment. It has not been pushed or deployed automatically. Deploy the matching updated frontend too, so its bounded requests, catalogue pagination and image-loading fixes use the same API revision.
 
-## Package and local validation
+## Source and local validation
 
-The ZIP contains a `backend/` directory. Extract it into the repository root so `backend/server.js` replaces the existing backend source. The archive excludes `.env`, `node_modules`, uploads and Git metadata; preserve the current environment values and existing local files outside the package.
+The Render service must use the `backend` root of the approved Git commit. Preserve existing environment secrets and any durable upload storage. Do not upload or replace `.env`, `node_modules` or production data from this checkout.
 
 Use **Node.js 24.x**. From the repository root:
 
@@ -41,7 +41,7 @@ The package declares `engines.node: 24.x`. Render supplies `PORT`; the service r
 
 ### Frontend origin is required
 
-Set `ALLOWED_ORIGINS` to the real frontend origin, such as `https://your-website.example`. That value is a format example, not the known production domain. The actual frontend origin was not supplied during this work and must be entered before production startup.
+The owner confirmed the Vercel frontend URL. Set `ALLOWED_ORIGINS=https://pinnawala-gems.vercel.app` before production startup. Additional domains must be explicitly confirmed; do not allow wildcard preview domains.
 
 Use comma-separated full origins for genuinely supported domains, for example a primary domain and its `www` domain. Origins contain the scheme and host, with an optional port, and **no path, query or fragment**. The production server refuses startup when the origin list is empty. Browser requests from other origins receive 403. Localhost is automatically accepted only outside production. Command-line requests without an Origin header, including Render health checks, can still reach the API; administrative routes continue to require an administrator token.
 
@@ -66,7 +66,7 @@ Existing JWT sessions use an eight-hour expiry. Preserve `JWT_SECRET` during thi
 
 ## Commit and deploy manually
 
-Use an account with write access to the GitHub repository connected to Render. From the repository root:
+Only after deployment authorization and the checklist's environment/rollback review, use an account with write access to the GitHub repository connected to Render. A Git push can trigger auto-deployment. From the repository root:
 
 ```sh
 git branch --show-current

@@ -127,7 +127,7 @@ function GemDetails() {
             </div>
 
             {/* Certificate */}
-            {(gem.hasCertificate || gem.certificateDetails) && (
+            {gem.hasCertificate === true && (
               <div className="gem-detail-certificate mb-8 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-blue-50 p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
                   <MdVerified className="text-green-600 text-lg" />

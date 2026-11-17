@@ -89,11 +89,11 @@ export default function ResponsiveImage({ src, mobileSrc, breakpoint = 599, alt,
       } catch (error) {
         if (!active) return;
         diagnostic(delivery.original, error.message);
-        // A newly deployed format may be unavailable in an old cache/browser.
-        // Try the original local asset once, or the caller's explicit fallback.
-        const alternative = fallback || (delivery.original.startsWith('/') && delivery.src !== delivery.original ? delivery.original : '');
+        // Keep original files usable when a format or CDN transformation fails.
+        // Try the original URL once, or the caller's explicit fallback.
+        const alternative = fallback || (delivery.src !== delivery.original ? delivery.original : '');
         if (alternative && alternative !== delivery.src) {
-          try { const url = await loadImage({ src: alternative }, fetchPriority); if (active) setResult({ key, url, failed: alternative !== delivery.original, fallbackUsed: true }); return; } catch { /* Show the explicit unavailable tile. */ }
+          try { const url = await loadImage({ src: alternative }, fetchPriority, retryKey); if (active) setResult({ key, url, failed: alternative !== delivery.original, fallbackUsed: true }); return; } catch { /* Show the explicit unavailable tile. */ }
         }
         if (active) setResult({ key, url: IMAGE_UNAVAILABLE, failed: true });
         callbacks.current.onError?.(error);

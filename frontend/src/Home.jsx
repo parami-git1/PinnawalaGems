@@ -56,13 +56,6 @@ function categorySlug(category) {
   return category.slug || category.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function deliveryImage(src, width = 800) {
-  if (typeof src !== 'string') return '';
-  return src.startsWith('https://res.cloudinary.com/') && src.includes('/image/upload/') && !src.includes('/s--')
-    ? src.replace('/image/upload/', `/image/upload/f_auto,q_auto,c_limit,w_${width}/`)
-    : src;
-}
-
 function Image({ src, alt, className = '', ...props }) {
   return <ResponsiveImage src={src} alt={alt} className={className} sizes="(max-width: 599px) 90vw, (max-width: 1023px) 46vw, 600px" {...props} />;
 }
@@ -217,7 +210,7 @@ function PosterDialog({ event, onClose }) {
   }, []);
   return <dialog ref={dialog} className="pg-poster-dialog" aria-labelledby="pg-poster-title" onCancel={(e) => { e.preventDefault(); onClose(); }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
     <div className="pg-poster-dialog-header"><h2 id="pg-poster-title">{event.title || 'From Pinnawala Gems'}</h2><button type="button" aria-label="Close announcement" onClick={onClose}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
-    <img src={deliveryImage(event.image, 1400)} alt={event.title || 'Pinnawala Gems announcement poster'} />
+    <ResponsiveImage src={event.image} maxWidth={1400} sizes="90vw" loading="eager" alt={event.title || 'Pinnawala Gems announcement poster'} />
     {event.description && <p>{event.description}</p>}
     <Link to="/contact" onClick={onClose} className="pg-text-link">Ask about this announcement<Arrow diagonal /></Link>
   </dialog>;
@@ -245,7 +238,7 @@ export default function Home() {
   const lastWord = words.pop();
   const eventLink = safeWebUrl(homeData.eventLink);
   const whatsapp = BUSINESS.whatsapp;
-  const customHeroImage = isDefaultHeroImage(homeData.heroImage) ? '' : deliveryImage(homeData.heroImage, 1800);
+  const customHeroImage = isDefaultHeroImage(homeData.heroImage) ? '' : homeData.heroImage.trim();
   const useDefaultHero = !customHeroImage || customHeroImage === failedHeroImage;
   const readyToReveal = heroReady || deadlineReached;
   useEffect(() => {
