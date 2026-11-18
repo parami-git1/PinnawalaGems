@@ -1,4 +1,5 @@
 const LOCAL_VARIANTS = {
+  '/images/workshop-gem-inspection-v4-1920.webp': [[768, '/images/workshop-gem-inspection-v4-768.webp'], [1280, '/images/workshop-gem-inspection-v4-1280.webp'], [1920, '/images/workshop-gem-inspection-v4-1920.webp']],
   '/images/workshop-atelier-editorial-v3-1536.webp': [[640, '/images/workshop-atelier-editorial-v3-640.webp'], [1000, '/images/workshop-atelier-editorial-v3-1000.webp'], [1536, '/images/workshop-atelier-editorial-v3-1536.webp']],
   '/images/home-ceylon-ivory-hero-mobile-v1.webp': [[480, '/images/perf-home-ceylon-ivory-hero-mobile-480-v1.webp'], [900, '/images/home-ceylon-ivory-hero-mobile-v1.webp']],
   '/gem.png': [[300, '/images/perf-gem-300-v1.webp']],

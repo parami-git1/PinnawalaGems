@@ -90,27 +90,24 @@ function Workshop() {
   return (
     <div ref={pageRef} className="relative min-h-screen overflow-hidden bg-[#F7F5F0] font-inter text-[#101936]">
       <section className="pg-workshop-hero" aria-labelledby="pg-workshop-hero-title">
+        <ResponsiveImage
+          className="pg-workshop-hero__background"
+          src="/images/workshop-gem-inspection-v4-1920.webp"
+          width="1920" height="1280" maxWidth={1920}
+          sizes="(max-width:1023px) 1100px, 82vw"
+          loading="eager" fetchPriority="high"
+          alt="Hands inspecting a diamond ring with a jeweller's loupe"
+        />
+        <div className="pg-workshop-hero__veil" aria-hidden="true" />
+        <span className="pg-workshop-hero__frame" aria-hidden="true" />
         <div className="pg-workshop-hero__layout">
           <div className="workshop-header pg-workshop-hero__copy">
-            <p className="pg-workshop-hero__eyebrow"><span aria-hidden="true" />Pinnawala Gems / The atelier</p>
-            <h1 id="pg-workshop-hero-title">The art behind<br /><em>every stone.</em></h1>
-            <p className="pg-workshop-hero__description">Discover the knowledge, patience and precision behind Ceylon's gemstones through masterclasses, artisan courses and exhibitions.</p>
+            <p className="pg-workshop-hero__eyebrow"><span aria-hidden="true" />Pinnawala Gems / Workshops</p>
+            <h1 id="pg-workshop-hero-title">Learn the art<br /><em>behind the stone.</em></h1>
+            <p className="pg-workshop-hero__description">Discover the craft behind Ceylon's gemstones through masterclasses, artisan courses and exhibitions.</p>
             <a className="pg-workshop-hero__link" href="#main-content">Explore the archive<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" aria-hidden="true"><path d="m7 7 10 10M7 17h10V7" /></svg></a>
             <div className="pg-workshop-hero__disciplines" aria-label="Workshop disciplines"><span>Gemology</span><i aria-hidden="true" /><span>Lapidary</span><i aria-hidden="true" /><span>Masterclasses</span></div>
           </div>
-          <figure className="pg-workshop-hero__figure">
-            <div className="pg-workshop-hero__photograph">
-              <ResponsiveImage
-                src="/images/workshop-atelier-editorial-v3-1536.webp"
-                width="1536" height="1024" maxWidth={1536}
-                sizes="(max-width:959px) 100vw, (max-width:1279px) 60vw, 740px"
-                loading="eager" fetchPriority="high"
-                alt="A close view of sapphire craftsmanship at a lapidary workbench"
-              />
-              <span className="pg-workshop-hero__photo-corner" aria-hidden="true" />
-            </div>
-            <figcaption><span>Precision in every facet.</span><span>The Pinnawala atelier</span></figcaption>
-          </figure>
         </div>
       </section>
 
