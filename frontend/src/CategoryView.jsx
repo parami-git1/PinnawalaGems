@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useOutletContext, useParams } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useRemoteResource } from './hooks/useRemoteResource';
+import { loadCollectionResource } from './collectionData';
 import CollectionBanner from './CollectionBanner';
 import ResponsiveImage from './ResponsiveImage';
 import './CollectionPolish.css';
@@ -8,7 +9,7 @@ import './CollectionPolish.css';
 const EMPTY_FILTERS = { search: '', shape: '', cut: '', origin: '', color: '', certificate: '', min: '', max: '' };
 const PAGE_SIZE = 30;
 const clean = (value) => String(value ?? '').trim();
-const slugify = (value) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+const slugify = (value) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const categoryIdOf = (gem) => clean(gem.categoryId?._id || gem.categoryId || gem.category?._id);
 const certified = (gem) => gem.hasCertificate === true;
 const weightLabel = (value) => clean(value) ? `${clean(value).replace(/\s*(?:cts?\.?|carats?)\s*$/i, '').trim()} ct` : '';
@@ -58,9 +59,9 @@ function GemCard({ gem, category }) {
 
 export default function CategoryView() {
   const { categorySlug, categoryId } = useParams();
+  const navigate = useNavigate();
   const { categoriesResource } = useOutletContext();
   const categories = useMemo(() => Array.isArray(categoriesResource.data) ? categoriesResource.data : [], [categoriesResource.data]);
-  const [localCategory, setLocalCategory] = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState('featured');
@@ -68,8 +69,7 @@ export default function CategoryView() {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [pagination, setPagination] = useState({ key: '', page: 1 });
   const routeKey = `${categorySlug || ''}/${categoryId || ''}`;
-  const routeCategory = categoryId || (categorySlug ? categories.find((category) => (category.slug || slugify(category.title)) === categorySlug.toLowerCase())?._id || 'unknown' : 'all');
-  const selectedCategory = localCategory?.routeKey === routeKey ? localCategory.id : routeCategory;
+  const selectedCategory = categoryId || (categorySlug ? categories.find((category) => slugify(category.slug || category.title) === slugify(categorySlug))?._id || 'unknown' : 'all');
   const activeCategory = categories.find((category) => category._id === selectedCategory);
   const allCategories = selectedCategory === 'all';
   const selectionKey = JSON.stringify([routeKey, selectedCategory, filters, sortOrder]);
@@ -85,7 +85,7 @@ export default function CategoryView() {
   if (filters.certificate) query.set('hasCertificate', String(filters.certificate === 'certified'));
   if (filters.min !== '') query.set('minWeight', filters.min);
   if (filters.max !== '') query.set('maxWeight', filters.max);
-  const stonesResource = useRemoteResource(`inventory/stones?${query}`);
+  const stonesResource = useRemoteResource(`inventory/stones?${query}`, { loader: loadCollectionResource, timeout: 60000 });
   const stones = useMemo(() => Array.isArray(stonesResource.data?.stones) ? stonesResource.data.stones : [], [stonesResource.data]);
   const isLoading = stonesResource.status === 'loading' || categoriesResource.status === 'loading';
   const hasError = stonesResource.status === 'error' || categoriesResource.status === 'error';
@@ -109,7 +109,11 @@ export default function CategoryView() {
   const resetPage = () => setPagination({ key: '', page: 1 });
   const setFilter = (key, value) => { setFilters((previous) => ({ ...previous, [key]: value })); resetPage(); };
   const clearFilters = () => { setFilters(EMPTY_FILTERS); setSortOrder('featured'); resetPage(); };
-  const chooseCategory = (id) => { setLocalCategory({ routeKey, id }); resetPage(); };
+  const chooseCategory = (id) => {
+    const category = categories.find((entry) => entry._id === id);
+    navigate(id === 'all' ? '/catalog' : category ? `/collections/${slugify(category.slug || category.title)}` : `/category/${id}`);
+    resetPage();
+  };
   const changeSort = (value) => { setSortOrder(value); resetPage(); };
   const changePage = (page) => {
     setPagination({ key: selectionKey, page });

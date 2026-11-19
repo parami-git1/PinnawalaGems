@@ -8,7 +8,7 @@
 .pg-footer a { text-decoration: none; }
 .pg-footer p, .pg-footer h2 { margin: 0; }
 .pg-footer__inner { width: min(1280px, calc(100% - 112px)); margin-inline: auto; }
-.pg-footer__main { display: grid; grid-template-columns: 1.25fr .7fr 1fr; gap: 60px; padding-block: 46px 32px; }
+.pg-footer__main { display: grid; grid-template-columns: 1.25fr 1fr; gap: 60px; padding-block: 46px 32px; }
 .pg-footer__brand { display: inline-flex; align-items: center; gap: 15px; max-width: 100%; }
 .pg-footer__logo { display: grid; place-items: center; flex-shrink: 0; width: 52px; height: 52px; background: #f8f6f1; border: 1px solid #d6c69f; }
 .pg-footer__logo img { display: block; width: 45px; height: 45px; object-fit: contain; background: none; }
@@ -17,12 +17,8 @@
 .pg-footer .pg-footer__description { margin-top: 25px; color: #b3bdca; font-size: 12px; line-height: 1.95; }
 .pg-footer__origin { display: flex; align-items: center; gap: 9px; margin-top: 26px; color: #adb7c5; font-size: 9px; line-height: 1.8; letter-spacing: .06em; }
 .pg-footer__origin > span { width: 5px; height: 5px; border-radius: 50%; background: #c0a66e; }
-.pg-footer__navigation, .pg-footer__contact, .pg-footer__brand-column { min-width: 0; }
-.pg-footer__navigation h2, .pg-footer__contact h2 { margin: 4px 0 16px; color: #c2aa76; font-size: 9px; font-weight: 500; line-height: 1.5; letter-spacing: .17em; text-transform: uppercase; }
-.pg-footer__navigation > div { display: grid; grid-template-columns: 1fr; }
-.pg-footer__navigation a { display: flex; align-items: center; justify-content: space-between; gap: 20px; width: min(100%, 160px); min-height: 36px; color: #d9dfe6; font-size: 12px; transition: color .2s; }
-.pg-footer__navigation a > svg { width: 13px; height: 13px; color: #8896a6; opacity: 0; transform: translate(-3px, 3px); transition: transform .2s, opacity .2s; }
-.pg-footer__navigation a:hover > svg, .pg-footer__navigation a:focus-visible > svg { opacity: 1; transform: translate(0, 0); }
+.pg-footer__contact, .pg-footer__brand-column { min-width: 0; }
+.pg-footer__contact h2 { margin: 4px 0 16px; color: #c2aa76; font-size: 9px; font-weight: 500; line-height: 1.5; letter-spacing: .17em; text-transform: uppercase; }
 .pg-footer__contact address { font-style: normal; }
 .pg-footer__contact address > a, .pg-footer__contact address > p { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 36px; padding-block: 7px; color: #d9dfe6; font-size: 12px; line-height: 1.7; transition: color .2s; }
 .pg-footer__contact .pg-footer__address { color: #aeb9c7; font-size: 11px; line-height: 1.9; padding-top: 3px; }
@@ -41,33 +37,24 @@
 .pg-footer__bottom button svg { width: 16px; height: 16px; color: #c2aa76; }
 
 @media (max-width: 1100px) {
-  .pg-footer__main { gap: 42px; grid-template-columns: 1.15fr .65fr 1fr; }
+  .pg-footer__main { gap: 42px; grid-template-columns: 1.15fr 1fr; }
   .pg-footer__inner { width: calc(100% - 80px); }
   .pg-footer__brand-name { font-size: 23px; }
 }
 @media (max-width: 899px) {
   .pg-footer__inner { width: calc(100% - 56px); }
-  .pg-footer__main { grid-template-columns: 1fr 1fr; gap: 35px 50px; padding-block: 48px 38px; }
-  .pg-footer__brand-column { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; column-gap: 50px; align-items: center; padding-bottom: 30px; border-bottom: 1px solid #293347; }
-  .pg-footer .pg-footer__description { margin-top: 0; }
-  .pg-footer__origin { grid-column: 1; margin-top: 18px; }
-  .pg-footer__navigation > div { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
-  .pg-footer__navigation a { min-height: 44px; }
+  .pg-footer__main { grid-template-columns: 1fr 1fr; gap: 32px; padding-block: 40px 32px; }
   .pg-footer__contact address > a { min-height: 44px; }
 }
 @media (max-width: 599px) {
   .pg-footer__inner { width: calc(100% - 40px); }
-  .pg-footer__main { grid-template-columns: 1fr; gap: 30px; padding-block: 40px 34px; }
-  .pg-footer__brand-column { display: block; grid-column: auto; padding-bottom: 28px; }
+  .pg-footer__main { grid-template-columns: 1fr; gap: 24px; padding-block: 32px 28px; }
+  .pg-footer__brand-column { padding-bottom: 22px; border-bottom: 1px solid #293347; }
   .pg-footer__brand { gap: 13px; }
   .pg-footer__brand-name { font-size: 25px; }
   .pg-footer .pg-footer__description { margin-top: 23px; font-size: 11px; }
   .pg-footer__origin { margin-top: 20px; }
-  .pg-footer__navigation h2, .pg-footer__contact h2 { margin-top: 0; margin-bottom: 10px; font-size: 8px; }
-  .pg-footer__navigation { padding-bottom: 22px; border-bottom: 1px solid #293347; }
-  .pg-footer__navigation > div { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; }
-  .pg-footer__navigation a { width: 100%; font-size: 12px; }
-  .pg-footer__navigation a > svg { opacity: .65; transform: none; }
+  .pg-footer__contact h2 { margin-top: 0; margin-bottom: 10px; font-size: 8px; }
   .pg-footer__contact address > a, .pg-footer__contact address > p { width: fit-content; max-width: 100%; font-size: 12px; }
   .pg-footer__contact .pg-footer__address { font-size: 11px; }
   .pg-footer__whatsapp { width: 100%; justify-content: flex-start; min-height: 48px; margin-top: 17px; }
@@ -93,8 +80,8 @@
 .pg-footer .pg-footer__brand-name > span { font-size: 10px; font-weight: 600; letter-spacing: .1em; }
 .pg-footer .pg-footer__description { margin-top: 18px; font-size: 13px; line-height: 1.85; }
 .pg-footer .pg-footer__origin { margin-top: 18px; font-size: 11px; font-weight: 500; }
-.pg-footer .pg-footer__navigation h2, .pg-footer .pg-footer__contact h2 { font-size: 11px; font-weight: 600; letter-spacing: .1em; }
-.pg-footer .pg-footer__navigation a, .pg-footer .pg-footer__contact address > a { font-size: 13px; }
+.pg-footer .pg-footer__contact h2 { font-size: 11px; font-weight: 600; letter-spacing: .1em; }
+.pg-footer .pg-footer__contact address > a { font-size: 13px; }
 .pg-footer .pg-footer__contact .pg-footer__address { font-size: 12px; }
 .pg-footer .pg-footer__whatsapp { border-color: #9b8459; border-radius: 7px; font-size: 12px; }
 .pg-footer .pg-footer__bottom p, .pg-footer .pg-footer__bottom button { font-size: 10px; line-height: 1.7; }

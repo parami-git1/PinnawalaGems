@@ -9,6 +9,17 @@
   color: #14243a;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, 24px, 0) scale(.97);
+  transform-origin: right bottom;
+  transition: opacity 360ms ease, transform 560ms cubic-bezier(.2,.75,.25,1), visibility 0s linear 560ms;
+}
+.pg-whatsapp.is-visible { opacity: 1; visibility: visible; pointer-events: auto; transform: translate3d(0, 0, 0) scale(1); transition-delay: 0s; }
+/* A decoded portrait can be ready before the new Home widget's first paint. */
+@starting-style {
+  .pg-whatsapp.is-visible { opacity: 0; transform: translate3d(0, 24px, 0) scale(.97); }
 }
 .pg-whatsapp *, .pg-whatsapp *::before, .pg-whatsapp *::after { box-sizing: border-box; }
 .pg-whatsapp :is(button, a):focus-visible { outline: 2px solid #9b7a3c; outline-offset: 5px; }
@@ -16,7 +27,8 @@
 .pg-whatsapp__assistant { display: block; width: 100%; height: 100%; object-fit: contain; background: transparent; opacity: 1; animation: none; filter: drop-shadow(0 6px 9px rgb(20 36 58 / .18)); }
 .pg-whatsapp__badge { position: absolute; right: 0; bottom: 1px; display: grid; place-items: center; width: 32px; height: 32px; border: 2px solid #f7f5f0; border-radius: 50%; background: #14243a; color: #d5bd87; box-shadow: 0 3px 10px rgb(20 36 58 / .12); }
 .pg-whatsapp__badge svg { width: 18px; height: 18px; }
-.pg-whatsapp__caption { position: relative; display: grid; gap: 5px; max-width: 188px; margin-bottom: 22px; padding: 13px 16px; border: 1px solid #ded5c3; border-radius: 10px 10px 2px 10px; background: #fbfaf6; box-shadow: 0 4px 18px rgb(20 36 58 / .06); }
+.pg-whatsapp__caption { position: relative; display: grid; gap: 5px; max-width: 188px; margin-bottom: 22px; padding: 13px 16px; border: 1px solid #ded5c3; border-radius: 10px 10px 2px 10px; background: #fbfaf6; box-shadow: 0 4px 18px rgb(20 36 58 / .06); opacity: 0; transform: translateX(8px); transition: opacity 320ms ease, transform 460ms cubic-bezier(.2,.75,.25,1); }
+.pg-whatsapp.is-visible .pg-whatsapp__caption { opacity: 1; transform: translateX(0); transition-delay: 120ms; }
 .pg-whatsapp__caption strong { font-family: 'Playfair Display', Georgia, serif; font-size: 21px; font-weight: 600; line-height: 1.15; letter-spacing: -.025em; }
 .pg-whatsapp__caption > span { color: #5f6875; font-size: 11px; font-weight: 500; line-height: 1.6; }
 .pg-whatsapp__dialog { position: absolute; right: 0; bottom: calc(100% + 12px); width: min(340px, calc(100vw - 32px)); max-height: min(460px, calc(100dvh - 210px)); overflow-y: auto; overscroll-behavior: contain; padding: 23px; border: 1px solid #d6c8aa; border-radius: 12px; background: #f7f5f0; box-shadow: 0 14px 45px rgb(20 36 58 / .18); }
@@ -44,6 +56,7 @@
   .pg-whatsapp__dialog { max-height: min(440px, calc(100dvh - 180px)); padding: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pg-whatsapp__trigger, .pg-whatsapp__link { transition: none; }
+  .pg-whatsapp, .pg-whatsapp__caption, .pg-whatsapp__trigger, .pg-whatsapp__link { transition: none; }
+  .pg-whatsapp, .pg-whatsapp__caption { transform: none; }
   .pg-whatsapp__trigger:hover { transform: none; }
 }

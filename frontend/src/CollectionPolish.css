@@ -26,6 +26,7 @@
 
 .gem-collection-banner { position: relative; isolation: isolate; display: flex; align-items: center; min-height: 210px; overflow: hidden; border-radius: 9px; background: #080f1b; color: #fffaf0; }
 .gem-collection-banner__cover { position: absolute; z-index: -3; top: 0; right: 0; width: 66%; height: 100%; object-fit: cover; object-position: center 58%; background: transparent; }
+.gem-collection-banner--curated .gem-collection-banner__cover { width: min(100%, 760px); object-position: right center; }
 .gem-collection-banner__veil { position: absolute; z-index: -2; inset: 0; background: linear-gradient(90deg, #080f1b 12%, rgb(8 15 27 / .96) 33%, rgb(8 15 27 / .48) 56%, rgb(8 15 27 / .04) 76%); }
 .gem-collection-banner::after { content: ''; position: absolute; z-index: -1; inset: 10px; border: 1px solid rgb(207 183 135 / .22); border-radius: 3px; pointer-events: none; }
 .gem-collection-banner__copy { max-width: 65%; padding: 32px 38px; }
@@ -50,27 +51,27 @@
 .gem-category-count { margin-left: auto; color: #8f826b; font-size: 9px; }
 .is-active .gem-category-count { color: #d8c49c; }
 .collection-catalog { min-width: 0; }
-.collection-aligned-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 43px; margin-bottom: 10px; }
-.collection-search { display: flex; align-items: center; gap: 8px; width: min(36%, 310px); min-width: 0; min-height: 39px; padding: 0 11px; border: 1px solid #ded8cc; border-radius: 5px; background: #fffefa; color: #9a835b; }
+.collection-aligned-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 43px; margin-bottom: 10px; padding: 10px 12px; border: 1px solid #2c4564; border-radius: 8px; background: #203650; }
+.collection-search { display: flex; align-items: center; gap: 8px; width: min(36%, 310px); min-width: 0; min-height: 39px; padding: 0 11px; border: 1px solid #c5d1df; border-radius: 5px; background: #fff; color: #6b819b; }
 .collection-search > svg { width: 15px; height: 15px; }
 .collection-search input { width: 100%; min-width: 0; height: 37px; border: 0; padding: 7px 0; background: transparent; color: var(--collection-ink); font-size: 11px; }
 .collection-search input:focus { outline: none; }
 .collection-search:focus-within { outline: 2px solid #b49a68; outline-offset: 2px; }
 .collection-search input::placeholder { color: #8a857a; opacity: 1; }
 .collection-controls__right { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.collection-result-count { white-space: nowrap; color: #7d776a; font-size: 10px; }
-.collection-result-count strong { color: #24334a; font-weight: 500; }
+.collection-result-count { white-space: nowrap; color: #dbe5f1; font-size: 10px; }
+.collection-result-count strong { color: #fff; font-weight: 500; }
 .collection-sort { min-width: 0; }
-.collection-sort select { width: 128px; max-width: 100%; min-height: 38px; padding: 7px; border: 1px solid #ded8cc; border-radius: 5px; background: #fffefa; color: #5d625f; font-size: 10px; }
-.collection-refine-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 8px 11px; border: 1px solid #d9cfb9; border-radius: 5px; background: #fffdfa; color: #75613c; font-size: 10px !important; }
+.collection-sort select { width: 128px; max-width: 100%; min-height: 38px; padding: 7px; border: 1px solid #c5d1df; border-radius: 5px; background: #fff; color: #2c405a; font-size: 10px; }
+.collection-refine-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 8px 11px; border: 1px solid #7e91a9; border-radius: 5px; background: #2c4666; color: #f2e4c9; font-size: 10px !important; }
 .collection-refine-toggle > svg { width: 14px; height: 14px; }
-.collection-refine-toggle.is-active { border-color: #bfa87b; background: #f0ebde; }
-.collection-clear { min-height: 38px; padding: 7px 0; border: 0; background: transparent; color: #88724d; white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; font-size: 9px !important; }
-.collection-filter-panel { margin-bottom: 15px; padding: 13px; border: 1px solid var(--collection-line); border-radius: 7px; background: #f2efe8; }
+.collection-refine-toggle.is-active { border-color: #d4b67e; background: #d4b67e; color: #152b46; }
+.collection-clear { min-height: 38px; padding: 7px 0; border: 0; background: transparent; color: #eed4a6; white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; font-size: 9px !important; }
+.collection-filter-panel { margin-bottom: 15px; padding: 13px; border: 1px solid #c8d5e5; border-radius: 7px; background: #e8eff8; }
 .collection-filter-fields { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 11px; align-items: start; }
 .collection-filter-field { display: block; min-width: 0; border: 0; padding: 0; margin: 0; }
-.collection-filter-field > span, .collection-filter-field legend { display: block; margin-bottom: 6px; padding: 0; color: #65645e; font-size: 9px; font-weight: 500; line-height: 1.4; }
-.collection-filter-field select, .collection-filter-field input { width: 100%; min-width: 0; height: 35px; padding: 7px; border: 1px solid #ded7c8; border-radius: 4px; background: #fdfcf8; color: #62645f; font-size: 10px; transition: border-color 180ms; }
+.collection-filter-field > span, .collection-filter-field legend { display: block; margin-bottom: 6px; padding: 0; color: #3b526f; font-size: 9px; font-weight: 500; line-height: 1.4; }
+.collection-filter-field select, .collection-filter-field input { width: 100%; min-width: 0; height: 35px; padding: 7px; border: 1px solid #c3d0df; border-radius: 4px; background: #fff; color: #2c405a; font-size: 10px; transition: border-color 180ms; }
 .collection-filter-field select:hover, .collection-filter-field input:hover { border-color: #bca77b; }
 .collection-weight > div { display: flex; align-items: center; gap: 5px; }
 .collection-weight > div > span { color: #a49881; font-size: 10px; }

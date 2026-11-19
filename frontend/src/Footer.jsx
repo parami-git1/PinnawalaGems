@@ -3,14 +3,6 @@ import './Footer.css';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import ResponsiveImage from './ResponsiveImage';
 
-const PAGES = [
-  ['/', 'Home'],
-  ['/catalog', 'Collection'],
-  ['/workshop', 'Workshop'],
-  ['/feedback', 'Feedback'],
-  ['/contact', 'Contact'],
-];
-
 function Arrow({ up = false }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
     <path d={up ? 'M12 19V5m-6 6 6-6 6 6' : 'M6 18 18 6M6 6h12v12'} strokeLinecap="round" strokeLinejoin="round" />
@@ -42,11 +34,6 @@ export default function Footer({ contactData = {} }) {
           <p className="pg-footer__description">{BUSINESS.tagline}<br />{BUSINESS.license}</p>
           <div className="pg-footer__origin"><span aria-hidden="true" />{BUSINESS.location}</div>
         </div>
-
-        <nav className="pg-footer__navigation" aria-label="Footer navigation">
-          <h2>Explore</h2>
-          <div>{PAGES.map(([to, label]) => <Link key={to} to={to}><span>{label}</span><Arrow /></Link>)}</div>
-        </nav>
 
         <div className="pg-footer__contact">
           <h2>Get in touch</h2>

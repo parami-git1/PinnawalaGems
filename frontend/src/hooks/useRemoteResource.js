@@ -7,7 +7,7 @@ const CACHE_AGE = 60000;
 const cachedState = (path) => ({ path, data: cache.get(path)?.data ?? null, status: cache.has(path) ? 'success' : 'loading', refreshing: false });
 
 // Each resource settles independently. A slow API must never block the page.
-export function useRemoteResource(path) {
+export function useRemoteResource(path, { loader, timeout = 15000 } = {}) {
   const [attempt, setAttempt] = useState(0);
   const [resource, setResource] = useState(() => cachedState(path));
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
@@ -18,7 +18,7 @@ export function useRemoteResource(path) {
     if (!attempt && saved && Date.now() - saved.updatedAt < CACHE_AGE) return undefined;
     const controller = new AbortController();
     let mounted = true;
-    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    const deadline = window.setTimeout(() => controller.abort(), timeout);
 
     async function load() {
       if (!mounted) return;
@@ -30,9 +30,12 @@ export function useRemoteResource(path) {
         let data;
         for (let round = 0; round < 2; round += 1) {
           try {
-            const response = await fetch(`${API_BASE}/${path}`, { signal: controller.signal, cache: 'no-cache' });
-            if (!response.ok) { const error = new Error(`Request failed: ${response.status}`); error.status = response.status; throw error; }
-            data = await response.json();
+            if (loader) data = await loader(path, { signal: controller.signal });
+            else {
+              const response = await fetch(`${API_BASE}/${path}`, { signal: controller.signal, cache: 'no-cache' });
+              if (!response.ok) { const error = new Error(`Request failed: ${response.status}`); error.status = response.status; throw error; }
+              data = await response.json();
+            }
             break;
           } catch (error) {
             if (round || controller.signal.aborted || (error.status && error.status < 500 && error.status !== 408)) throw error;
@@ -48,17 +51,17 @@ export function useRemoteResource(path) {
       } catch {
         if (mounted) setResource((current) => ({ ...current, status: 'error', refreshing: false }));
       } finally {
-        window.clearTimeout(timeout);
+        window.clearTimeout(deadline);
       }
     }
 
     Promise.resolve().then(load);
     return () => {
       mounted = false;
-      window.clearTimeout(timeout);
+      window.clearTimeout(deadline);
       controller.abort();
     };
-  }, [path, attempt]);
+  }, [path, attempt, loader, timeout]);
 
   return { ...(resource.path === path ? resource : cachedState(path)), retry };
 }

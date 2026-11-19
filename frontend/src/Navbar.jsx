@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { BUSINESS } from './businessDetails';
 import './Navbar.css';
 import ResponsiveImage from './ResponsiveImage';
+import { warmPageHero } from './pageHeroWarmup';
 
 const COLLECTION_ITEMS = [
   { title: 'Blue Sapphire', to: '/collections/blue-sapphire' },
@@ -37,6 +38,10 @@ function Arrow() {
 }
 
 function Navbar({ adminSlot = null, categories = null }) {
+  const warmDestination = (event) => {
+    const link = event.target.closest('a[href]');
+    if (link && link.origin === window.location.origin) warmPageHero(link.pathname);
+  };
   const { pathname } = useLocation();
   const [menuState, setMenuState] = useState({ pathname, mobile: false, collection: false, desktop: false });
   const navRef = useRef(null);
@@ -121,7 +126,7 @@ function Navbar({ adminSlot = null, categories = null }) {
   }, [desktopCollectionOpen]);
 
   return (
-    <nav ref={navRef} className="pg-nav" aria-label="Main navigation">
+    <nav ref={navRef} className="pg-nav" aria-label="Main navigation" onPointerOver={warmDestination} onFocusCapture={warmDestination}>
       <div className="pg-nav__inner">
         <Link to="/" onClick={closeMenus} className="pg-nav__brand" aria-label={`${BUSINESS.name} home`}>
           <ResponsiveImage src="/logo.png" alt="" width="78" height="54" maxWidth={320} sizes="78px" loading="eager" fetchPriority="high" />

@@ -2,12 +2,13 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom';
 import { API_BASE, useRemoteResource } from './hooks/useRemoteResource';
 import './Feedback.css';
-import ResponsiveImage from './ResponsiveImage';
+import FeedbackGallery from './FeedbackGallery';
+import { FEEDBACK_STARTER } from './pageHeroAssets';
 
 const DEFAULT_PHOTOS = [
-  'https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?q=80&w=1400&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1604187351574-c75ca79f5807?q=80&w=1400&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=1400&auto=format&fit=crop',
+  FEEDBACK_STARTER,
+  '/images/lapidary-craft.webp',
+  '/images/ceylon-landscape.webp',
 ];
 const EMPTY_FORM = { name: '', review: '', rating: 0 };
 const RATING_LABELS = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
@@ -90,11 +91,7 @@ export default function Feedback() {
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [toast, setToast] = useState(null);
-  const [slideIndex, setSlideIndex] = useState(0);
   const [reviewPage, setReviewPage] = useState(0);
-  const [photoPaused, setPhotoPaused] = useState(false);
-  const [photoHovered, setPhotoHovered] = useState(false);
-  const [photoFocused, setPhotoFocused] = useState(false);
   const submittingRef = useRef(false);
   const nameRef = useRef(null);
   const reviewRef = useRef(null);
@@ -107,11 +104,10 @@ export default function Feedback() {
   const displayFeedbacks = useMemo(() => Array.isArray(resource.data) ? resource.data.filter((feedback) => feedback && feedback.isApproved === true) : [], [resource.data]);
   const photos = useMemo(() => {
     const data = home.data || {};
-    const customerPhotos = Array.isArray(data.customerPhotos) ? data.customerPhotos.filter((photo) => text(photo)).slice(0, 4) : [];
-    const configured = customerPhotos.length ? customerPhotos : [data.heroImage, data.featureImage].filter((photo) => text(photo));
-    return configured.length ? configured : DEFAULT_PHOTOS;
+    const customerPhotos = Array.isArray(data.customerPhotos) ? data.customerPhotos.map(text).filter(Boolean).slice(0, 4) : [];
+    const configured = customerPhotos.length ? customerPhotos : [data.heroImage, data.featureImage].map(text).filter(Boolean);
+    return configured.length ? [...new Set(configured)] : DEFAULT_PHOTOS;
   }, [home.data]);
-  const activeSlide = slideIndex % photos.length;
   const maxPage = Math.max(0, displayFeedbacks.length - perView);
   const visibleSlots = Math.max(1, Math.min(perView, displayFeedbacks.length));
   const currentPage = Math.min(reviewPage, maxPage);
@@ -123,12 +119,6 @@ export default function Feedback() {
   const ratingLabel = activeRating
     ? `${activeRating} ${activeRating === 1 ? 'Star' : 'Stars'} — ${RATING_LABELS[activeRating - 1]}`
     : 'Select your rating';
-
-  useEffect(() => {
-    if (photos.length <= 1 || photoPaused || photoHovered || photoFocused || reducedMotion) return undefined;
-    const timer = window.setInterval(() => setSlideIndex((index) => (index + 1) % photos.length), 5000);
-    return () => window.clearInterval(timer);
-  }, [photos.length, photoPaused, photoHovered, photoFocused, reducedMotion]);
 
   const handleChange = (event) => setFormData((previous) => ({ ...previous, [event.target.name]: event.target.value }));
   const handleBlur = (event) => setTouched((previous) => ({ ...previous, [event.target.name]: true }));
@@ -179,16 +169,7 @@ export default function Feedback() {
     {toast && <Toast {...toast} onClose={closeToast} />}
     <div className="feedback-shell">
       <section className="feedback-hero" aria-labelledby="feedback-title">
-        <div className="feedback-gallery" aria-label="Pinnawala Gems photo gallery" aria-roledescription="carousel" onMouseEnter={() => setPhotoHovered(true)} onMouseLeave={() => setPhotoHovered(false)} onFocusCapture={() => setPhotoFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPhotoFocused(false); }}>
-          {photos.map((photo, index) => <ResponsiveImage key={photo} src={index === activeSlide ? photo : undefined} alt={index === activeSlide ? 'At Pinnawala Gems' : ''} aria-hidden={index !== activeSlide} loading={index === activeSlide ? 'eager' : 'lazy'} maxWidth={1000} sizes="(max-width:1023px) 90vw,46vw" fade={false} className={`feedback-gallery-photo${index === activeSlide ? ' is-active' : ''}`} fallback="/images/collection-atelier-editorial-v1.webp" />)}
-          <div className="feedback-gallery-shade" />
-          <div className="feedback-gallery-caption"><p className="feedback-eyebrow">The Pinnawala Journal</p><h1 id="feedback-title">A Legacy of<br /><em>Brilliance</em></h1><span className="feedback-caption-rule" /><p className="feedback-gallery-description">Every stone carries a story. We are honoured to hear the moments, memories, and meaning our clients discover with us.</p>
-            {photos.length > 1 && <div className="feedback-photo-dots">{photos.map((_, index) => <button key={index} type="button" className={index === activeSlide ? 'is-active' : ''} aria-label={`Photo ${index + 1} of ${photos.length}`} aria-current={index === activeSlide ? 'true' : undefined} onClick={() => setSlideIndex(index)}><span /></button>)}</div>}
-          </div>
-          {photos.length > 1 && <div className="feedback-photo-controls">
-            <div className="feedback-photo-arrows"><button type="button" aria-label="Previous photo" onClick={() => setSlideIndex((activeSlide - 1 + photos.length) % photos.length)}><Icon name="left" /></button><button type="button" aria-label={photoPaused || reducedMotion ? 'Play slideshow' : 'Pause slideshow'} onClick={() => setPhotoPaused((paused) => !paused)} disabled={reducedMotion}><Icon name={photoPaused || reducedMotion ? 'play' : 'pause'} /></button><button type="button" aria-label="Next photo" onClick={() => setSlideIndex((activeSlide + 1) % photos.length)}><Icon name="right" /></button></div>
-          </div>}
-        </div>
+        <FeedbackGallery photos={photos} reducedMotion={reducedMotion} Icon={Icon} />
 
         <div className="feedback-form-panel">
           <header className="feedback-form-heading">

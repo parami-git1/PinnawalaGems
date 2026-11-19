@@ -299,7 +299,18 @@ export default function Home() {
 
     {(homeData.topAdImage || homeData.sideAdImage || homeData.bottomAdImage) && <section className="pg-promotions pg-container" aria-label="Latest offers">{[homeData.topAdImage, homeData.sideAdImage, homeData.bottomAdImage].filter(Boolean).map((src, index) => <Image src={src} alt="An announcement from Pinnawala Gems" key={`${src}-${index}`} />)}</section>}
 
-    <section className="pg-visit" aria-labelledby="pg-visit-title"><div className="pg-container pg-visit-inner" data-reveal><Facet className="pg-visit-facet" /><p className="pg-eyebrow">Visit {BUSINESS.name}</p><h2 id="pg-visit-title">Some things are best<br /><em>seen in person.</em></h2><p>Find your colour. Ask a question. Begin a conversation.</p><div><Link className="pg-button pg-button--gold" to="/contact">Plan your visit<Arrow /></Link><a className="pg-text-link" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer">Speak with our team<Arrow diagonal /></a></div><span className="pg-visit-location">{BUSINESS.address}</span></div></section>
+    <section className="pg-visit" aria-labelledby="pg-visit-title">
+      <div className="pg-container pg-visit-inner" data-reveal>
+        <p className="pg-eyebrow">Visit {BUSINESS.name}</p>
+        <h2 id="pg-visit-title">Some things are best <em>seen in person.</em></h2>
+        <p>Find your colour. Ask a question. Begin a conversation.</p>
+        <div className="pg-visit-actions">
+          <Link className="pg-button pg-button--gold" to="/contact">Plan your visit<Arrow /></Link>
+          <a className="pg-text-link" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer">Speak with our team<Arrow diagonal /></a>
+        </div>
+        <span className="pg-visit-location">{BUSINESS.address}</span>
+      </div>
+    </section>
     {showFilm && <FilmDialog src={homeData.heroVideo} onClose={() => setShowFilm(false)} />}
     {selectedPost && <PosterDialog event={selectedPost} onClose={() => setSelectedPost(null)} />}
   </main></>;

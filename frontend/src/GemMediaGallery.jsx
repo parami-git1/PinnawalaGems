@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import './GemMediaGallery.css';
 import ResponsiveImage from './ResponsiveImage';
 import { imageDelivery } from './imageDelivery';
+import MediaWatermark from './MediaWatermark';
 
 const paths = {
   image: 'M3 4h18v16H3V4Zm0 11 5-5 5 5 3-3 5 5M16 8h.01',
@@ -32,6 +33,7 @@ function MediaFrame({ item, title, poster, expanded = false }) {
   const retry = () => { setStatus('loading'); setAttempt((value) => value + 1); };
   return <div className={`pg-gem-media__asset${item.type === 'video' ? ' is-video' : ''}${expanded ? ' is-expanded' : ''}`} aria-busy={status === 'loading'}>
     {item.type === 'video' ? <video key={attempt} ref={video} src={item.url} poster={poster ? imageDelivery(poster).src : undefined} controls playsInline preload="metadata" aria-label={`${title}, video ${item.number}`} onLoadedMetadata={() => setStatus('ready')} onError={() => setStatus('error')} /> : <ResponsiveImage key={attempt} retryKey={attempt} src={item.url} alt={`${title}, photograph ${item.number}`} loading="eager" maxWidth={expanded ? 2000 : 1200} sizes={expanded ? '90vw' : '(max-width:1023px) 90vw,52vw'} width="800" height="800" draggable="false" onReady={({failed}) => setStatus(failed ? 'error' : 'ready')} onError={() => setStatus('error')} />}
+    {item.type === 'image' && status === 'ready' && <MediaWatermark />}
     {status === 'loading' && <span className="pg-gem-media__loading" role="status"><i />Loading {item.type === 'video' ? 'video' : 'photograph'}<span className="pg-gem-media__sr-only"> of {title}</span></span>}
     {status === 'error' && <div className="pg-gem-media__unavailable" role="status"><Icon name={item.type === 'video' ? 'play' : 'image'} /><strong>{item.type === 'video' ? 'Video' : 'Photograph'} unavailable</strong><p>Please try again or select another view.</p><button type="button" onClick={retry}>Try again</button></div>}
   </div>;

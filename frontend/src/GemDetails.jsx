@@ -4,6 +4,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { MdEmail, MdVerified } from 'react-icons/md';
 import './GemDetailsPolish.css';
 import GemMediaGallery from './GemMediaGallery';
+import CertificateViewer from './CertificateViewer';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import { apiRequest } from './api';
 
@@ -141,14 +142,7 @@ function GemDetails() {
                   </p>
                 )}
                 {gem.certificateImage && (
-                  <div className="border border-slate-200 p-2 bg-white inline-block mt-1">
-                    <p className="font-inter text-[9px] uppercase tracking-[0.15em] font-bold text-slate-400 mb-1.5 text-center">
-                      Certificate Preview
-                    </p>
-                    <a href={gem.certificateImage} target="_blank" rel="noopener noreferrer">
-                      <img src={gem.certificateImage} alt="Certificate" className="h-28 object-contain hover:opacity-80 transition-opacity duration-300" />
-                    </a>
-                  </div>
+                  <CertificateViewer key={gem.certificateImage} src={gem.certificateImage} title={gem.title} reference={gem.certificateDetails} />
                 )}
               </div>
             )}

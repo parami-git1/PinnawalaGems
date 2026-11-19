@@ -21,6 +21,21 @@
         } else {
           hero.src = '/images/home-ceylon-ivory-hero-v1.webp';
         }
+      } else if (location.pathname === '/contact' || location.pathname === '/feedback') {
+        // Warm only this deep link's first visual, before route JavaScript runs.
+        const hero = new Image();
+        hero.fetchPriority = 'high';
+        hero.decoding = 'async';
+        hero.onload = () => { if (hero.decode) hero.decode().catch(() => {}); };
+        if (location.pathname === '/contact') {
+          hero.sizes = '(max-width:599px) 1100px,100vw';
+          hero.srcset = '/images/perf-contact-hero-640-v1.webp 640w, /images/perf-contact-hero-1280-v1.webp 1280w, /images/perf-contact-hero-1774-v1.webp 1774w';
+          hero.src = '/images/perf-contact-hero-1774-v1.webp';
+        } else {
+          hero.sizes = '(max-width:1023px) 100vw,45vw';
+          hero.srcset = '/images/feedback-atelier-starter-640-v1.webp 640w, /images/feedback-atelier-starter-v1.webp 1000w, /images/feedback-atelier-starter-1536-v1.webp 1536w';
+          hero.src = '/images/feedback-atelier-starter-v1.webp';
+        }
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

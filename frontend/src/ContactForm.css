@@ -1,2 +1,7 @@
 .contact-enquiry-form :is(input, textarea) { font-family: 'Inter', system-ui, sans-serif !important; font-size: 14px !important; font-weight: 400 !important; line-height: 1.6 !important; letter-spacing: 0 !important; }
 .contact-enquiry-form :is(input, textarea)::placeholder { color: #647087 !important; opacity: 1 !important; font-family: 'Inter', system-ui, sans-serif !important; font-size: 13px !important; font-weight: 400 !important; letter-spacing: 0 !important; text-transform: none !important; }
+.pg-contact-banner { background: #081323; }
+.pg-contact-banner-image { position: absolute; inset: 0; overflow: hidden; background-color: #081323; background-size: cover; background-position: right center; }
+.pg-contact-banner-image > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: right center; opacity: 0; transition: opacity 300ms ease; }
+.pg-contact-banner-image > img[data-image-state="ready"] { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .pg-contact-banner-image > img { transition: none; } }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import './AdminOperations.css';
 import { apiRequest, fetchAllGemstones, fetchAllRecords } from './api';
 import { GEM_MEDIA_LIMITS, IMAGE_TYPES } from './mediaPolicy';
+import { getCategoryBanner, getDefaultCategoryBanner } from './categoryBannerAssets';
 
 const emptyCategory = { title: '', description: '', mainImage: '', coverImage: '' };
 const emptyStockStone = { categoryId: '', title: '', image: '', quantity: 1, description: '', weight: '', color: '', shape: '', price: '', hasCertificate: false };
@@ -73,6 +74,27 @@ function MediaThumb({ src, title = '', large = false }) {
 function ImageField({ label, name, value, onChange, onUpload, required = false, id }) {
   const inputId = useId();
   return <div className="ops-image-field ops-span-full"><Field label={label} name={name} value={value} onChange={onChange} required={required} id={id} inputMode="url" placeholder="Paste an image URL" /><div className="ops-image-tools"><MediaThumb key={value || 'empty'} src={value} title={label} large /><div><label className="admin-button is-secondary ops-upload" htmlFor={inputId}><OpsIcon name="upload" />Choose image<input id={inputId} type="file" accept="image/*" onChange={onUpload} /></label><p className="ops-help">Choose a file or paste an image URL above.</p>{value && <a href={value} target="_blank" rel="noopener noreferrer" className="ops-text-link">Open full image <OpsIcon name="arrow" /></a>}</div></div></div>;
+}
+
+function CategoryBannerPreview({ category }) {
+  const [failedSources, setFailedSources] = useState([]);
+  const source = [getCategoryBanner(category), getDefaultCategoryBanner(category)].find((url) => url && !failedSources.includes(url));
+  const uploaded = Boolean(source && typeof category.coverImage === 'string' && source === category.coverImage.trim());
+  return <div className="ops-banner-preview">
+    {source ? <img key={source} src={source} alt={`${category.title || 'Collection'} category banner preview`} loading="lazy" onError={() => setFailedSources((current) => [...current, source])} /> : <div className="ops-banner-placeholder"><OpsIcon name="image" /><span>Banner preview unavailable</span></div>}
+    <span className={`ops-banner-source${uploaded ? ' is-uploaded' : ''}`}>{uploaded ? 'Uploaded' : 'Curated default'}</span>
+  </div>;
+}
+
+function CategoryBannerField({ category, onChange, onUpload, editing }) {
+  const uploadId = 'ops-category-banner-upload';
+  return <section className="ops-category-banner ops-span-full" aria-labelledby="ops-category-banner-heading">
+    <div className="ops-banner-field-heading"><OpsIcon name="image" /><div><h4 id="ops-category-banner-heading">Category banner</h4><p>The wide image at the top of this collection's page.</p></div></div>
+    <CategoryBannerPreview category={category} />
+    <div className="ops-banner-upload-tools"><label className="admin-button is-primary ops-upload" htmlFor={uploadId}><OpsIcon name="upload" />Upload banner<input id={uploadId} type="file" accept="image/jpeg,image/png,image/webp" aria-describedby={`${uploadId}-help`} onChange={onUpload} /></label><p id={`${uploadId}-help`} className="ops-help">JPEG, PNG or WebP · up to 8 MB. Use a wide landscape image, ideally 3:1 (1800 × 600 px). Keep the gemstone on the right so the collection title stays clear.</p></div>
+    <Field label="Banner image URL" name="coverImage" id="ops-category-banner-url" value={category.coverImage} onChange={onChange} inputMode="url" placeholder="Upload a banner or paste an image URL" />
+    <div className="ops-banner-save"><p className="ops-help">{category.coverImage ? 'Save the category to apply this banner to your website.' : 'A curated banner appears until you add your own image.'}</p>{editing && <button type="submit" className="admin-button is-secondary"><OpsIcon name="check" />Save category banner</button>}</div>
+  </section>;
 }
 
 function Panel({ title, description, count, children, className = '', id }) {
@@ -255,16 +277,24 @@ function CatalogOperations({ categories, categoryForm, setCategoryForm, editingC
   const [placement, setPlacement] = useState('all');
   const change = changeSetter(setCategoryForm);
   const visibleStones = placement === 'homepage' ? stones.filter((stone) => stone.isTopGem) : placement === 'featured' ? stones.filter((stone) => stone.isFeatured) : stones;
-  return <div className="ops-editor-layout"><FormPanel title={editingCategory ? 'Edit gem category' : 'New gem category'} description="Set the name and imagery used to browse your collection." id="ops-category-editor-heading" label="Gem category details" busy={busy} editing={editingCategory} onSubmit={saveCategory}>
+  const editCategory = (category, banner = false) => { setEditingCategory(category); setCategoryForm({ ...emptyCategory, ...category }); focusEditor(banner ? 'ops-category-banner-upload' : 'ops-gem-category-title'); };
+  return <div className="ops-stack">
+    <Panel title="Collection banners" description="Review every collection's wide banner. Choose Edit banner to upload a replacement, then save the category." count={categories.length} id="ops-collection-banners-heading" className="ops-banner-overview">
+      {loading && categories.length === 0 ? <p className="ops-loading" role="status">Loading collection banners...</p> : categories.length ? <div className="ops-banner-grid">{categories.map((category) => <article className={`ops-banner-card${editingCategory?._id === category._id ? ' is-editing' : ''}`} key={category._id}>
+        <CategoryBannerPreview category={category} />
+        <div className="ops-banner-card-footer"><div><h4>{category.title || 'Untitled category'}</h4><p>{editingCategory?._id === category._id ? 'Editing in the form below' : 'Collection page banner'}</p></div><button type="button" className="admin-button is-secondary" disabled={busy} onClick={() => editCategory(category, true)} aria-label={`Edit banner for ${category.title || 'untitled category'}`}><OpsIcon name="edit" />Edit banner</button></div>
+      </article>)}</div> : <Empty title="Your collection banners will appear here" detail="Create a gem category below to give it a wide collection banner." />}
+    </Panel>
+    <div className="ops-editor-layout"><FormPanel title={editingCategory ? 'Edit gem category' : 'New gem category'} description="Set the name and imagery used to browse your collection." id="ops-category-editor-heading" label="Gem category details" busy={busy} editing={editingCategory} onSubmit={saveCategory}>
     <Field label="Category title" name="title" id="ops-gem-category-title" value={categoryForm.title} onChange={change} required autoComplete="off" />
+    <CategoryBannerField category={categoryForm} onChange={change} onUpload={coverUpload} editing={editingCategory} />
     <TextField value={categoryForm.description} onChange={change} />
-    <ImageField label="Main image URL" name="mainImage" value={categoryForm.mainImage} onChange={change} onUpload={upload} required />
-    <ImageField label="Cover image URL" name="coverImage" value={categoryForm.coverImage} onChange={change} onUpload={coverUpload} />
+    <div className="ops-category-thumbnail ops-span-full"><div><h4>Category thumbnail</h4><p className="ops-help">The smaller image used on category cards.</p></div><ImageField label="Thumbnail image URL" name="mainImage" value={categoryForm.mainImage} onChange={change} onUpload={upload} required /></div>
     <FormActions editing={editingCategory} busy={busy} label={editingCategory ? 'Save category' : 'Create category'} onCancel={() => { setEditingCategory(null); setCategoryForm(emptyCategory); }} />
   </FormPanel><div className="ops-stack">
-    <Records title="Gem categories" description="Deleting a category also removes its related gemstones." rows={categories} columns={['Category', 'Actions']} searchLabel="Search categories" loading={loading} emptyTitle="No gem categories yet" emptyDetail="Create a category using the form to organise your gemstones." renderRow={(category) => <tr key={category._id}><td><RecordName record={category} image={category.mainImage || category.image} />{category.description && <p className="ops-cell-description">{category.description}</p>}</td><td><RowActions title={category.title} busy={busy} onEdit={() => { setEditingCategory(category); setCategoryForm({ ...emptyCategory, ...category }); focusEditor('ops-gem-category-title'); }} onDelete={() => deleteCategory(category)} /></td></tr>} />
+    <Records title="Gem categories" description="Deleting a category also removes its related gemstones." rows={categories} columns={['Category', 'Actions']} searchLabel="Search categories" loading={loading} emptyTitle="No gem categories yet" emptyDetail="Create a category using the form to organise your gemstones." renderRow={(category) => <tr key={category._id}><td><RecordName record={category} image={category.mainImage || category.image} />{category.description && <p className="ops-cell-description">{category.description}</p>}</td><td><RowActions title={category.title} busy={busy} onEdit={() => editCategory(category)} onDelete={() => deleteCategory(category)} /></td></tr>} />
     <Records title="Homepage & featured gems" description="Control gemstone visibility without changing inventory details." rows={visibleStones} columns={['Gemstone', 'Placement']} searchLabel="Search gemstones or references" loading={loading} emptyTitle={placement === 'all' ? 'No gemstones available' : 'No gems in this view'} emptyDetail={placement === 'all' ? 'Add gemstones in Gem Inventory, then manage their placement here.' : 'Choose All gemstones to update homepage and featured placements.'} tools={<label className="ops-filter"><span className="sr-only">Filter gemstone placement</span><select aria-label="Filter gemstone placement" value={placement} onChange={(event) => setPlacement(event.target.value)}><option value="all">All gemstones</option><option value="homepage">On homepage</option><option value="featured">Featured</option></select></label>} renderRow={(stone) => <tr key={stone._id}><td><RecordName record={stone} image={stone.image} /></td><td><div className="ops-placement"><button type="button" className={`admin-button ${stone.isTopGem ? 'is-selected' : 'is-secondary'}`} disabled={busy} aria-pressed={Boolean(stone.isTopGem)} onClick={() => toggleStone(stone, 'isTopGem')}>{stone.isTopGem && <OpsIcon name="check" />}{stone.isTopGem ? 'On homepage' : 'Add homepage'}</button><button type="button" className={`admin-button ${stone.isFeatured ? 'is-selected' : 'is-secondary'}`} disabled={busy} aria-pressed={Boolean(stone.isFeatured)} onClick={() => toggleStone(stone, 'isFeatured')}>{stone.isFeatured && <OpsIcon name="check" />}{stone.isFeatured ? 'Featured' : 'Feature'}</button></div></td></tr>} />
-  </div></div>;
+  </div></div></div>;
 }
 
 function StockOperations({ categories, categoryForm, setCategoryForm, saveCategory, deleteCategory, stoneForm, setStoneForm, editingStone, setEditingStone, saveStone, stones, deleteStone, upload, categoryUpload, busy, loading }) {

@@ -5,12 +5,13 @@ import Navbar from './Navbar';
 import WhatsAppWidget from './WhatsAppWidget';
 import NotFound from './NotFound';
 import { useRemoteResource } from './hooks/useRemoteResource';
+import { warmPageHero } from './pageHeroWarmup';
 
 const AdminInventory = lazy(() => import('./AdminInventory'));
 const Home = lazy(() => import('./Home'));
 const CategoryView = lazy(() => import('./CategoryView'));
-const Contact = lazy(() => import('./Contact'));
-const Feedback = lazy(() => import('./Feedback'));
+const Contact = lazy(() => { warmPageHero('/contact', 'high'); return import('./Contact'); });
+const Feedback = lazy(() => { warmPageHero('/feedback', 'high'); return import('./Feedback'); });
 const GemDetails = lazy(() => import('./GemDetails'));
 const Login = lazy(() => import('./Login'));
 const Workshop = lazy(() => import('./Workshop'));

@@ -112,6 +112,36 @@
 .admin-operations .ops-variation > .admin-button { justify-self: start; min-height: 31px; font-size: 10px; }
 .admin-operations .ops-variation-images { display: flex; flex-wrap: wrap; gap: 7px; }
 .admin-operations .ops-variation-empty { padding: 15px; border: 1px dashed #d8e0eb; border-radius: 7px; color: #8190a3; font-size: 11px; line-height: 1.7; }
+.admin-operations .ops-banner-overview { border-color: #dce3ed; }
+.admin-operations .ops-banner-overview .ops-panel-header { background: #f8fafc; }
+.admin-operations .ops-banner-overview .ops-panel-header h3 { font-size: 17px; }
+.admin-operations .ops-banner-overview .ops-panel-header p { max-width: 680px; font-size: 13px; }
+.admin-operations .ops-banner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; padding: 22px; }
+.admin-operations .ops-banner-card { min-width: 0; overflow: hidden; border: 1px solid var(--ops-line); border-radius: 9px; background: #fff; }
+.admin-operations .ops-banner-card.is-editing { border-color: #b19b6c; box-shadow: 0 0 0 2px rgb(166 139 86 / .1); }
+.admin-operations .ops-banner-preview { position: relative; width: 100%; aspect-ratio: 3 / 1; overflow: hidden; background: #14253b; }
+.admin-operations .ops-banner-preview > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.admin-operations .ops-banner-source { position: absolute; left: 11px; bottom: 10px; display: inline-flex; align-items: center; min-height: 25px; padding: 3px 9px; border: 1px solid rgb(255 255 255 / .3); border-radius: 5px; background: rgb(12 26 43 / .85); color: #f0f3f8; font-size: 11px; font-weight: 550; line-height: 1.5; }
+.admin-operations .ops-banner-source.is-uploaded { border-color: rgb(167 209 188 / .45); color: #d8f2e3; }
+.admin-operations .ops-banner-placeholder { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 100%; color: #bac9db; font-size: 12px; }
+.admin-operations .ops-banner-card-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 15px; }
+.admin-operations .ops-banner-card-footer > div { flex: 1 1 110px; min-width: 0; }
+.admin-operations .ops-banner-card-footer h4 { overflow-wrap: anywhere; color: #273b55; font-size: 14px; font-weight: 650; line-height: 1.5; }
+.admin-operations .ops-banner-card-footer p { margin-top: 3px; color: var(--ops-muted); font-size: 11px; }
+.admin-operations .ops-banner-card-footer .admin-button { flex-shrink: 0; }
+.admin-operations .ops-category-banner { display: grid; gap: 14px; min-width: 0; padding: 16px; border: 1px solid #dce3ec; border-radius: 9px; background: #f8fafc; }
+.admin-operations .ops-banner-field-heading { display: flex; align-items: flex-start; gap: 10px; }
+.admin-operations .ops-banner-field-heading > svg { margin-top: 3px; color: #927c4e; }
+.admin-operations .ops-banner-field-heading h4, .admin-operations .ops-category-thumbnail h4 { color: #2d435f; font-size: 14px; font-weight: 650; }
+.admin-operations .ops-banner-field-heading p { margin-top: 3px; color: var(--ops-muted); font-size: 12px; }
+.admin-operations .ops-category-banner .ops-banner-preview { border-radius: 6px; }
+.admin-operations .ops-banner-upload-tools { display: grid; gap: 9px; }
+.admin-operations .ops-banner-upload-tools > .ops-upload { min-height: 42px; font-size: 13px; }
+.admin-operations .ops-banner-upload-tools .ops-help, .admin-operations .ops-banner-save .ops-help { font-size: 12px; }
+.admin-operations .ops-banner-save { display: grid; gap: 10px; justify-items: start; }
+.admin-operations .ops-category-thumbnail { display: grid; gap: 12px; padding-top: 18px; border-top: 1px solid var(--ops-line); }
+.admin-operations .ops-category-thumbnail .ops-help { margin-top: 3px; }
+@media (max-width: 639px) { .admin-operations .ops-banner-grid { gap: 15px; padding: 16px; } .admin-operations .ops-category-banner { padding: 13px; } .admin-operations .ops-banner-card-footer { padding: 13px; } }
 @keyframes ops-spin { to { transform: rotate(360deg); } }
 @media (max-width: 1199px) { .admin-operations .ops-editor-layout { grid-template-columns: minmax(280px, .9fr) minmax(0, 1.1fr); } .admin-operations .ops-table :is(th, td) { padding-inline: 15px; } .admin-operations .ops-form-body { padding: 19px; } .admin-operations .ops-panel-header { padding-inline: 19px; } }
 @media (max-width: 959px) { .admin-operations .ops-editor-layout, .admin-operations .ops-stock-layout { grid-template-columns: minmax(0, 1fr); } .admin-operations .ops-page-header h2 { font-size: 22px; } }

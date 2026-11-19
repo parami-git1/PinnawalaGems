@@ -15,7 +15,7 @@ import {
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import { apiRequest } from './api';
 import './ContactForm.css';
-import ResponsiveImage from './ResponsiveImage';
+import ContactHeroImage from './ContactHeroImage';
 import ContactMedia from './ContactMedia';
 
 /* ─── constants ────────────────────────────────────────────────────── */
@@ -165,9 +165,9 @@ function Contact() {
       {/* ════════════════════════════════════════════
           HERO BANNER — full quality gem photo + elegant ascending wave
       ════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden" style={{ paddingBottom: '130px' }}>
+      <section data-contact-hero className="pg-contact-banner relative overflow-hidden" style={{ paddingBottom: '130px' }}>
         {/* ── FULL QUALITY background — no opacity reduction on the image itself ── */}
-        <ResponsiveImage className="absolute inset-0 h-full w-full object-cover object-right" src="/contact-hero-v2.png" width="1774" height="887" maxWidth={1774} sizes="(max-width:599px) 1100px,100vw" alt="" loading="eager" fetchPriority="high" />
+        <ContactHeroImage />
 
         {/* ── ONLY a top-to-bottom gradient so text is readable
               but the bottom of the image (gem) shows with ZERO dimming ── */}
