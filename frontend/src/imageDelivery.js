@@ -1,3 +1,5 @@
+import { publicMediaUrl } from './publicMediaUrl';
+
 const LOCAL_VARIANTS = {
   '/images/category-blue-sapphire-banner-v2-1600.webp': [[640, '/images/category-blue-sapphire-banner-v2-640.webp'], [1000, '/images/category-blue-sapphire-banner-v2-1000.webp'], [1600, '/images/category-blue-sapphire-banner-v2-1600.webp']],
   '/images/category-yellow-sapphire-banner-v2-1600.webp': [[640, '/images/category-yellow-sapphire-banner-v2-640.webp'], [1000, '/images/category-yellow-sapphire-banner-v2-1000.webp'], [1600, '/images/category-yellow-sapphire-banner-v2-1600.webp']],
@@ -16,7 +18,7 @@ const LOCAL_VARIANTS = {
 };
 
 export function imageDelivery(value, { width = 800, sizes = '100vw' } = {}) {
-  const original = typeof value === 'string' ? value.trim() : '';
+  const original = publicMediaUrl(value);
   if (!original) return { src: '', original };
   const local = LOCAL_VARIANTS[original];
   if (local) {

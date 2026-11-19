@@ -1,5 +1,11 @@
 export const publicResourceCache = new Map();
+export const PUBLIC_RESOURCE_MAX_AGE = 60000;
 const subscribers = new Set();
+
+export function storePublicResource(path, data) {
+  publicResourceCache.set(path, { data, updatedAt: Date.now() });
+  if (publicResourceCache.size > 120) publicResourceCache.delete(publicResourceCache.keys().next().value);
+}
 
 export function affectedResource(path) {
   const clean = String(path).replace(/^\/?api\//, '').replace(/^\//, '').split('?')[0];

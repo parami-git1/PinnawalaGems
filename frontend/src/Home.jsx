@@ -6,6 +6,8 @@ import HomeLoading from './HomeLoading';
 import GemShowcase from './GemShowcase';
 import CustomerGallery from './CustomerGallery';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
+import { getDefaultCategoryBanner } from './categoryBannerAssets';
+import { HOME_HERO_PREVIEW, HOME_MOBILE_PREVIEW } from './homeHeroPreview';
 import './Home.css';
 import './HomeRefinements.css';
 import './HeroRefinement.css';
@@ -108,11 +110,12 @@ function SectionIntro({ number, label, title, children, link, to = '/catalog', s
 }
 
 function CategoryCard({ category, index }) {
-  const source = category.coverImage || category.mainImage || category.image;
+  const fallback = getDefaultCategoryBanner(category);
+  const source = category.mainImage || category.image || category.coverImage || fallback;
   return <div data-reveal data-delay={index * 45}>
     <Link className={`pg-category pg-category--${category.tone || 'sapphire'}`} to={`/collections/${categorySlug(category)}`}>
-      <div className="pg-category-visual"><span className="pg-category-number">0{index + 1}</span>
-        {source ? <ResponsiveImage src={source} alt={category.title} width="640" height="720" maxWidth={640} sizes="(max-width: 599px) 44vw, 23vw" /> : <Facet className="pg-category-facet" />}
+      <div className={`pg-category-visual${source === fallback ? ' pg-category-visual--local' : ''}`}><span className="pg-category-number">0{index + 1}</span>
+        <ResponsiveImage src={source} fallback={fallback} alt={category.title} width="640" height="720" maxWidth={640} sizes="(max-width: 599px) 44vw, 23vw" />
         <span className="pg-category-explore"><Arrow diagonal /></span>
       </div>
       <div className="pg-category-caption"><h3>{category.title}</h3><p>{category.description || 'Explore the collection'}</p></div>
@@ -256,7 +259,7 @@ export default function Home() {
 
   return <>{showLoader && <HomeLoading leaving={readyToReveal} message={loadingMessage} />}<main id="main-content" className="pg-home" ref={root}>
     <section className={`pg-hero${useDefaultHero ? ' pg-hero--ivory' : ''}`} aria-labelledby="pg-hero-title">
-      <div className="pg-hero-picture"><ResponsiveImage src={useDefaultHero ? HERO_IMAGE : customHeroImage} mobileSrc={useDefaultHero ? HERO_MOBILE : undefined} width="1774" height="887" maxWidth={1800} sizes="100vw" alt={useDefaultHero ? 'Ceylon gemstones on ivory silk with Sigiriya and a white Sri Lankan stupa in the misty background' : 'Pinnawala Gems featured collection'} fetchPriority="high" loading="eager" preservePrevious onReady={() => setHeroReady(true)} onError={() => { if (!useDefaultHero) setFailedHeroImage(customHeroImage); }} /></div>
+      <div className="pg-hero-picture" style={{ '--pg-hero-preview': `url("${HOME_HERO_PREVIEW}")`, '--pg-hero-mobile-preview': `url("${HOME_MOBILE_PREVIEW}")` }}><ResponsiveImage src={useDefaultHero ? HERO_IMAGE : customHeroImage} mobileSrc={useDefaultHero ? HERO_MOBILE : undefined} fallback={useDefaultHero ? HERO_IMAGE : undefined} width="1774" height="887" maxWidth={1800} sizes="100vw" alt={useDefaultHero ? 'Ceylon gemstones on ivory silk with Sigiriya and a white Sri Lankan stupa in the misty background' : 'Pinnawala Gems featured collection'} fetchPriority="high" loading="eager" preservePrevious onReady={() => setHeroReady(true)} onError={() => { if (!useDefaultHero) setFailedHeroImage(customHeroImage); }} /></div>
       <div className="pg-hero-shade" />
       <div className="pg-container pg-hero-inner"><div className="pg-hero-copy">
         <p className="pg-eyebrow pg-hero-enter">{BUSINESS.name}</p>

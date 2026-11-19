@@ -1,67 +1,99 @@
-import { useCallback, useEffect, useState } from 'react';
-import { API_BASE } from '../api';
-import { publicResourceCache as cache, subscribeResourceInvalidation } from '../resourceCache';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { publicResourceCache as cache, PUBLIC_RESOURCE_MAX_AGE, subscribeResourceInvalidation } from '../resourceCache';
+import { PUBLIC_RESOURCE_MAX_ATTEMPTS, requestPublicResource } from '../publicResourceClient';
 
 export { API_BASE } from '../api';
-const CACHE_AGE = 60000;
-const cachedState = (path) => ({ path, data: cache.get(path)?.data ?? null, status: cache.has(path) ? 'success' : 'loading', refreshing: false });
+
+const cachedState = (path) => {
+  const saved = cache.get(path);
+  return {
+    path, data: saved?.data ?? null, status: saved ? 'success' : 'loading',
+    refreshing: false, recovering: false, error: null, attempt: 0,
+    maxAttempts: PUBLIC_RESOURCE_MAX_ATTEMPTS, nextRetryAt: null,
+    updatedAt: saved?.updatedAt ?? null,
+    stale: Boolean(saved && Date.now() - saved.updatedAt >= PUBLIC_RESOURCE_MAX_AGE),
+  };
+};
 
 // Each resource settles independently. A slow API must never block the page.
 export function useRemoteResource(path, { loader, timeout = 15000 } = {}) {
-  const [attempt, setAttempt] = useState(0);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [resource, setResource] = useState(() => cachedState(path));
-  const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  const previousRequest = useRef(null);
+  const lastWakeup = useRef({ path, at: 0 });
+  const retry = useCallback(() => setRefreshVersion((value) => value + 1), []);
   useEffect(() => subscribeResourceInvalidation((prefix) => { if (path.startsWith(prefix)) retry(); }), [path, retry]);
 
   useEffect(() => {
-    const saved = cache.get(path);
-    if (!attempt && saved && Date.now() - saved.updatedAt < CACHE_AGE) return undefined;
-    const controller = new AbortController();
+    const previous = previousRequest.current;
+    const force = previous?.path === path && previous.refreshVersion !== refreshVersion;
+    previousRequest.current = { path, refreshVersion };
     let mounted = true;
-    const deadline = window.setTimeout(() => controller.abort(), timeout);
+    let request;
+    let latestAttempt = 0;
 
-    async function load() {
+    Promise.resolve().then(async () => {
       if (!mounted) return;
+      const saved = cache.get(path);
+      if (!force && saved && Date.now() - saved.updatedAt < PUBLIC_RESOURCE_MAX_AGE) {
+        // A route may change paths within the same mounted component. Always
+        // synchronize a fresh cache hit instead of leaving its old error/data.
+        setResource(cachedState(path));
+        return;
+      }
       setResource((current) => {
-        const data = current.path === path ? current.data : cache.get(path)?.data ?? null;
-        return { path, data, status: data == null ? 'loading' : 'success', refreshing: data != null };
+        const state = current.path === path ? current : cachedState(path);
+        return { ...state, path, status: state.data == null ? 'loading' : 'success', refreshing: state.data != null, recovering: false, error: null, nextRetryAt: null };
+      });
+      request = requestPublicResource(path, {
+        loader, timeout,
+        onProgress: (progress) => {
+          latestAttempt = progress.attempt;
+          if (mounted) setResource((current) => ({ ...current, ...progress }));
+        },
       });
       try {
-        let data;
-        for (let round = 0; round < 2; round += 1) {
-          try {
-            if (loader) data = await loader(path, { signal: controller.signal });
-            else {
-              const response = await fetch(`${API_BASE}/${path}`, { signal: controller.signal, cache: 'no-cache' });
-              if (!response.ok) { const error = new Error(`Request failed: ${response.status}`); error.status = response.status; throw error; }
-              data = await response.json();
-            }
-            break;
-          } catch (error) {
-            if (round || controller.signal.aborted || (error.status && error.status < 500 && error.status !== 408)) throw error;
-            await new Promise((resolve) => window.setTimeout(resolve, 400));
-            if (controller.signal.aborted) throw error;
-          }
-        }
-        if (mounted) {
-          cache.set(path, { data, updatedAt: Date.now() });
-          if (cache.size > 120) cache.delete(cache.keys().next().value);
-          setResource({ path, data, status: 'success', refreshing: false });
-        }
-      } catch {
-        if (mounted) setResource((current) => ({ ...current, status: 'error', refreshing: false }));
+        const data = await request.promise;
+        if (mounted) setResource({ ...cachedState(path), data, attempt: latestAttempt });
+      } catch (error) {
+        if (mounted && error?.name !== 'AbortError') setResource((current) => ({
+          ...current, path, status: 'error', refreshing: false, recovering: false,
+          error, attempt: error.attempts || current.attempt, nextRetryAt: error.retryAt || null,
+          stale: current.data != null,
+        }));
       } finally {
-        window.clearTimeout(deadline);
+        request.release();
       }
-    }
+    });
 
-    Promise.resolve().then(load);
     return () => {
       mounted = false;
-      window.clearTimeout(deadline);
-      controller.abort();
+      request?.release();
     };
-  }, [path, attempt, loader, timeout]);
+  }, [path, refreshVersion, loader, timeout]);
+
+  useEffect(() => {
+    const revalidate = () => {
+      if (document.visibilityState === 'hidden' || navigator.onLine === false) return;
+      const state = resource.path === path ? resource : cachedState(path);
+      if (state.status === 'error' && state.error?.transient === false) return;
+      if (state.nextRetryAt && state.nextRetryAt > Date.now()) return;
+      const saved = cache.get(path);
+      const aging = !saved || Date.now() - saved.updatedAt >= PUBLIC_RESOURCE_MAX_AGE;
+      if (state.status !== 'error' && !aging) return;
+      if (lastWakeup.current.path === path && Date.now() - lastWakeup.current.at < 1000) return;
+      lastWakeup.current = { path, at: Date.now() };
+      retry();
+    };
+    window.addEventListener('online', revalidate);
+    window.addEventListener('focus', revalidate);
+    document.addEventListener('visibilitychange', revalidate);
+    return () => {
+      window.removeEventListener('online', revalidate);
+      window.removeEventListener('focus', revalidate);
+      document.removeEventListener('visibilitychange', revalidate);
+    };
+  }, [path, resource, retry]);
 
   return { ...(resource.path === path ? resource : cachedState(path)), retry };
 }

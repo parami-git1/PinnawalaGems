@@ -197,3 +197,9 @@
   .pg-home .pg-visit-actions svg { width: 17px; height: 17px; }
   .pg-home .pg-visit-location { max-width: 310px; margin: 14px auto 0; font-size: 12px; }
 }
+.pg-home .pg-hero-picture { background-image: var(--pg-hero-preview); background-size: cover; background-position: center; }
+.pg-home .pg-hero-picture > img[data-image-state="loading"] { background-color: transparent; }
+.pg-home .pg-hero-picture > img[data-image-state="error"] { opacity: 0; }
+.pg-home .pg-category-visual--local { background: #0a1425; }
+.pg-home .pg-category-visual > img[src*="category-"][src*="-banner-v2-"] { object-position: 77% center; }
+@media (max-width:599px) { .pg-home .pg-hero-picture { background-image: var(--pg-hero-mobile-preview); } }

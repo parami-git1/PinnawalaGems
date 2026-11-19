@@ -23,6 +23,12 @@ async function read(path, signal) {
   if (!response.ok) {
     const error = new Error(`Collection request failed: ${response.status}`);
     error.status = response.status;
+    const retryAfter = response.headers.get('Retry-After');
+    if (retryAfter) {
+      const seconds = Number(retryAfter);
+      const retryAt = Number.isFinite(seconds) && seconds >= 0 ? Date.now() + seconds * 1000 : Date.parse(retryAfter);
+      if (Number.isFinite(retryAt)) error.retryAt = Math.max(Date.now(), retryAt);
+    }
     throw error;
   }
   return response.json();

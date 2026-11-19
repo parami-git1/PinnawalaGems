@@ -33,6 +33,7 @@ const ImagePlaceholder = ({ src, alt }) => {
           sizes="(max-width:599px) 90vw,48vw"
           width="800" height="600"
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          fallback="/images/lapidary-craft.webp"
         />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[radial-gradient(circle_at_center,_rgba(201,162,39,.16),_transparent_46%)] text-slate-400" aria-label={`${alt} image placeholder`}>

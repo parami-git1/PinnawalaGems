@@ -1,3 +1,3 @@
-.pg-media-watermark { position: absolute; z-index: 2; top: 50%; left: 50%; width: 43%; max-width: 280px; transform: translate(-50%, -50%); opacity: .11; pointer-events: none; user-select: none; filter: grayscale(1) drop-shadow(0 0 1px rgb(255 255 255 / .8)); }
+.pg-media-watermark { position: absolute; z-index: 2; top: 50%; left: 50%; width: 43%; max-width: 280px; transform: translate(-50%, -50%); opacity: .16; pointer-events: none; user-select: none; filter: grayscale(1) drop-shadow(0 0 1px rgb(255 255 255 / .8)); }
 .pg-media-watermark > img { display: block; width: 100%; height: auto; margin: 0; padding: 0; object-fit: contain; background: transparent; }
-.pg-media-watermark--certificate { width: 41%; max-width: 340px; opacity: .075; }
+.pg-media-watermark--certificate { width: 41%; max-width: 340px; opacity: .11; }

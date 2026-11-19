@@ -1,5 +1,6 @@
 .pg-responsive-image { background-color: transparent; }
 .pg-responsive-image[data-image-state="loading"] { background-color: #f4f3ef; }
+.pg-responsive-image.pg-responsive-image--candidate { position: absolute !important; visibility: hidden !important; pointer-events: none; }
 .pg-responsive-image[data-image-state="ready"][data-image-fade="true"] { animation: pg-image-ready 180ms ease-out; }
 @keyframes pg-image-ready { from { opacity: .55; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pg-responsive-image { animation: none !important; } }
