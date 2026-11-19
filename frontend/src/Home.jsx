@@ -129,7 +129,7 @@ function GemCard({ gem, index }) {
   const facts = [['Carat weight', gem.weight ? `${gem.weight}${/ct|carat/i.test(String(gem.weight)) ? '' : ' ct'}` : null], ['Shape', gem.shape], ['Origin', gem.origin], ['Cut', gem.cut]].filter(([, value]) => value);
   return <article className="pg-gem-card" data-reveal data-delay={(index % 4) * 40}>
     <Link to={`/gem/${gem._id}`} className="pg-gem-link">
-      <div className="pg-gem-visual"><div className="pg-gem-label"><span>The Pinnawala edit</span><span>{String(index + 1).padStart(2, '0')}</span></div>
+      <div className="pg-gem-visual"><div className="pg-gem-label"><span>{String(index + 1).padStart(2, '0')}</span></div>
         <Image src={gem.image} alt={title} width="600" height="600" className="pg-gem-primary" />
         {secondary && <Image src={secondary} alt={`${title}, alternate view`} width="400" height="400" maxWidth={600} className="pg-gem-alternate" fade={false} fallback={gem.image || '/gem.png'} />}
         <span className="pg-gem-view"><Arrow diagonal /></span>
@@ -266,14 +266,13 @@ export default function Home() {
         <h1 id="pg-hero-title" className="pg-hero-enter">{words.join(' ')}{' '}<em>{lastWord}</em></h1>
         <p className="pg-hero-description pg-hero-enter">{BUSINESS.tagline}</p>
         <div className="pg-hero-actions pg-hero-enter"><Link to="/catalog" className="pg-button pg-button--gold">Discover the collection<Arrow /></Link><Link to="/workshop" className="pg-hero-secondary">The art of our craft<Arrow diagonal /></Link></div>
-        <p className="pg-hero-assurance pg-hero-enter"><span>{BUSINESS.license}</span><span>{BUSINESS.shipping}</span></p>
         {safeWebUrl(homeData.heroVideo) && <button type="button" className="pg-film-button" onClick={() => setShowFilm(true)}><span aria-hidden="true">▷</span> Watch our story</button>}
       </div><div className="pg-hero-footer"><a href="#collections" className="pg-scroll-link"><span>Scroll to discover</span><Arrow /></a></div></div>
     </section>
 
     {homeData.showEvent && homeData.eventText && <aside className="pg-announcement pg-container"><span className="pg-caption-dot" /><p>{homeData.eventText}</p>{eventLink && <a href={eventLink} target="_blank" rel="noopener noreferrer" className="pg-text-link">Learn more<Arrow diagonal /></a>}</aside>}
 
-    <section id="collections" className="pg-section pg-categories" aria-labelledby="pg-categories-title"><div className="pg-container"><SectionIntro showEyebrow={false} title={<span id="pg-categories-title">The colours of Ceylon.<br /><em>Find your kind of brilliance.</em></span>} link="View the collection">Explore our handpicked Ceylon gems.</SectionIntro><div className="pg-category-grid" aria-busy={categoriesResource.status === 'loading'}>{categories.map((category, index) => <CategoryCard key={category._id || category.title} category={category} index={index} />)}</div></div></section>
+    <section id="collections" className="pg-section pg-categories" aria-labelledby="pg-categories-title"><div className="pg-container"><SectionIntro showEyebrow={false} title={<span id="pg-categories-title">The colours of Ceylon.<br /><em>Find your kind of brilliance.</em></span>} link="View the collection" /><div className="pg-category-grid" aria-busy={categoriesResource.status === 'loading'}>{categories.map((category, index) => <CategoryCard key={category._id || category.title} category={category} index={index} />)}</div></div></section>
 
     <FeaturedCollection resource={gemsResource} />
 

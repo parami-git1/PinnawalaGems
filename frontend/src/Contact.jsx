@@ -16,7 +16,6 @@ import { BUSINESS, withBusinessDetails } from './businessDetails';
 import { apiRequest } from './api';
 import './ContactForm.css';
 import ContactHeroImage from './ContactHeroImage';
-import ContactMedia from './ContactMedia';
 
 /* ─── constants ────────────────────────────────────────────────────── */
 const GOOGLE_MAPS_EMBED_URL = BUSINESS.mapsEmbedUrl;
@@ -322,10 +321,7 @@ function Contact() {
                 {/* social links */}
                 {socials.length > 0 && (
                   <div className="mt-9 border-t border-white/10 pt-6">
-                    <p className="text-[9px] font-semibold uppercase tracking-[.25em] text-slate-500">
-                      Follow our world
-                    </p>
-                    <div className="mt-3 flex gap-2">
+                    <div className="flex gap-2">
                       {socials.map(([href, icon, label, hoverBg, hoverText, hoverBorder]) => (
                         <a
                           key={label}
@@ -362,10 +358,7 @@ function Contact() {
               {/* header */}
               <div className="flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-[.35em] text-[#B8901F]">
-                    We would love to hear from you
-                  </p>
-                  <h2 className="mt-3 font-[Cormorant_Garamond,serif] text-4xl leading-none text-[#0B1330] md:text-5xl">
+                  <h2 className="font-[Cormorant_Garamond,serif] text-4xl leading-none text-[#0B1330] md:text-5xl">
                     Send us a <em className="text-[#B8901F]">message.</em>
                   </h2>
                 </div>
@@ -559,7 +552,6 @@ function Contact() {
               </div>
             </div>
           </section>
-          <ContactMedia photos={contactInfo.contactImages} video={contactInfo.contactVideo} />
         </main>
       )}
     </div>

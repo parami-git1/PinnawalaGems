@@ -107,7 +107,6 @@ function Workshop() {
             <h1 id="pg-workshop-hero-title">Learn the art<br /><em>behind the stone.</em></h1>
             <p className="pg-workshop-hero__description">Discover the craft behind Ceylon's gemstones through masterclasses, artisan courses and exhibitions.</p>
             <a className="pg-workshop-hero__link" href="#main-content">Explore the archive<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" aria-hidden="true"><path d="m7 7 10 10M7 17h10V7" /></svg></a>
-            <div className="pg-workshop-hero__disciplines" aria-label="Workshop disciplines"><span>Gemology</span><i aria-hidden="true" /><span>Lapidary</span><i aria-hidden="true" /><span>Masterclasses</span></div>
           </div>
         </div>
       </section>
@@ -116,8 +115,7 @@ function Workshop() {
       <main id="main-content" className="relative z-10 mx-auto w-full max-w-7xl px-6 py-20 md:px-12 md:py-28">
         <div className="mb-12 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[.35em] text-[#B8901F]">Past sessions & showcases</p>
-            <h2 className="mt-3 font-[Cormorant_Garamond,serif] text-5xl leading-none text-[#0B1330] md:text-6xl">The workshop archive.</h2>
+            <h2 className="font-[Cormorant_Garamond,serif] text-5xl leading-none text-[#0B1330] md:text-6xl">The workshop archive.</h2>
           </div>
           <p className="max-w-sm text-sm leading-6 text-slate-500 md:text-right">Stories, skills, and shared knowledge from the people who bring each stone to life.</p>
         </div>

@@ -80,17 +80,6 @@
 .pg-workshop-hero__link svg { width: 17px; height: 17px; transition: transform 180ms ease; }
 .pg-workshop-hero__link:hover svg { transform: translate(2px,2px); }
 .pg-workshop-hero__link:focus-visible { outline: 2px solid #e1c58e; outline-offset: 6px; }
-.pg-workshop-hero__disciplines {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  margin-top: 31px;
-  color: #aebcd0;
-  font: 500 10px/1.5 'Inter',system-ui,sans-serif;
-  letter-spacing: .05em;
-}
-.pg-workshop-hero__disciplines i { width: 1px; height: 10px; background: rgb(214 188 136 / .45); }
 @media (max-width: 1023px) {
   .pg-workshop-hero { min-height: 610px; padding: 145px 0 82px; }
   .pg-workshop-hero__layout { width: calc(100% - 64px); }
@@ -109,7 +98,6 @@
   .pg-workshop-hero h1 { font-size: clamp(36px,10.2vw,48px); line-height: 1.15; }
   .pg-workshop-hero__description { max-width: 320px; margin-top: 23px; font-size: 14px; }
   .pg-workshop-hero__link { margin-top: 22px; }
-  .pg-workshop-hero__disciplines { gap: 12px; margin-top: 29px; font-size: 9px; }
   .pg-workshop-hero > .pg-workshop-hero__background { width: 155%; right: -40%; object-position: 55% center; opacity: .82; }
   .pg-workshop-hero__veil { background: linear-gradient(90deg,rgb(8 21 45 / .97),rgb(8 21 45 / .86) 46%,rgb(8 21 45 / .5)),linear-gradient(0deg,#08152d 0%,transparent 70%); }
   .pg-workshop-hero__frame { inset: 91px 12px 19px; border-color: rgb(214 188 136 / .17); }

@@ -70,20 +70,27 @@ function Navbar({ adminSlot = null, categories = null }) {
   useEffect(() => {
     if (!mobileOpen) return undefined;
     const originalOverflow = document.body.style.overflow;
+    const originalOverscroll = document.documentElement.style.overscrollBehavior;
     document.body.style.overflow = 'hidden';
-    const frame = window.requestAnimationFrame(() => mobilePanelRef.current?.querySelector('a')?.focus());
+    document.documentElement.style.overscrollBehavior = 'none';
+    const frame = window.requestAnimationFrame(() => mobilePanelRef.current?.querySelector('a')?.focus({ preventScroll: true }));
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
         setMenuState((previous) => ({ ...previous, mobile: false, collection: false }));
-        mobileToggleRef.current?.focus();
+        mobileToggleRef.current?.focus({ preventScroll: true });
       }
       if (event.key === 'Tab') {
         const focusable = [...(navRef.current?.querySelectorAll('a[href], button:not([disabled])') || [])]
           .filter((element) => element.getClientRects().length > 0);
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
+        if (!navRef.current?.contains(document.activeElement)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first)?.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
           event.preventDefault();
           last?.focus();
         } else if (!event.shiftKey && document.activeElement === last) {
@@ -94,13 +101,18 @@ function Navbar({ adminSlot = null, categories = null }) {
     };
     const desktopQuery = window.matchMedia('(min-width: 900px)');
     const handleResize = (event) => {
-      if (event.matches) setMenuState((previous) => ({ ...previous, mobile: false, collection: false }));
+      if (event.matches) {
+        setMenuState((previous) => ({ ...previous, mobile: false, collection: false }));
+        const destination = navRef.current?.querySelector('.pg-nav__desktop [aria-current="page"]') || navRef.current?.querySelector('.pg-nav__brand');
+        destination?.focus({ preventScroll: true });
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     desktopQuery.addEventListener('change', handleResize);
     return () => {
       window.cancelAnimationFrame(frame);
       document.body.style.overflow = originalOverflow;
+      document.documentElement.style.overscrollBehavior = originalOverscroll;
       document.removeEventListener('keydown', handleKeyDown);
       desktopQuery.removeEventListener('change', handleResize);
     };
@@ -113,15 +125,22 @@ function Navbar({ adminSlot = null, categories = null }) {
     };
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
+        event.preventDefault();
         setMenuState((previous) => ({ ...previous, desktop: false }));
-        collectionToggleRef.current?.focus();
+        collectionToggleRef.current?.focus({ preventScroll: true });
       }
+    };
+    const desktopQuery = window.matchMedia('(min-width: 900px)');
+    const handleResize = (event) => {
+      if (!event.matches) setMenuState((previous) => ({ ...previous, desktop: false }));
     };
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
+    desktopQuery.addEventListener('change', handleResize);
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
+      desktopQuery.removeEventListener('change', handleResize);
     };
   }, [desktopCollectionOpen]);
 
@@ -201,13 +220,17 @@ function Navbar({ adminSlot = null, categories = null }) {
           {NAV_LINKS.map(({ to, label }) => {
             if (label === 'Collection') return (
               <div key={to} className="pg-nav__mobile-collection">
-                <button
-                  type="button"
-                  className={`pg-nav__mobile-link${collectionActive ? ' is-active' : ''}`}
-                  aria-expanded={mobileCollectionOpen}
-                  aria-controls="pg-mobile-collection"
-                  onClick={() => updateMenu({ collection: !mobileCollectionOpen })}
-                ><span>Collection</span><Chevron open={mobileCollectionOpen} /></button>
+                <div className="pg-nav__mobile-collection-row">
+                  <Link to={to} onClick={closeMenus} className={`pg-nav__mobile-link${collectionActive ? ' is-active' : ''}`} aria-current={collectionActive ? 'page' : undefined}><span>Collection</span></Link>
+                  <button
+                    type="button"
+                    className="pg-nav__mobile-collection-toggle"
+                    aria-label={mobileCollectionOpen ? 'Hide gemstone categories' : 'Show gemstone categories'}
+                    aria-expanded={mobileCollectionOpen}
+                    aria-controls="pg-mobile-collection"
+                    onClick={() => updateMenu({ collection: !mobileCollectionOpen })}
+                  ><Chevron open={mobileCollectionOpen} /></button>
+                </div>
                 {mobileCollectionOpen && (
                   <div className="pg-nav__mobile-categories" id="pg-mobile-collection">
                     <Link to="/catalog" onClick={closeMenus} className="pg-nav__mobile-view-all">View all gemstones <Arrow /></Link>

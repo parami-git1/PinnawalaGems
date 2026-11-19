@@ -22,8 +22,6 @@
 .pg-home .pg-gem-studio__note p { max-width: 190px; margin-top: 10px; color: #687264; font-size: 13px; line-height: 1.8; }
 .pg-gem-studio__note i { display: block; width: 65px; height: 1px; background: #b2a17b; margin-top: 22px; }
 .pg-gem-studio__note--right { padding-left: 20px; }
-.pg-gem-studio__note--right::before { content: ''; position: absolute; left: -38px; top: 30px; width: 40px; height: 1px; background: #beb6a0; }
-.pg-gem-studio__note--left::after { content: ''; position: absolute; right: -24px; bottom: 40px; width: 40px; height: 1px; background: #beb6a0; }
 .pg-gem-studio__poster { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 24px; }
 .pg-gem-studio__poster img { width: 55%; max-width: 290px; height: auto; object-fit: contain; }
 .pg-gem-studio__poster p { color: #687264; font-size: 12px; }
@@ -37,7 +35,6 @@
   .pg-gem-studio__viewer { height: 420px; }
   .pg-home .pg-gem-studio__note h3 { font-size: 19px; }
   .pg-gem-studio__note--right { padding-left: 10px; }
-  .pg-gem-studio__note--right::before, .pg-gem-studio__note--left::after { display: none; }
 }
 @media (max-width: 899px) {
   .pg-gem-studio { padding-block: 48px 28px; }
