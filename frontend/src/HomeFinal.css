@@ -166,6 +166,7 @@
   .pg-home .pg-category-caption p { margin-top: 5px; font-size: 12px; }
   .pg-home .pg-category-number { top: 10px; left: 10px; width: 24px; height: 24px; }
   .pg-home .pg-featured .pg-gem-track { grid-auto-columns: 86%; gap: 14px; }
+  .pg-home .pg-track-controls button { width: 44px; height: 44px; }
   .pg-home .pg-featured .pg-gem-meta { padding: 18px; }
   .pg-home .pg-featured .pg-gem-meta h3 { font-size: clamp(21px, 5.5vw, 24px); overflow-wrap: anywhere; }
   .pg-home .pg-featured .pg-gem-track--single .pg-gem-visual { min-height: 0; }

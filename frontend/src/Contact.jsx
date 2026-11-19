@@ -134,7 +134,7 @@ function Contact() {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#F7F5F0] font-[Jost,sans-serif] text-[#101936]">
+    <div className="pg-contact min-h-screen overflow-hidden bg-[#F7F5F0] font-[Jost,sans-serif] text-[#101936]">
       {/* ── keyframes ── */}
       <style>{`
         @keyframes pgReveal {
@@ -164,7 +164,7 @@ function Contact() {
       {/* ════════════════════════════════════════════
           HERO BANNER — full quality gem photo + elegant ascending wave
       ════════════════════════════════════════════ */}
-      <section data-contact-hero className="pg-contact-banner relative overflow-hidden" style={{ paddingBottom: '130px' }}>
+      <section data-contact-hero className="pg-contact-banner relative overflow-hidden" style={{ paddingBottom: 'var(--contact-wave-height, 130px)' }}>
         {/* ── FULL QUALITY background — no opacity reduction on the image itself ── */}
         <ContactHeroImage />
 
@@ -178,7 +178,7 @@ function Contact() {
         />
 
         {/* ── hero text ── */}
-        <div className="relative z-10 flex flex-col items-center justify-center px-6 pb-24 pt-32 text-center text-white md:pb-32 md:pt-44">
+        <div className="pg-contact-banner-copy relative z-10 flex flex-col items-center justify-center px-6 pb-24 pt-32 text-center text-white md:pb-32 md:pt-44">
           <p className="pg-reveal mb-4 text-[10px] font-semibold uppercase tracking-[.45em] text-[#D9B64A]"
             style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}>
             {BUSINESS.name} · Private appointments
@@ -207,7 +207,7 @@ function Contact() {
             Rises steadily from bottom-left → top-right.
             One simple C-curve: no kinks, no weird bumps, just elegance.
         ════════════════════════════════════════════════════════════════ */}
-        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]" style={{ height: '130px' }}>
+        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]" style={{ height: 'var(--contact-wave-height, 130px)' }}>
           <svg
             viewBox="0 0 1440 130"
             xmlns="http://www.w3.org/2000/svg"
@@ -258,7 +258,7 @@ function Contact() {
           MAIN CONTENT
       ════════════════════════════════════════════ */}
       {!isEditing && (
-        <main id="main-content" className="relative mx-auto max-w-6xl px-5 pb-28 md:px-10">
+        <main id="main-content" className="pg-contact-main relative mx-auto max-w-6xl px-5 pb-28 md:px-10">
 
           {/* ── two-column white card — sits on top of the wave ── */}
           <section className="pg-reveal relative z-10 -mt-16 overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_28px_80px_rgba(11,19,48,.16)] md:-mt-24 md:grid md:grid-cols-[.9fr_1.1fr]">

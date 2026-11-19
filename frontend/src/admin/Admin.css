@@ -336,6 +336,18 @@
   .admin-breadcrumb strong { display: block; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .admin-media-row { flex-wrap: wrap; }
 }
+@media (max-width: 1023px), (max-width: 1199px) and (pointer: coarse) {
+  /* Keep every editor and filter readable without triggering iOS input zoom. */
+  .admin-app :is(input, select, textarea):not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']) { min-height: 44px !important; font-size: 16px !important; }
+  .admin-app :is(input, textarea)::placeholder { font-size: 14px; }
+  .admin-app .admin-button, .admin-subnav button { min-height: 44px; }
+  .admin-app .admin-icon-button { width: 44px; height: 44px; }
+  .admin-topbar-leading { flex: 1; }
+  .admin-breadcrumb { min-width: 0; }
+  .admin-breadcrumb strong { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .admin-topbar-actions { flex-shrink: 0; }
+  .admin-sidebar-account > button { width: 44px; height: 44px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .admin-app *, .admin-app *::before, .admin-app *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

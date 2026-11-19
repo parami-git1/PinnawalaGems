@@ -182,8 +182,14 @@
   .feedback-hero { grid-template-columns: minmax(0, 1fr); min-height: 0; }
   .feedback-gallery { min-height: 390px; }
   .feedback-gallery-caption { width: 380px; bottom: 35px; }
-  .feedback-photo-arrows > button:first-child, .feedback-photo-arrows > button:last-child { top: 14px; width: 36px; height: 36px; transform: none; }
-  .feedback-photo-arrows > button:nth-child(2) { bottom: 35px; }
+  .feedback-photo-arrows > button:first-child, .feedback-photo-arrows > button:last-child { top: 14px; width: 44px; height: 44px; transform: none; }
+  .feedback-photo-arrows > button:nth-child(2) { top: 14px; bottom: auto; right: calc(50% - 22px); width: 44px; height: 44px; }
+  .feedback-field input, .feedback-field textarea { font-size: 16px; }
+  .feedback-photo-dots { flex-wrap: wrap; margin-block: 8px -4px; }
+  .feedback-photo-dots > button, .feedback-photo-dots > button.is-active { width: 44px; height: 44px; }
+  .feedback-read-more { min-height: 44px; }
+  .feedback-review-dots { flex-wrap: wrap; }
+  .feedback-review-dots > button { min-width: 44px; min-height: 44px; }
   .feedback-form-panel { padding: 36px 40px 128px; }
   .feedback-form-heading h2 { font-size: 43px; }
   .feedback-form-heading > p:last-child { max-width: 600px; }
@@ -196,16 +202,16 @@
 @media (max-width: 639px) {
   .feedback-gallery { min-height: 390px; }
   .feedback-gallery-caption { left: 20px; right: 20px; bottom: 36px; width: auto; max-width: none; padding: 17px 19px 14px; border-radius: 22px 48px 22px 22px; }
-  .feedback-gallery h1 { font-size: 43px; }
+  .feedback-gallery h1 { font-size: clamp(35px, 9.2vw, 43px); }
   .feedback-gallery .feedback-eyebrow { font-size: 7px; letter-spacing: 1.8px; }
   .feedback-gallery-description { max-width: 280px; font-size: 12px; line-height: 1.8; }
   .feedback-caption-rule { margin-block: 13px 11px; }
   .feedback-photo-arrows > button:first-child { left: 12px; top: 22px; }
   .feedback-photo-arrows > button:last-child { right: 12px; top: 22px; }
-  .feedback-photo-arrows > button:nth-child(2) { right: 28px; bottom: 46px; width: 28px; height: 28px; }
+  .feedback-photo-arrows > button:nth-child(2) { top: 22px; bottom: auto; right: calc(50% - 22px); width: 44px; height: 44px; }
   .feedback-form-panel { padding: 36px 24px 117px; }
   .feedback-form-heading .feedback-eyebrow { font-size: 8px; letter-spacing: 2.3px; }
-  .feedback-form-heading h2 { padding: 16px 21px 18px; font-size: 37px; line-height: 1.08; border-radius: 22px 56px 22px 22px; }
+  .feedback-form-heading h2 { padding: 16px 21px 18px; font-size: clamp(30px, 8vw, 37px); line-height: 1.08; border-radius: 22px 56px 22px 22px; }
   .feedback-form-heading > p:last-child { margin-top: 27px; font-size: 13px; line-height: 1.95; }
   .feedback-form { gap: 18px; margin-top: 25px; }
   .feedback-field input, .feedback-field textarea { font-size: 16px; }
@@ -218,10 +224,13 @@
   .feedback-submit-notices > p { font-size: 10px; }
   .feedback-reviews { margin-top: -56px; padding: 37px 20px 55px; border-radius: 48px 48px 0 0; }
   .feedback-reviews-heading { margin-bottom: 24px; }
-  .feedback-reviews-heading h2 { font-size: 37px; }
+  .feedback-reviews-heading h2 { font-size: clamp(30px, 8vw, 37px); }
   .feedback-reviews-heading h2::before, .feedback-reviews-heading h2::after { display: none; }
-  .feedback-reviews-carousel { gap: 9px; }
-  .feedback-review-nav { width: 36px; height: 36px; flex-basis: 36px; }
+  .feedback-reviews-carousel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .feedback-reviews-viewport { grid-column: 1 / -1; grid-row: 1; min-width: 0; }
+  .feedback-review-nav { grid-row: 2; width: 44px; height: 44px; flex-basis: 44px; }
+  .feedback-review-nav:first-child { justify-self: end; }
+  .feedback-review-nav:last-child { justify-self: start; }
   .feedback-review-nav > svg { width: 16px; height: 16px; }
   .feedback-review-card { min-height: 265px; padding: 21px 18px; }
   .feedback-review-card blockquote { font-size: 20px; }
@@ -233,16 +242,19 @@
 @media (max-width: 359px) {
   .feedback-gallery { min-height: 400px; }
   .feedback-gallery-caption { left: 17px; right: 17px; padding-inline: 17px; }
-  .feedback-gallery h1 { font-size: 41px; }
+  .feedback-gallery h1 { font-size: 35px; }
   .feedback-gallery-description { font-size: 11px; }
   .feedback-form-panel { padding-inline: 20px; }
-  .feedback-form-heading h2 { padding-inline: 19px; font-size: 32px; }
+  .feedback-form-heading h2 { padding-inline: 19px; font-size: 30px; }
   .feedback-rating-row { gap: 5px; }
   .feedback-star { width: 44px; }
   .feedback-review-card { padding-inline: 15px; }
   .feedback-review-card blockquote { font-size: 19px; }
-  .feedback-review-nav { width: 31px; flex-basis: 31px; }
+  .feedback-review-nav { width: 44px; flex-basis: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pg-feedback *, .pg-feedback *::before, .pg-feedback *::after { animation: none !important; transition: none !important; }
+}
+@media (min-width: 1024px) and (max-width: 1199px) and (pointer: coarse) {
+  .feedback-field input, .feedback-field textarea { font-size: 16px; }
 }

@@ -59,3 +59,12 @@
 @media (max-width: 1023px) { .gem-detail-polish .gem-detail-gallery.pg-gem-media { width: 100%; border-right: 0; border-bottom: 1px solid #e6e1d8; } .pg-gem-media__asset { max-height: 560px; } }
 @media (max-width: 599px) { .gem-detail-polish .gem-detail-gallery.pg-gem-media { padding: 18px; } .pg-gem-media__heading { margin-bottom: 15px; } .pg-gem-media__heading p { font-size: 22px; } .pg-gem-media__edition { font-size: 7px; max-width: 80px; } .pg-gem-media__asset > img { padding: 14px; } .pg-gem-media__stage { border-radius: 10px; } .pg-gem-media__thumbnail { flex-basis: 68px; height: 78px; } .pg-gem-media__thumbnail-play { left: 20px; top: 14px; } .pg-gem-media__toolbar > span { gap: 8px; } .pg-gem-media__hint { font-size: 9px; } .pg-gem-media-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 24px); border-radius: 10px; } .pg-gem-media-dialog > header { padding: 15px; } .pg-gem-media-dialog > header p { font-size: 19px; } .pg-gem-media-dialog .pg-gem-media__asset { height: min(65dvh, 560px); } .pg-gem-media-dialog .pg-gem-media__asset > img { padding: 20px 42px; } .pg-gem-media-dialog__previous { left: 7px; } .pg-gem-media-dialog__next { right: 7px; } .pg-gem-media-dialog button { width: 39px; height: 39px; } }
 @media (prefers-reduced-motion: reduce) { .pg-gem-media__loading i { animation: none; } }
+@media (max-width: 1023px) {
+  .pg-gem-media__heading > div > span, .pg-gem-media__toolbar > span { font-size: 12px; }
+  .pg-gem-media__edition { font-size: 10px; letter-spacing: .08em; }
+  .pg-gem-media__hint { font-size: 12px; line-height: 1.65; }
+  .pg-gem-media__thumbnail-label { font-size: 10px; }
+  .pg-gem-media__expand, .pg-gem-media__toolbar button, .pg-gem-media-dialog button { width: 44px; height: 44px; }
+  .pg-gem-media__unavailable button { min-height: 44px; font-size: 13px; }
+  .pg-gem-media-dialog__hint { font-size: 12px; }
+}

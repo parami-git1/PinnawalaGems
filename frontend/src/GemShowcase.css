@@ -45,13 +45,12 @@
 @media (max-width: 599px) {
   .pg-gem-studio { padding-block: 40px 24px; }
   .pg-gem-studio__mobile-break { display: block; }
-  .pg-home .pg-gem-studio__heading h2 { margin-top: 20px; font-size: 35px; }
+  .pg-home .pg-gem-studio__heading h2 { margin-top: 14px; font-size: clamp(28px, 7.5vw, 33px); }
   .pg-home .pg-gem-studio__heading > p:last-child { max-width: 310px; font-size: 13px; margin-top: 15px; }
   .pg-gem-studio__viewer { width: calc(100% + 24px); max-width: none; height: 340px; margin-left: -12px; }
   .pg-gem-studio__composition { margin-top: 8px; }
 }
 @media (max-width: 359px) {
   .pg-gem-studio__viewer { height: 310px; }
-  .pg-home .pg-gem-studio__heading h2 { font-size: 30px; }
 }
 @media (prefers-reduced-motion: reduce) { .pg-gem-studio__canvas { transition: none; } }

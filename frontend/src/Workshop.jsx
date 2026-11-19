@@ -88,6 +88,23 @@ function Workshop() {
     })),
   ];
 
+  useEffect(() => {
+    const track = workshopTrackRef.current;
+    if (!track) return undefined;
+    const cards = [...track.querySelectorAll('.workshop-event')];
+    const measure = () => {
+      const height = Math.ceil(Math.max(0, ...cards.map((card) => card.offsetHeight)));
+      track.style.setProperty('--workshop-cards-height', `${height + 4}px`);
+    };
+    // Cards are absolutely positioned, so their content cannot size the track.
+    // Keep every story visible through font loading, resizing and CMS updates.
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    cards.forEach((card) => observer?.observe(card));
+    window.addEventListener('resize', measure);
+    measure();
+    return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, [resource.data]);
+
   return (
     <div ref={pageRef} className="relative min-h-screen overflow-hidden bg-[#F7F5F0] font-inter text-[#101936]">
       <section className="pg-workshop-hero" aria-labelledby="pg-workshop-hero-title">
@@ -112,7 +129,7 @@ function Workshop() {
       </section>
 
       {/* ── Workshop Sections ────────────────────────────────────────────── */}
-      <main id="main-content" className="relative z-10 mx-auto w-full max-w-7xl px-6 py-20 md:px-12 md:py-28">
+      <main id="main-content" className="pg-workshop-archive relative z-10 mx-auto w-full max-w-7xl px-6 py-20 md:px-12 md:py-28">
         <div className="mb-12 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <h2 className="font-[Cormorant_Garamond,serif] text-5xl leading-none text-[#0B1330] md:text-6xl">The workshop archive.</h2>

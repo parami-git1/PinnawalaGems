@@ -69,3 +69,12 @@
 @media (max-width: 767px) { .admin-login { grid-template-columns: minmax(0, 1fr); } .admin-login-brand-panel { padding: 24px 28px; } .admin-login-brand { gap: 11px; } .admin-login-brand > span:first-child { width: 39px; height: 39px; } .admin-login-brand > span:last-child { font-size: 23px; } .admin-login-brand img { width: 30px; height: 30px; } .admin-login-brand small { font-size: 6px; letter-spacing: 2.3px; } .admin-login-brand-copy, .admin-login-brand-footer { display: none; } .admin-login-form-panel { min-height: calc(100svh - 87px); padding: 74px 24px 28px; } .admin-login-back { left: 27px; top: 18px; } .admin-login-card { width: min(100%, 425px); padding: 29px; } .admin-login-card h2 { font-size: 27px; } .admin-login-field input { min-height: 47px; font-size: 16px; } .admin-login-field input::placeholder { font-size: 12px; } .admin-login-submit { min-height: 47px; } }
 @media (max-width: 374px) { .admin-login-brand-panel { padding-inline: 23px; } .admin-login-form-panel { padding-inline: 17px; } .admin-login-card { padding: 24px; } .admin-login-description { font-size: 11px; } .admin-login-back { left: 22px; } .admin-login-card h2 { font-size: 26px; } }
 @media (prefers-reduced-motion: reduce) { .admin-login *, .admin-login *::before, .admin-login *::after { animation: none !important; transition: none !important; } }
+@media (max-width: 1023px) {
+  .admin-login-field input { font-size: 16px; }
+  .admin-login-back { min-height: 44px; }
+  .admin-login-password > button { width: 44px; }
+  .admin-login-error > button { width: 44px; height: 44px; flex-basis: 44px; }
+}
+@media (min-width: 1024px) and (max-width: 1199px) and (pointer: coarse) {
+  .admin-login-field input { font-size: 16px; }
+}

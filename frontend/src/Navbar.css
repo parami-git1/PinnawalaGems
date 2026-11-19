@@ -98,3 +98,4 @@
 @media (prefers-reduced-motion: reduce) {
   .pg-nav *, .pg-nav *::before, .pg-nav *::after { transition: none; }
 }
+@media (pointer: coarse) { .pg-nav__collection-toggle { width: 44px; } }

@@ -29,6 +29,27 @@
 .gem-detail-polish .gem-detail-actions button:last-child { background: #fff; border: 1px solid #c9b78f; color: #725f37; }
 .gem-detail-polish .gem-detail-actions button:last-child:hover { background: #f6f3ed; }
 .gem-detail-polish :is(a,button):focus-visible { outline: 2px solid #a58a53; outline-offset: 4px; }
-@media (max-width: 1023px) { .gem-detail-polish .gem-detail-main { max-width: 740px; padding-top: 101px; } .gem-detail-polish .gem-detail-gallery { border-radius: 23px 23px 0 0; } }
-@media (max-width: 599px) { .gem-detail-polish .gem-detail-main { padding-inline: 18px; padding-top: 94px; } .gem-detail-polish .gem-detail-card { border-radius: 17px; } .gem-detail-polish .gem-detail-copy { padding: 25px 22px; } .gem-detail-polish .gem-detail-title h1 { font-size: 32px; } .gem-detail-polish .gem-detail-image { padding: 26px; } .gem-detail-polish .gem-detail-specs { row-gap: 20px; } .gem-detail-polish .gem-detail-gallery { border-radius: 17px 17px 0 0; } }
+@media (max-width: 1023px) {
+  .gem-detail-polish .gem-detail-main { max-width: 740px; padding-top: 108px; }
+  .gem-detail-polish .gem-detail-gallery { border-radius: 23px 23px 0 0; }
+  .gem-detail-polish .gem-detail-copy, .gem-detail-polish .gem-detail-specs > div { min-width: 0; }
+  .gem-detail-polish .gem-detail-back { font-size: 11px; letter-spacing: .06em; }
+  .gem-detail-polish .gem-detail-title p { font-size: 12px; letter-spacing: .06em; }
+  .gem-detail-polish .gem-detail-description { font-size: 15px; line-height: 1.75; }
+  .gem-detail-polish .gem-detail-specs > div > span:first-child { font-size: 11px; letter-spacing: .06em; }
+  .gem-detail-polish .gem-detail-specs > div > span:last-child { font-size: 14px; }
+  .gem-detail-polish .gem-detail-certificate > div:first-child span { font-size: 12px; letter-spacing: .06em; }
+  .gem-detail-polish .gem-detail-certificate p { font-size: 13px; }
+  .gem-detail-polish .gem-detail-actions button { font-size: 12px; letter-spacing: .04em; }
+}
+@media (max-width: 899px) { .gem-detail-polish .gem-detail-main { padding-top: 94px; } }
+@media (max-width: 599px) {
+  .gem-detail-polish .gem-detail-main { padding-inline: 14px; }
+  .gem-detail-polish .gem-detail-card { border-radius: 17px; }
+  .gem-detail-polish .gem-detail-copy { padding: 23px 20px; }
+  .gem-detail-polish .gem-detail-title h1 { font-size: clamp(26px, 7.5vw, 32px); }
+  .gem-detail-polish .gem-detail-image { padding: 26px; }
+  .gem-detail-polish .gem-detail-specs { row-gap: 20px; }
+  .gem-detail-polish .gem-detail-gallery { border-radius: 17px 17px 0 0; }
+}
 @media (prefers-reduced-motion: reduce) { .gem-detail-polish *, .gem-detail-polish *::before { animation: none !important; transition: none !important; } }

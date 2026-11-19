@@ -112,6 +112,7 @@ export default function CategoryView() {
   const chooseCategory = (id) => {
     const category = categories.find((entry) => entry._id === id);
     navigate(id === 'all' ? '/catalog' : category ? `/collections/${slugify(category.slug || category.title)}` : `/category/${id}`);
+    setIsCategoriesOpen(false);
     resetPage();
   };
   const changeSort = (value) => { setSortOrder(value); resetPage(); };

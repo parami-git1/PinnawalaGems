@@ -4,4 +4,33 @@
 .pg-contact-banner-image { position: absolute; inset: 0; overflow: hidden; background-color: #081323; background-size: cover; background-position: right center; }
 .pg-contact-banner-image > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: right center; opacity: 0; transition: opacity 300ms ease; }
 .pg-contact-banner-image > img[data-image-state="ready"] { opacity: 1; }
+@media (max-width: 1023px) {
+  .contact-enquiry-form :is(input, textarea) { min-height: 46px; font-size: 16px !important; }
+  .pg-contact .social-icon { width: 44px; height: 44px; }
+  .pg-contact-main > section:first-child { min-width: 0; }
+  .pg-contact-main > section:first-child > div { min-width: 0; }
+  .pg-contact-main a[href^="mailto:"] { overflow-wrap: anywhere; }
+  .pg-contact-main button { min-height: 44px; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .pg-contact-main > section:first-child > div { padding-inline: 24px; }
+  .pg-contact-main .contact-enquiry-form { grid-template-columns: minmax(0, 1fr); }
+  .pg-contact-main .contact-enquiry-form > * { grid-column: auto; min-width: 0; }
+}
+@media (max-width: 767px) {
+  .pg-contact-banner { --contact-wave-height: 82px; }
+  .pg-contact-banner-copy { padding-top: 116px; padding-bottom: 50px; }
+  .pg-contact-banner-copy h1 { font-size: clamp(42px, 11vw, 56px); }
+  .pg-contact-banner-copy > p:first-child { max-width: 32ch; font-size: 9px; line-height: 1.8; letter-spacing: .18em; }
+  .pg-contact-main { padding-bottom: 56px; }
+  .pg-contact-main > section:first-child > div { padding: 30px 24px; }
+  .pg-contact-main h2 { font-size: clamp(30px, 8vw, 38px); overflow-wrap: anywhere; }
+  .contact-enquiry-form label { font-size: 11px; letter-spacing: .12em; }
+}
+@media (max-height: 500px) and (max-width: 899px) {
+  .pg-contact-banner-copy { padding-top: 104px; padding-bottom: 30px; }
+}
+@media (min-width: 1024px) and (max-width: 1199px) and (pointer: coarse) {
+  .contact-enquiry-form :is(input, textarea) { min-height: 46px; font-size: 16px !important; }
+}
 @media (prefers-reduced-motion: reduce) { .pg-contact-banner-image > img { transition: none; } }
