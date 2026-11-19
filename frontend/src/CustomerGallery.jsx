@@ -207,12 +207,10 @@ export default function CustomerGallery({ photos = [] }) {
           >
             {slides.map((slide) => <GalleryPhoto key={slide.key} src={slide.src} index={slide.index} total={total} clone={slide.clone} />)}
           </div>
-          <div className="pg-community__toolbar">
-            <div className="pg-community__controls">
-              <button type="button" className="pg-community__arrow" onClick={() => moveManually(-1)} disabled={total < 2} aria-label="Previous community photo" aria-controls={trackId}><Arrow previous /></button>
-              <button type="button" className="pg-community__arrow" onClick={() => moveManually(1)} disabled={total < 2} aria-label="Next community photo" aria-controls={trackId}><Arrow /></button>
-            </div>
-          </div>
+          {total > 1 && <>
+            <button type="button" className="pg-community__arrow pg-community__arrow--previous" onClick={() => moveManually(-1)} aria-label="Previous community photo" aria-controls={trackId}><Arrow previous /></button>
+            <button type="button" className="pg-community__arrow pg-community__arrow--next" onClick={() => moveManually(1)} aria-label="Next community photo" aria-controls={trackId}><Arrow /></button>
+          </>}
         </div>
       </div>
     </section>

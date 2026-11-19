@@ -12,12 +12,19 @@ function WhatsAppWidget({ contactData = {} }) {
   const [showWidget, setShowWidget] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
   const [assistantReady, setAssistantReady] = useState(false);
+  const [pageVisible, setPageVisible] = useState(() => !document.hidden);
   const widgetRef = useRef(null);
   const triggerRef = useRef(null);
   const closeRef = useRef(null);
   const visibleRef = useRef(false);
   const dialogId = useId();
   const whatsappNumber = withBusinessDetails(contactData).whatsappNumber;
+
+  useEffect(() => {
+    const updateVisibility = () => setPageVisible(!document.hidden);
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => document.removeEventListener('visibilitychange', updateVisibility);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,7 +69,7 @@ function WhatsAppWidget({ contactData = {} }) {
   const isVisible = showWidget && assistantReady;
   if (!hasEntered || !whatsappNumber) return null;
 
-  return <div ref={widgetRef} className={`pg-whatsapp${isVisible ? ' is-visible' : ''}${isOpen ? ' is-open' : ''}`} inert={!isVisible} aria-hidden={!isVisible}>
+  return <div ref={widgetRef} className={`pg-whatsapp${isVisible ? ' is-visible' : ''}${isOpen ? ' is-open' : ''}`} data-page-visible={pageVisible} inert={!isVisible} aria-hidden={!isVisible}>
     {isOpen && <div id={dialogId} role="dialog" aria-labelledby={`${dialogId}-title`} className="pg-whatsapp__dialog">
       <div className="pg-whatsapp__header"><div><p className="pg-whatsapp__brand">{BUSINESS.name}</p><h2 id={`${dialogId}-title`}>A little guidance?</h2></div><button ref={closeRef} type="button" onClick={closeChat} aria-label="Close WhatsApp chat" className="pg-whatsapp__close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" /></svg></button></div>
       <p className="pg-whatsapp__description">Tell us what you have in mind. We can help with gemstone details, choosing a stone, or planning a visit.</p>

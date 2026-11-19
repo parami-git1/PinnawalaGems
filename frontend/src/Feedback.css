@@ -50,11 +50,9 @@
 .feedback-photo-arrows > button { position: absolute; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid rgb(255 255 255 / .25); border-radius: 50%; background: rgb(4 10 24 / .4); color: #fff; backdrop-filter: blur(4px); pointer-events: auto; transition: background 180ms, border-color 180ms; }
 .feedback-photo-arrows > button:first-child { left: 16px; top: 50%; transform: translateY(-50%); }
 .feedback-photo-arrows > button:last-child { right: 16px; top: 50%; transform: translateY(-50%); }
-.feedback-photo-arrows > button:nth-child(2) { right: 20px; bottom: 100px; width: 31px; height: 31px; opacity: .75; }
 .feedback-photo-arrows > button:hover:enabled { border-color: #ddc47f; background: rgb(4 10 24 / .65); }
 .feedback-photo-arrows > button:disabled { opacity: .35; }
 .feedback-photo-arrows svg { width: 16px; height: 16px; }
-.feedback-photo-arrows > button:nth-child(2) svg { width: 12px; height: 12px; }
 .feedback-photo-dots { display: flex; align-items: center; gap: 2px; margin: 12px -5px -5px; }
 .feedback-photo-dots > button { display: grid; place-items: center; width: 19px; height: 24px; padding: 0; border: 0; background: transparent; }
 .feedback-photo-dots > button > span { width: 8px; height: 8px; border-radius: 50%; background: rgb(255 255 255 / .4); transition: width 180ms, background 180ms; }
@@ -183,7 +181,6 @@
   .feedback-gallery { min-height: 390px; }
   .feedback-gallery-caption { width: 380px; bottom: 35px; }
   .feedback-photo-arrows > button:first-child, .feedback-photo-arrows > button:last-child { top: 14px; width: 44px; height: 44px; transform: none; }
-  .feedback-photo-arrows > button:nth-child(2) { top: 14px; bottom: auto; right: calc(50% - 22px); width: 44px; height: 44px; }
   .feedback-field input, .feedback-field textarea { font-size: 16px; }
   .feedback-photo-dots { flex-wrap: wrap; margin-block: 8px -4px; }
   .feedback-photo-dots > button, .feedback-photo-dots > button.is-active { width: 44px; height: 44px; }
@@ -208,7 +205,6 @@
   .feedback-caption-rule { margin-block: 13px 11px; }
   .feedback-photo-arrows > button:first-child { left: 12px; top: 22px; }
   .feedback-photo-arrows > button:last-child { right: 12px; top: 22px; }
-  .feedback-photo-arrows > button:nth-child(2) { top: 22px; bottom: auto; right: calc(50% - 22px); width: 44px; height: 44px; }
   .feedback-form-panel { padding: 36px 24px 117px; }
   .feedback-form-heading .feedback-eyebrow { font-size: 8px; letter-spacing: 2.3px; }
   .feedback-form-heading h2 { padding: 16px 21px 18px; font-size: clamp(30px, 8vw, 37px); line-height: 1.08; border-radius: 22px 56px 22px 22px; }

@@ -66,7 +66,6 @@ function PhotoDialog({ item, title, count, onClose, onStep }) {
   return <dialog ref={dialog} className="pg-gem-media-dialog" aria-labelledby={labelId} onCancel={(event) => { event.preventDefault(); onClose(); }} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} onKeyDown={keyboard}>
     <header><div><p id={labelId}>{title}</p><span>Photograph {item.number} of {count}</span></div><button type="button" onClick={onClose} aria-label="Close enlarged photograph"><Icon name="close" /></button></header>
     <div className="pg-gem-media-dialog__stage"><MediaFrame key={item.url} item={item} title={title} expanded />{count > 1 && <><button type="button" className="pg-gem-media-dialog__previous" aria-label="Previous enlarged photograph" onClick={() => onStep(-1)}><Icon name="left" /></button><button type="button" className="pg-gem-media-dialog__next" aria-label="Next enlarged photograph" onClick={() => onStep(1)}><Icon name="right" /></button></>}</div>
-    <p className="pg-gem-media-dialog__hint">Use the arrows to take a closer look.</p>
   </dialog>;
 }
 
@@ -83,7 +82,6 @@ export default function GemMediaGallery({ gem }) {
   const photos = media.filter((item) => item.type === 'image');
   const videoCount = media.length - photos.length;
   const item = media[Math.min(selected, media.length - 1)];
-  const headingId = useId();
   const choose = (index) => setSelected((index + media.length) % media.length);
   const step = (direction) => choose(selected + direction);
   const stepPhoto = (direction) => setSelected((selected + direction + photos.length) % photos.length);
@@ -95,7 +93,13 @@ export default function GemMediaGallery({ gem }) {
     else if (active.offsetLeft + active.offsetWidth > list.scrollLeft + list.clientWidth) list.scrollTo({ left: active.offsetLeft + active.offsetWidth - list.clientWidth });
   }, [selected]);
   const onKey = (event) => {
-    if (event.target !== event.currentTarget || media.length < 2) return;
+    if (event.target !== event.currentTarget) return;
+    if ((event.key === 'Enter' || event.key === ' ') && item.type === 'image') {
+      event.preventDefault();
+      setExpanded(true);
+      return;
+    }
+    if (media.length < 2) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); step(event.key === 'ArrowLeft' ? -1 : 1); }
   };
   const onTouchStart = (event) => { touch.current = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null; };
@@ -106,16 +110,15 @@ export default function GemMediaGallery({ gem }) {
     touch.current = null;
     if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) step(deltaX > 0 ? -1 : 1);
   };
-  return <section className="gem-detail-gallery pg-gem-media" aria-labelledby={headingId}>
-    <header className="pg-gem-media__heading"><div><p id={headingId}>A closer look</p><span>{photos.length} {photos.length === 1 ? 'photograph' : 'photographs'}{videoCount ? ` · ${videoCount} ${videoCount === 1 ? 'video' : 'videos'}` : ''}</span></div><span className="pg-gem-media__edition">PINNAWALA GEMS</span></header>
+  return <section className="gem-detail-gallery pg-gem-media" aria-label={`${gem.title} photographs and videos`}>
+    <header className="pg-gem-media__heading"><div><span>{photos.length} {photos.length === 1 ? 'photograph' : 'photographs'}{videoCount ? ` · ${videoCount} ${videoCount === 1 ? 'video' : 'videos'}` : ''}</span></div><span className="pg-gem-media__edition">PINNAWALA GEMS</span></header>
     {item ? <>
-      <div className="pg-gem-media__stage" tabIndex={0} role="group" aria-label={`${gem.title} media viewer. Use left and right arrow keys to browse.`} onKeyDown={onKey} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="pg-gem-media__stage" tabIndex={0} role="group" aria-label={`${gem.title} media viewer. Press Enter to enlarge the photograph, or use left and right arrow keys to browse.`} onClick={(event) => { if (item.type === 'image' && event.target.closest('.pg-gem-media__asset')) setExpanded(true); }} onKeyDown={onKey} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <MediaFrame key={`${item.type}-${item.url}`} item={item} title={gem.title} poster={photos[0]?.url} />
         {item.type === 'image' && <button type="button" className="pg-gem-media__expand" aria-label="Enlarge gemstone photograph" onClick={() => setExpanded(true)}><Icon name="expand" /></button>}
       </div>
       <div className="pg-gem-media__toolbar"><span aria-live="polite">{item.type === 'video' ? `Video ${item.number}` : `Photograph ${item.number}`}<i />{String(selected + 1).padStart(2, '0')} / {String(media.length).padStart(2, '0')}</span>{media.length > 1 && <div><button type="button" aria-label="Previous gemstone media" onClick={() => step(-1)}><Icon name="left" /></button><button type="button" aria-label="Next gemstone media" onClick={() => step(1)}><Icon name="right" /></button></div>}</div>
       {media.length > 1 && <div ref={thumbnails} className="pg-gem-media__thumbnails" aria-label="Choose a photograph or video">{media.map((entry, index) => <Thumbnail key={`${entry.type}-${entry.url}`} item={entry} selected={index === selected} cover={photos[0]?.url} title={gem.title} onSelect={() => choose(index)} />)}</div>}
-      <p className="pg-gem-media__hint">{item.type === 'video' ? 'Press play to see this stone in motion.' : 'Explore each view. Select the expand icon for more detail.'}</p>
       {expanded && item.type === 'image' && <PhotoDialog item={item} title={gem.title} count={photos.length} onClose={() => setExpanded(false)} onStep={stepPhoto} />}
     </> : <div className="pg-gem-media__empty"><Icon name="image" /><p>Photographs will be available soon.</p></div>}
   </section>;

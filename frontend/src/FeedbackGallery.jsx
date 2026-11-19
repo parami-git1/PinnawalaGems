@@ -76,7 +76,6 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
   const [current, setCurrent] = useState(starterPhoto);
   const [incoming, setIncoming] = useState(null);
   const [fading, setFading] = useState(false);
-  const [photoPaused, setPhotoPaused] = useState(false);
   const [photoHovered, setPhotoHovered] = useState(false);
   const [photoFocused, setPhotoFocused] = useState(false);
   const [error, setError] = useState(null);
@@ -134,7 +133,7 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
   const selectPhoto = (index) => setSelection({ list: photoList, index: (index + photos.length) % photos.length });
 
   useEffect(() => {
-    if (photos.length <= 1 || incoming || !current.ready || photoPaused || photoHovered || photoFocused || reducedMotion || (target !== current.source && error?.source !== target)) return undefined;
+    if (photos.length <= 1 || incoming || !current.ready || photoHovered || photoFocused || reducedMotion || (target !== current.source && error?.source !== target)) return undefined;
     const timer = window.setTimeout(() => {
       for (let offset = 1; offset <= photos.length; offset += 1) {
         const index = (requestedIndex + offset) % photos.length;
@@ -145,7 +144,7 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
       }
     }, 5000);
     return () => window.clearTimeout(timer);
-  }, [photos, photoList, requestedIndex, target, current.source, current.ready, incoming, photoPaused, photoHovered, photoFocused, reducedMotion, error]);
+  }, [photos, photoList, requestedIndex, target, current.source, current.ready, incoming, photoHovered, photoFocused, reducedMotion, error]);
 
   // Prepare just the next photograph at low priority, never the whole slideshow.
   useEffect(() => {
@@ -191,6 +190,6 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
       {photos.length > 1 && <div className="feedback-photo-dots">{photos.map((_, index) => <button key={index} type="button" className={index === activeSlide ? 'is-active' : ''} aria-label={`Photo ${index + 1} of ${photos.length}`} aria-current={index === activeSlide ? 'true' : undefined} onClick={() => selectPhoto(index)}><span /></button>)}</div>}
     </div>
     {galleryState === 'error' && <div className="feedback-gallery-error" role="status"><span>This photo could not load.</span><button type="button" onClick={retryPhoto}>Retry photo</button></div>}
-    {photos.length > 1 && <div className="feedback-photo-controls"><div className="feedback-photo-arrows"><button type="button" aria-label="Previous photo" onClick={() => selectPhoto(requestedIndex - 1)}><Icon name="left" /></button><button type="button" aria-label={photoPaused || reducedMotion ? 'Play slideshow' : 'Pause slideshow'} onClick={() => setPhotoPaused((paused) => !paused)} disabled={reducedMotion}><Icon name={photoPaused || reducedMotion ? 'play' : 'pause'} /></button><button type="button" aria-label="Next photo" onClick={() => selectPhoto(requestedIndex + 1)}><Icon name="right" /></button></div></div>}
+    {photos.length > 1 && <div className="feedback-photo-controls"><div className="feedback-photo-arrows"><button type="button" aria-label="Previous photo" onClick={() => selectPhoto(requestedIndex - 1)}><Icon name="left" /></button><button type="button" aria-label="Next photo" onClick={() => selectPhoto(requestedIndex + 1)}><Icon name="right" /></button></div></div>}
   </div>;
 }

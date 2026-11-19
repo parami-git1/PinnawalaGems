@@ -2,6 +2,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Decal, Environment, MeshTransmissionMaterial, OrbitControls, useEnvironment, useGLTF, useTexture } from '@react-three/drei';
 import { Color, ShaderChunk } from 'three';
+import { GEM_STUDIO_ENVIRONMENT, GEM_STUDIO_MODEL } from './gemStudioAssets';
 
 const STUDIO_BACKGROUND = new Color('#faf8f3');
 const SPIN_RADIANS_PER_SECOND = 0.15;
@@ -51,7 +52,7 @@ function applyLogoSilhouette(shader) {
 
 function Sapphire({ floating, mobile }) {
   const group = useRef(null);
-  const { nodes } = useGLTF('/gem.glb');
+  const { nodes } = useGLTF(GEM_STUDIO_MODEL);
   const logo = useTexture('/logo.png');
   const source = nodes.Object_2?.geometry || Object.values(nodes).find((node) => node?.geometry)?.geometry;
   const geometry = useMemo(() => {
@@ -80,14 +81,14 @@ function Sapphire({ floating, mobile }) {
 
   return <group ref={group} scale={1.02}>
     <mesh geometry={geometry} scale={1.3}>
-      <MeshTransmissionMaterial backside backsideThickness={1.2} transmission={0.96} thickness={1.1} ior={1.77} color="#bdd2f4" attenuationColor="#2d66ca" attenuationDistance={2.3} roughness={0.03} metalness={0} clearcoat={0.5} clearcoatRoughness={0.07} envMapIntensity={1.15} chromaticAberration={0.001} anisotropicBlur={0} distortion={0} temporalDistortion={0} samples={mobile ? 4 : 6} resolution={mobile ? 256 : 512} backsideResolution={mobile ? 256 : 512} background={STUDIO_BACKGROUND} flatShading />
+      <MeshTransmissionMaterial backside backsideThickness={1.2} transmission={0.96} thickness={1.1} ior={1.77} color="#afc7ee" attenuationColor="#2459b9" attenuationDistance={2.15} roughness={0.045} metalness={0} clearcoat={0.5} clearcoatRoughness={0.07} envMapIntensity={1.2} chromaticAberration={0.001} anisotropicBlur={0} distortion={0} temporalDistortion={0} samples={mobile ? 4 : 6} resolution={mobile ? 256 : 512} backsideResolution={mobile ? 256 : 512} background={STUDIO_BACKGROUND} flatShading />
       <Decal onBeforeRender={hideBrandFromTransmission} onAfterRender={restoreBrandMaterial} depthTest renderOrder={3} polygonOffsetFactor={-2} position={[0, tableHeight + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.92, 0.54, 0.018]}>
-        <meshPhysicalMaterial map={logo} bumpMap={logo} bumpScale={0.006} onBeforeCompile={applyLogoSilhouette} transparent alphaTest={0.12} depthWrite={false} polygonOffset polygonOffsetFactor={-2} color="#ffda73" emissive="#ffce55" emissiveIntensity={0.18} metalness={0.82} roughness={0.2} envMapIntensity={2.2} clearcoat={0.4} clearcoatRoughness={0.13} />
+        <meshPhysicalMaterial map={logo} bumpMap={logo} bumpScale={0.012} onBeforeCompile={applyLogoSilhouette} transparent alphaTest={0.12} depthWrite={false} polygonOffset polygonOffsetFactor={-2} color="#ffdd7d" emissive="#ffd05c" emissiveIntensity={0.22} metalness={0.78} roughness={0.19} envMapIntensity={2.35} clearcoat={0.55} clearcoatRoughness={0.1} />
       </Decal>
       {/* The signature gold ring sits inside the table facet, around the logo. */}
       <mesh onBeforeRender={hideBrandFromTransmission} onAfterRender={restoreBrandMaterial} position={[0, tableHeight + 0.009, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <torusGeometry args={[tableRadius - 0.027, 0.012, 10, 96]} />
-        <meshPhysicalMaterial color="#f0c960" metalness={0.9} roughness={0.2} envMapIntensity={1.35} />
+        <meshPhysicalMaterial color="#f5d16e" metalness={0.88} roughness={0.18} envMapIntensity={1.5} />
       </mesh>
     </mesh>
   </group>;
@@ -96,7 +97,7 @@ function Sapphire({ floating, mobile }) {
 function Studio({ active, autoRotate, command, mobile, onReady }) {
   const controls = useRef(null);
   const { invalidate } = useThree();
-  const environment = useEnvironment({ files: '/images/gem-studio-lighting.hdr' });
+  const environment = useEnvironment({ files: GEM_STUDIO_ENVIRONMENT });
   useEffect(() => { if (active) invalidate(); }, [active, autoRotate, invalidate]);
   useEffect(() => {
     if (!command || !controls.current) return;
@@ -107,10 +108,10 @@ function Studio({ active, autoRotate, command, mobile, onReady }) {
   }, [command, invalidate]);
 
   return <>
-    <ambientLight intensity={0.15} />
+    <ambientLight intensity={0.19} />
     <directionalLight position={[3, 5, 4]} intensity={1.2} color="#fffaf2" />
     <directionalLight position={[-4, 3, 2]} intensity={1.1} color="#f0f5ff" />
-    <directionalLight position={[2, 4, -4]} intensity={1.0} color="#fff6e7" />
+    <directionalLight position={[2, 4, -4]} intensity={1.12} color="#fff6e7" />
     <Environment map={environment} />
     <Sapphire floating={active && autoRotate} mobile={mobile} />
     <OrbitControls ref={controls} makeDefault enablePan={false} enableZoom={false} autoRotate={false} enableDamping dampingFactor={0.075} minPolarAngle={0.22} maxPolarAngle={1.25} rotateSpeed={0.6} onChange={invalidate} />
@@ -125,6 +126,6 @@ export default function GemScene({ active, autoRotate, command, onReady }) {
   </Canvas>;
 }
 
-useGLTF.preload('/gem.glb');
+useGLTF.preload(GEM_STUDIO_MODEL);
 useTexture.preload('/logo.png');
-useEnvironment.preload({ files: '/images/gem-studio-lighting.hdr' });
+useEnvironment.preload({ files: GEM_STUDIO_ENVIRONMENT });

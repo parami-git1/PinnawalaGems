@@ -15,7 +15,6 @@
 .pg-featured .pg-gem-meta { padding: 25px; }
 .pg-featured .pg-gem-meta > p:first-child { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 8px; line-height: 1.8; letter-spacing: .1em; }
 .pg-featured .pg-gem-meta h3 { margin-top: 12px; font-size: 24px; line-height: 1.35; letter-spacing: -.025em; }
-.pg-home .pg-gem-description { display: none; margin-top: 18px; text-transform: none; letter-spacing: 0; font-size: 13px; line-height: 1.9; color: #74776c; }
 .pg-gem-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding-top: 22px; margin-top: 22px; border-top: 1px solid #e5e1d5; }
 .pg-gem-facts dt { color: #8c8879; font-size: 8px; letter-spacing: .09em; text-transform: uppercase; }
 .pg-gem-facts dd { margin: 6px 0 0; color: #303a47; font-size: 12px; }
@@ -29,7 +28,6 @@
 .pg-featured .pg-gem-track--single .pg-gem-alternate { width: 71%; height: 71%; inset: 14.5%; }
 .pg-featured .pg-gem-track--single .pg-gem-meta { padding: 42px; }
 .pg-featured .pg-gem-track--single .pg-gem-meta h3 { font-size: 38px; }
-.pg-featured .pg-gem-track--single .pg-gem-description { display: block; }
 .pg-featured .pg-gem-track--single .pg-gem-meta > div { margin: 0; padding: 0; border: 0; }
 .pg-featured .pg-track-footer { max-width: 1060px; margin-inline: auto; }
 
@@ -97,7 +95,6 @@
   .pg-featured .pg-gem-track { grid-auto-columns: calc((100% - 20px) / 2); }
   .pg-featured .pg-gem-track--single .pg-gem-meta { padding: 25px; }
   .pg-featured .pg-gem-track--single .pg-gem-visual { min-height: 340px; }
-  .pg-home .pg-gem-description { font-size: 11px; }
   .pg-featured .pg-gem-track--single .pg-gem-meta h3 { font-size: 29px; }
   .pg-craft .pg-craft-grid { grid-template-columns: minmax(0, 860px); }
   .pg-craft .pg-comparison-images { aspect-ratio: 1.26; }
@@ -120,7 +117,6 @@
   .pg-featured .pg-gem-track--single .pg-gem-visual { aspect-ratio: 1.15; min-height: 0; height: auto; }
   .pg-featured .pg-gem-track--single .pg-gem-meta { padding: 26px; }
   .pg-featured .pg-gem-track--single .pg-gem-meta h3 { font-size: 30px; }
-  .pg-home .pg-gem-description { font-size: 12px; line-height: 1.85; }
   .pg-featured .pg-gem-meta > p:first-child { flex-wrap: wrap; font-size: 7px; }
   .pg-gem-facts { gap: 16px; }
   .pg-craft .pg-craft-visual { padding: 17px; border-radius: 12px; }

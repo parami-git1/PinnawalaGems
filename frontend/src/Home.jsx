@@ -132,12 +132,10 @@ function GemCard({ gem, index }) {
       <div className="pg-gem-visual"><div className="pg-gem-label"><span>{String(index + 1).padStart(2, '0')}</span></div>
         <Image src={gem.image} alt={title} width="600" height="600" className="pg-gem-primary" />
         {secondary && <Image src={secondary} alt={`${title}, alternate view`} width="400" height="400" maxWidth={600} className="pg-gem-alternate" fade={false} fallback={gem.image || '/gem.png'} />}
-        <span className="pg-gem-view"><Arrow diagonal /></span>
       </div>
       <div className="pg-gem-meta">
         <p>{gem.origin || 'From our collection'}{gem.hasCertificate && <span className="pg-gem-certified">Certificate available <span aria-hidden="true">✓</span></span>}</p>
         <h3>{title}</h3>
-        <p className="pg-gem-description">A closer look at a truly individual stone. Discover its details and let our team help you find your perfect match.</p>
         {facts.length > 0 && <dl className="pg-gem-facts">{facts.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>}
         <span className="pg-gem-detail-link">View gemstone<Arrow /></span>
       </div>
@@ -265,7 +263,7 @@ export default function Home() {
         <p className="pg-eyebrow pg-hero-enter">{BUSINESS.name}</p>
         <h1 id="pg-hero-title" className="pg-hero-enter">{words.join(' ')}{' '}<em>{lastWord}</em></h1>
         <p className="pg-hero-description pg-hero-enter">{BUSINESS.tagline}</p>
-        <div className="pg-hero-actions pg-hero-enter"><Link to="/catalog" className="pg-button pg-button--gold">Discover the collection<Arrow /></Link><Link to="/workshop" className="pg-hero-secondary">The art of our craft<Arrow diagonal /></Link></div>
+        <div className="pg-hero-actions pg-hero-enter"><Link to="/catalog" className="pg-button pg-button--gold">Discover the collection<Arrow /></Link></div>
         {safeWebUrl(homeData.heroVideo) && <button type="button" className="pg-film-button" onClick={() => setShowFilm(true)}><span aria-hidden="true">▷</span> Watch our story</button>}
       </div><div className="pg-hero-footer"><a href="#collections" className="pg-scroll-link"><span>Scroll to discover</span><Arrow /></a></div></div>
     </section>
@@ -276,7 +274,7 @@ export default function Home() {
 
     <FeaturedCollection resource={gemsResource} />
 
-    <GemShowcase />
+    <GemShowcase preload={heroReady} />
 
     <section className="pg-craft pg-section" aria-labelledby="pg-craft-title">
       <div className="pg-container">
