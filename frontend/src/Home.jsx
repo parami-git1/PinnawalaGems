@@ -221,6 +221,7 @@ export default function Home() {
   const { home, categoriesResource } = useOutletContext();
   const homeData = withBusinessDetails(home.data);
   const gemsResource = useRemoteResource('inventory/top-gems');
+  const [heroReady, setHeroReady] = useState(false);
   // Defer event-ads until hero is painted — it is well below the fold and
   // must not compete for bandwidth or main-thread time with critical assets.
   const eventsResource = useRemoteResource(heroReady ? 'event-ads' : null);
@@ -228,7 +229,6 @@ export default function Home() {
   const [showFilm, setShowFilm] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [failedHeroImage, setFailedHeroImage] = useState('');
-  const [heroReady, setHeroReady] = useState(false);
   const [showLoader, setShowLoader] = useState(() => !initialHomeRevealed);
   const [deadlineReached, setDeadlineReached] = useState(false);
   useScrollReveals(root);
