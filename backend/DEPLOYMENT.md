@@ -64,6 +64,28 @@ Retain the current Render values; `.env.example` is a blank reference and must n
 
 Existing JWT sessions use an eight-hour expiry. Preserve `JWT_SECRET` during this routine deployment to retain compatible sessions. The backend now checks HS256 and the session-age limit explicitly.
 
+## Verified administrator access: deploy backend first
+
+The matching frontend verifies `GET /api/admin/session` before rendering protected screens. Deploy this backend revision on Render **before** deploying that frontend on Vercel. A missing endpoint must remain a deployment error; the frontend must not fall back to trusting the presence of a browser token. No new environment variables, database migration, administrator password changes or Cloudinary changes are required.
+
+The session endpoint is read-only. A valid administrator bearer token receives `{ "admin": { "role": "admin", "subject": "..." }, "expiresAt": 1234567890000 }`, with optional existing `username`, `email` and `name` identity fields. `expiresAt` is an absolute Unix timestamp in **milliseconds**. The response never includes the bearer token, password or unrelated JWT fields. Authentication and private responses use `Cache-Control: no-store`.
+
+New password/Google login tokens retain the eight-hour lifetime and existing `{ token, admin }` response contract. They add the administrator role, issuer `pinnawala-gems-admin`, and audience `pinnawala-gems-api`. Protected routes validate signature, HS256, explicit expiry, issue time, maximum age, subject and administrator scope on every request. Verified non-administrator or wrong-purpose tokens receive 403; missing, forged or expired credentials receive 401. The optional administrator view of feedback uses that same verification, so non-administrators cannot retrieve pending reviews.
+
+Existing roleless sessions remain compatible only when their signed identity matches a token issued by the existing password login (`password-admin:<configured username>` plus matching username) or an allowlisted Google administrator email. These sessions still expire at their existing deadline, within eight hours. Preserve the configured credentials and JWT signing secret when deploying this compatibility update. Logout clears the client session; this remains a stateless bearer-token service, so an already-stolen token is not individually revoked before expiry. Changing the portal URL does not replace authorization or prevent discovery from a public frontend bundle.
+
+After the Render deployment, make a read-only request without credentials:
+
+```sh
+curl -i https://pinnawalagems.onrender.com/api/admin/session
+```
+
+Expect **401**, JSON `Admin authentication required`, and `Cache-Control: no-store`. A 404 means the required backend revision is not deployed. Check that `/api/health` includes `admin-session-verification`, then deploy the matching frontend. Verify normal administrator login/session expiry in the browser with the existing administrator account; do not perform production password-guessing or data-mutation tests.
+
+If rollback is needed, restore the previous frontend first, then the previous backend revision. Keep the same production data, uploaded assets and environment secrets throughout. The previous frontend can use the existing bearer endpoints while this backend is active; the new frontend requires the session-verification endpoint.
+
+The authorization approach follows the [OWASP Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html) and [REST Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html). This source change and local test suite do not certify the deployment, credentials, proxy configuration or external identity provider.
+
 ## Commit and deploy manually
 
 Only after deployment authorization and the checklist's environment/rollback review, use an account with write access to the GitHub repository connected to Render. A Git push can trigger auto-deployment. From the repository root:

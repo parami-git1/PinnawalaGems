@@ -81,7 +81,7 @@ function Sapphire({ floating, mobile }) {
 
   return <group ref={group} scale={1.02}>
     <mesh geometry={geometry} scale={1.3}>
-      <MeshTransmissionMaterial backside backsideThickness={1.2} transmission={0.96} thickness={1.1} ior={1.77} color="#afc7ee" attenuationColor="#2459b9" attenuationDistance={2.15} roughness={0.045} metalness={0} clearcoat={0.5} clearcoatRoughness={0.07} envMapIntensity={1.2} chromaticAberration={0.001} anisotropicBlur={0} distortion={0} temporalDistortion={0} samples={mobile ? 4 : 6} resolution={mobile ? 256 : 512} backsideResolution={mobile ? 256 : 512} background={STUDIO_BACKGROUND} flatShading />
+      <MeshTransmissionMaterial backside backsideThickness={1.2} transmission={0.96} thickness={1.1} ior={1.77} color="#afc7ee" attenuationColor="#2459b9" attenuationDistance={2.15} roughness={0.045} metalness={0} clearcoat={0.5} clearcoatRoughness={0.07} envMapIntensity={1.2} chromaticAberration={0} anisotropicBlur={0} distortion={0} temporalDistortion={0} samples={mobile ? 4 : 6} resolution={mobile ? 256 : 512} backsideResolution={mobile ? 256 : 512} background={STUDIO_BACKGROUND} flatShading />
       <Decal onBeforeRender={hideBrandFromTransmission} onAfterRender={restoreBrandMaterial} depthTest renderOrder={3} polygonOffsetFactor={-2} position={[0, tableHeight + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.92, 0.54, 0.018]}>
         <meshPhysicalMaterial map={logo} bumpMap={logo} bumpScale={0.012} onBeforeCompile={applyLogoSilhouette} transparent alphaTest={0.12} depthWrite={false} polygonOffset polygonOffsetFactor={-2} color="#ffdd7d" emissive="#ffd05c" emissiveIntensity={0.22} metalness={0.78} roughness={0.19} envMapIntensity={2.35} clearcoat={0.55} clearcoatRoughness={0.1} />
       </Decal>

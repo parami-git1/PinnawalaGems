@@ -1,8 +1,11 @@
 import { GoogleLogin } from '@react-oauth/google';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AdminLogin.css';
 import { apiRequest } from './api';
+import { safeAdminReturnPath } from './adminPaths';
+import { rememberVerifiedAdminSession, setAdminToken } from './adminSession';
+import { verifyAdminSession } from './adminSessionApi';
 
 function LoginIcon({ type = 'shield' }) {
   const paths = {
@@ -19,6 +22,7 @@ function LoginIcon({ type = 'shield' }) {
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [errorMsg, setErrorMsg] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -41,8 +45,11 @@ export default function Login() {
       const data = await apiRequest(path, { method: 'POST', body: JSON.stringify(payload), signal: controller.signal }, { auth: false, timeout: 20000 });
       if (!mounted.current) return;
       if (typeof data.token !== 'string' || !data.token) throw new Error('The server did not return an admin session. Please try again.');
-      localStorage.setItem('adminToken', data.token);
-      navigate('/admin', { replace: true });
+      const session = await verifyAdminSession(data.token, controller.signal);
+      if (!mounted.current || controller.signal.aborted) return;
+      setAdminToken(data.token);
+      rememberVerifiedAdminSession(data.token, session);
+      navigate(safeAdminReturnPath(location.state?.from), { replace: true });
     } catch (error) {
       if (mounted.current && !controller.signal.aborted) setErrorMsg(error.message || 'Unable to sign in. Please check your connection and try again.');
     } finally {

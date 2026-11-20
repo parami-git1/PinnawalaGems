@@ -105,7 +105,7 @@ after(async () => {
 
 async function request(path, { method = 'GET', body, token = 'valid' } = {}) {
   const headers = { ...(body ? { 'Content-Type': 'application/json' } : {}) };
-  if (token) headers.Authorization = `Bearer ${token === 'valid' ? jwt.sign({ sub: 'synthetic-planner-test-admin' }, TEST_SECRET, { expiresIn: '1h' }) : token}`;
+  if (token) headers.Authorization = `Bearer ${token === 'valid' ? jwt.sign({ sub: 'synthetic-planner-test-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, TEST_SECRET, { expiresIn: '1h' }) : token}`;
   const response = await fetch(base + path, { method, headers, ...(body ? { body: JSON.stringify(body) } : {}) });
   return { status: response.status, body: await response.json() };
 }

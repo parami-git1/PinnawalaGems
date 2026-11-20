@@ -6,6 +6,12 @@
 .pg-gem-media__asset { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1; overflow: hidden; background: #fff; }
 .pg-gem-media__asset > img { display: block; width: 100%; height: 100%; position: absolute; inset: 0; object-fit: contain; padding: 22px; }
 .pg-gem-media__stage .pg-gem-media__asset > img { cursor: zoom-in; }
+.pg-gem-media__asset { isolation: isolate; }
+.pg-gem-magnifier { position: absolute; z-index: 3; overflow: hidden; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px #b49a65, 0 0 0 4px rgb(255 255 255 / .8), 0 7px 24px rgb(20 36 58 / .18); pointer-events: none; user-select: none; }
+.pg-gem-magnifier[hidden] { display: none; }
+.pg-gem-magnifier__surface { position: absolute; top: 0; left: 0; display: block; transform-origin: top left; background: #fff; }
+.pg-gem-magnifier__image { position: absolute; inset: 0; display: block; width: 100%; height: 100%; box-sizing: border-box; background: transparent; }
+.pg-gem-magnifier__watermark { position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%, -50%); background-repeat: no-repeat; background-position: center; background-size: contain; }
 .pg-gem-media__asset.is-video { background: #101923; }
 .pg-gem-media__asset > video { display: block; width: 100%; height: 100%; position: absolute; inset: 0; object-fit: contain; }
 .pg-gem-media__asset[aria-busy="true"] > img:not(.pg-responsive-image) { opacity: 0; }

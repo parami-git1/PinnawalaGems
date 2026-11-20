@@ -16,15 +16,20 @@ const cachedState = (path) => {
 };
 
 // Each resource settles independently. A slow API must never block the page.
+// Pass `null` as the path to defer a request until the path is available.
 export function useRemoteResource(path, { loader, timeout = 15000 } = {}) {
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [resource, setResource] = useState(() => cachedState(path));
+  const [resource, setResource] = useState(() => path ? cachedState(path) : { path: null, data: null, status: 'idle', refreshing: false, recovering: false, error: null, attempt: 0, maxAttempts: PUBLIC_RESOURCE_MAX_ATTEMPTS, nextRetryAt: null, updatedAt: null, stale: false });
   const previousRequest = useRef(null);
   const lastWakeup = useRef({ path, at: 0 });
   const retry = useCallback(() => setRefreshVersion((value) => value + 1), []);
-  useEffect(() => subscribeResourceInvalidation((prefix) => { if (path.startsWith(prefix)) retry(); }), [path, retry]);
+  useEffect(() => {
+    if (!path) return;
+    return subscribeResourceInvalidation((prefix) => { if (path.startsWith(prefix)) retry(); });
+  }, [path, retry]);
 
   useEffect(() => {
+    if (!path) return;
     const previous = previousRequest.current;
     const force = previous?.path === path && previous.refreshVersion !== refreshVersion;
     previousRequest.current = { path, refreshVersion };
@@ -73,6 +78,7 @@ export function useRemoteResource(path, { loader, timeout = 15000 } = {}) {
   }, [path, refreshVersion, loader, timeout]);
 
   useEffect(() => {
+    if (!path) return;
     const revalidate = () => {
       if (document.visibilityState === 'hidden' || navigator.onLine === false) return;
       const state = resource.path === path ? resource : cachedState(path);
@@ -95,5 +101,6 @@ export function useRemoteResource(path, { loader, timeout = 15000 } = {}) {
     };
   }, [path, resource, retry]);
 
-  return { ...(resource.path === path ? resource : cachedState(path)), retry };
+  const idle = { path: null, data: null, status: 'idle', refreshing: false, recovering: false, error: null, attempt: 0, maxAttempts: PUBLIC_RESOURCE_MAX_ATTEMPTS, nextRetryAt: null, updatedAt: null, stale: false };
+  return { ...(path ? (resource.path === path ? resource : cachedState(path)) : idle), retry };
 }

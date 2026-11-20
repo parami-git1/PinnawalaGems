@@ -3,6 +3,7 @@ import './GemMediaGallery.css';
 import ResponsiveImage from './ResponsiveImage';
 import { imageDelivery } from './imageDelivery';
 import MediaWatermark from './MediaWatermark';
+import PhotoMagnifier from './PhotoMagnifier';
 
 const paths = {
   image: 'M3 4h18v16H3V4Zm0 11 5-5 5 5 3-3 5 5M16 8h.01',
@@ -26,14 +27,16 @@ function MediaFrame({ item, title, poster, expanded = false }) {
   const [status, setStatus] = useState('loading');
   const [attempt, setAttempt] = useState(0);
   const video = useRef(null);
+  const frame = useRef(null);
   useEffect(() => {
     const node = video.current;
     return () => { node?.pause(); };
   }, [attempt]);
   const retry = () => { setStatus('loading'); setAttempt((value) => value + 1); };
-  return <div className={`pg-gem-media__asset${item.type === 'video' ? ' is-video' : ''}${expanded ? ' is-expanded' : ''}`} aria-busy={status === 'loading'}>
+  return <div ref={frame} className={`pg-gem-media__asset${item.type === 'video' ? ' is-video' : ''}${expanded ? ' is-expanded' : ''}`} aria-busy={status === 'loading'} data-media-status={status}>
     {item.type === 'video' ? <video key={attempt} ref={video} src={item.url} poster={poster ? imageDelivery(poster).src : undefined} controls playsInline preload="metadata" aria-label={`${title}, video ${item.number}`} onLoadedMetadata={() => setStatus('ready')} onError={() => setStatus('error')} /> : <ResponsiveImage key={attempt} retryKey={attempt} src={item.url} alt={`${title}, photograph ${item.number}`} loading="eager" maxWidth={expanded ? 2000 : 1200} sizes={expanded ? '90vw' : '(max-width:1023px) 90vw,52vw'} width="800" height="800" draggable="false" onReady={({failed}) => setStatus(failed ? 'error' : 'ready')} onError={() => setStatus('error')} />}
     {item.type === 'image' && status === 'ready' && <MediaWatermark />}
+    {item.type === 'image' && status === 'ready' && <PhotoMagnifier frameRef={frame} />}
     {status === 'loading' && <span className="pg-gem-media__loading" role="status"><i />Loading {item.type === 'video' ? 'video' : 'photograph'}<span className="pg-gem-media__sr-only"> of {title}</span></span>}
     {status === 'error' && <div className="pg-gem-media__unavailable" role="status"><Icon name={item.type === 'video' ? 'play' : 'image'} /><strong>{item.type === 'video' ? 'Video' : 'Photograph'} unavailable</strong><p>Please try again or select another view.</p><button type="button" onClick={retry}>Try again</button></div>}
   </div>;
@@ -113,7 +116,7 @@ export default function GemMediaGallery({ gem }) {
   return <section className="gem-detail-gallery pg-gem-media" aria-label={`${gem.title} photographs and videos`}>
     <header className="pg-gem-media__heading"><div><span>{photos.length} {photos.length === 1 ? 'photograph' : 'photographs'}{videoCount ? ` · ${videoCount} ${videoCount === 1 ? 'video' : 'videos'}` : ''}</span></div><span className="pg-gem-media__edition">PINNAWALA GEMS</span></header>
     {item ? <>
-      <div className="pg-gem-media__stage" tabIndex={0} role="group" aria-label={`${gem.title} media viewer. Press Enter to enlarge the photograph, or use left and right arrow keys to browse.`} onClick={(event) => { if (item.type === 'image' && event.target.closest('.pg-gem-media__asset')) setExpanded(true); }} onKeyDown={onKey} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="pg-gem-media__stage" tabIndex={0} role="group" aria-label={`${gem.title} media viewer. Press Enter to enlarge the photograph, or use left and right arrow keys to browse.`} onClick={(event) => { if (item.type === 'image' && !event.target.closest('button') && event.target.closest('.pg-gem-media__asset[data-media-status="ready"]')) setExpanded(true); }} onKeyDown={onKey} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <MediaFrame key={`${item.type}-${item.url}`} item={item} title={gem.title} poster={photos[0]?.url} />
         {item.type === 'image' && <button type="button" className="pg-gem-media__expand" aria-label="Enlarge gemstone photograph" onClick={() => setExpanded(true)}><Icon name="expand" /></button>}
       </div>

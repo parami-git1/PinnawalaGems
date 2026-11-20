@@ -1,0 +1,11 @@
+.admin-access { display: grid; place-items: center; min-height: 100svh; padding: 28px 20px; background: #f7f5f0; color: #14243a; font-family: 'Inter', sans-serif; text-align: center; }
+.admin-access > div { width: min(100%, 460px); }
+.admin-access img { margin: 0 auto 20px; object-fit: contain; background: transparent; }
+.admin-access__eyebrow { color: #93753d; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+.admin-access h1 { margin: 14px 0; font: 500 clamp(27px, 6vw, 36px)/1.2 'Playfair Display', Georgia, serif; }
+.admin-access p[role] { color: #606c7b; font-size: 15px; line-height: 1.75; }
+.admin-access__actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.admin-access button { min-height: 44px; padding: 10px 20px; border: 1px solid #c4b185; border-radius: 6px; background: #14243a; color: #fff; cursor: pointer; }
+.admin-access button + button { background: transparent; color: #14243a; }
+.admin-access a { display: inline-flex; align-items: center; min-height: 44px; margin-top: 18px; color: #806331; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
+.admin-access :is(a,button):focus-visible { outline: 2px solid #9b7a3c; outline-offset: 4px; }

@@ -38,7 +38,7 @@ app.use('/api/planner', require('./routes/plannerRoutes'));
 
 app.get('/api/health', (_req, res) => {
   const connected = mongoose.connection.readyState === 1;
-  res.status(connected ? 200 : 503).json({ status: connected ? 'ok' : 'starting', database: connected ? 'connected' : 'unavailable', features: ['appointments', 'admin-notes', 'planner-notifications', 'gem-media', 'catalog-pagination', 'security-hardening'], revision: process.env.RENDER_GIT_COMMIT || null });
+  res.status(connected ? 200 : 503).json({ status: connected ? 'ok' : 'starting', database: connected ? 'connected' : 'unavailable', features: ['appointments', 'admin-notes', 'planner-notifications', 'gem-media', 'catalog-pagination', 'security-hardening', 'admin-session-verification'], revision: process.env.RENDER_GIT_COMMIT || null });
 });
 
 app.use('/api', (req, res) => res.status(404).json({ message: `API route not found: ${req.method} ${req.originalUrl.split('?')[0]}` }));

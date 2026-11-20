@@ -47,7 +47,7 @@ export default function GemShowcase({ preload = false, onSettled }) {
   const fallback = useCallback(() => { setUnavailable(true); onSettled?.('unavailable'); }, [onSettled]);
   useEffect(() => {
     if (!shouldPrepare || !documentVisible || ready || unavailable) return undefined;
-    const deadline = window.setTimeout(fallback, 11000);
+    const deadline = window.setTimeout(fallback, 8000);
     return () => window.clearTimeout(deadline);
   }, [shouldPrepare, documentVisible, ready, unavailable, fallback]);
 

@@ -1,5 +1,4 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const router = express.Router();
 const Feedback = require('../models/Feedback');
 const requireAdmin = require('../middleware/adminAuth');
@@ -7,20 +6,9 @@ const { feedbackLimiter } = require('../middleware/security');
 const mongoose = require('mongoose');
 
 // ඔක්කොම Feedbacks ගන්නවා (Frontend එකෙන් Admin ද නැද්ද කියලා බලලා ෆිල්ටර් කරනවා)
-router.get('/', async (req, res) => {
+router.get('/', (req, res, next) => req.headers.authorization ? requireAdmin(req, res, next) : next(), async (req, res) => {
   try {
-    const authorization = req.headers.authorization || '';
-    const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
-    let isAdmin = false;
-    if (token) {
-      try {
-        jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'], maxAge: '8h', clockTolerance: 5 });
-        isAdmin = true;
-      } catch (error) {
-        isAdmin = false;
-      }
-    }
-    const feedbacks = await Feedback.find(isAdmin ? {} : { isApproved: true }).sort({ createdAt: -1 });
+    const feedbacks = await Feedback.find(req.admin ? {} : { isApproved: true }).sort({ createdAt: -1 });
     res.json(feedbacks);
   } catch (error) {
     res.status(500).json({ message: 'Reviews could not be loaded. Please try again.' });

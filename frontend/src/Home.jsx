@@ -174,8 +174,8 @@ function FeaturedCollection({ resource }) {
 function CraftComparison() {
   const [value, setValue] = useState(50);
   return <figure className="pg-comparison"><div className="pg-comparison-images">
-    <Image src="/images/rough-stone.webp" alt="A pink gemstone in its natural rough form" width="800" height="534" />
-    <div className="pg-comparison-cut" style={{ clipPath: `inset(0 ${100 - value}% 0 0)` }}><Image src="/images/cut-stone.webp" alt="A faceted pink gemstone showing the art of cutting" width="800" height="534" /></div>
+    <Image src="/images/rough-stone.webp" alt="A pink gemstone in its natural rough form" width="800" height="534" fetchPriority="low" />
+    <div className="pg-comparison-cut" style={{ clipPath: `inset(0 ${100 - value}% 0 0)` }}><Image src="/images/cut-stone.webp" alt="A faceted pink gemstone showing the art of cutting" width="800" height="534" fetchPriority="low" /></div>
     <div className="pg-comparison-rule" style={{ left: `${value}%` }}><span aria-hidden="true">↔</span></div>
     <span className="pg-comparison-label pg-comparison-label--left">The cut</span><span className="pg-comparison-label pg-comparison-label--right">The rough</span>
     <input type="range" min="0" max="100" value={value} onChange={(event) => setValue(Number(event.target.value))} aria-label="Compare rough and cut gemstones" aria-valuetext={`${value}% cut gemstone revealed`} />
@@ -221,7 +221,9 @@ export default function Home() {
   const { home, categoriesResource } = useOutletContext();
   const homeData = withBusinessDetails(home.data);
   const gemsResource = useRemoteResource('inventory/top-gems');
-  const eventsResource = useRemoteResource('event-ads');
+  // Defer event-ads until hero is painted — it is well below the fold and
+  // must not compete for bandwidth or main-thread time with critical assets.
+  const eventsResource = useRemoteResource(heroReady ? 'event-ads' : null);
   const root = useRef(null);
   const [showFilm, setShowFilm] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
@@ -244,7 +246,7 @@ export default function Home() {
   const readyToReveal = heroReady || deadlineReached;
   useEffect(() => {
     if (!showLoader) return undefined;
-    const deadline = window.setTimeout(() => setDeadlineReached(true), 6000);
+    const deadline = window.setTimeout(() => setDeadlineReached(true), 3500);
     return () => window.clearTimeout(deadline);
   }, [showLoader]);
   useEffect(() => {
@@ -287,7 +289,7 @@ export default function Home() {
 
     <section className="pg-origin pg-section" aria-labelledby="pg-origin-title"><div className="pg-container pg-origin-layout">
       <div className="pg-origin-copy" data-reveal><h2 id="pg-origin-title">Rooted in Sri Lanka.<br /><em>Chosen with care.</em></h2><p>{BUSINESS.name} is based in {BUSINESS.location}. {BUSINESS.license}</p><p>Visit us on Main Street or speak with our team about your next gemstone.</p><Link to="/contact" className="pg-button pg-button--navy">Visit us in Eheliyagoda<Arrow /></Link></div>
-      <figure className="pg-origin-art" data-reveal><Image src="/images/ceylon-landscape.webp" fallback="/images/ceylon-landscape.webp" alt="An editorial view of lush Sri Lankan hills and a sapphire on an atelier workbench" width="1440" height="614" /><span className="pg-origin-corner" aria-hidden="true"><Facet /></span></figure>
+      <figure className="pg-origin-art" data-reveal><Image src="/images/ceylon-landscape.webp" fallback="/images/ceylon-landscape.webp" alt="An editorial view of lush Sri Lankan hills and a sapphire on an atelier workbench" width="1440" height="614" fetchPriority="low" /><span className="pg-origin-corner" aria-hidden="true"><Facet /></span></figure>
     </div></section>
 
     {photos.length > 0 && <CustomerGallery photos={photos} />}

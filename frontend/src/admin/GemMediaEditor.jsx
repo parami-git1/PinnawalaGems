@@ -3,19 +3,21 @@ import { AdminField, AdminIcon } from './AdminUI';
 import { GEM_MEDIA_LIMITS, IMAGE_TYPES, VIDEO_TYPES, mediaUrls } from '../mediaPolicy';
 import './GemMediaEditor.css';
 import { apiUrl } from '../api';
+import { clearAdminSession, getAdminToken } from '../adminSession';
 
 function uploadFile(file, onProgress, requestRef) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     requestRef.current = xhr;
     xhr.open('POST', apiUrl('/media/upload'));
-    xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('adminToken')}`);
+    const requestToken = getAdminToken();
+    xhr.setRequestHeader('Authorization', `Bearer ${requestToken || ''}`);
     xhr.timeout = 120000;
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress(Math.round(event.loaded / event.total * 100)); };
     xhr.onload = () => {
       let data;
       try { data = JSON.parse(xhr.responseText); } catch { data = {}; }
-      if (xhr.status === 401) { localStorage.removeItem('adminToken'); window.location.assign('/admin-login'); }
+      if (xhr.status === 401) clearAdminSession(requestToken);
       if (xhr.status < 200 || xhr.status >= 300) { reject(new Error(data.message || 'Upload failed. Please try again.')); return; }
       if (!data.url) { reject(new Error('The upload returned no media URL. Please try again.')); return; }
       resolve(data);

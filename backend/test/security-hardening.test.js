@@ -22,7 +22,7 @@ const security = require('../middleware/security');
 let server, base, Feedback;
 let reviews = [], uploads = [];
 const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
-const token = (options = {}) => jwt.sign({ sub: 'synthetic-security-admin' }, SECRET, { expiresIn: '1h', ...options });
+const token = (options = {}) => jwt.sign({ sub: 'synthetic-security-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h', ...options });
 
 async function api(route, { method = 'GET', body, headers = {}, raw, auth = false } = {}) {
   const response = await fetch(base + route, { method, headers: { ...(body !== undefined || raw !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(auth ? { Authorization: `Bearer ${token()}` } : {}), ...headers }, ...(body !== undefined ? { body: JSON.stringify(body) } : raw !== undefined ? { body: raw } : {}) });

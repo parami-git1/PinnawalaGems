@@ -23,7 +23,7 @@ let server, base, rows = [], pipelines = [], updates = [], singletonWrites = [],
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 async function api(route, { method = 'GET', body, anonymous = false } = {}) {
-  const response = await fetch(base + route, { method, headers: { ...(!anonymous ? { Authorization: `Bearer ${jwt.sign({ sub: 'synthetic-catalog-admin' }, SECRET, { expiresIn: '1h' })}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const response = await fetch(base + route, { method, headers: { ...(!anonymous ? { Authorization: `Bearer ${jwt.sign({ sub: 'synthetic-catalog-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   return { status: response.status, body: await response.json() };
 }
 const create = (body = {}) => api('/api/inventory/stones', { method: 'POST', body: { title: 'Synthetic sapphire', image: IMAGE, categoryId: CATEGORY, ...body } });

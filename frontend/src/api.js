@@ -1,4 +1,5 @@
 import { invalidatePublicResources } from './resourceCache';
+import { clearAdminSession, getAdminToken } from './adminSession';
 
 export function normalizeApiBase(value) {
   const server = String(value || 'https://pinnawalagems.onrender.com').trim().replace(/\/+$/, '');
@@ -29,10 +30,11 @@ export async function apiRequest(path, options = {}, { auth = true, timeout = 15
   const timer = window.setTimeout(() => { timedOut = true; controller.abort(); }, timeout);
   const headers = new Headers(options.headers || {});
   if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  if (auth) headers.set('Authorization', `Bearer ${localStorage.getItem('adminToken') || ''}`);
+  const requestToken = auth ? getAdminToken() : null;
+  if (auth) headers.set('Authorization', `Bearer ${requestToken || ''}`);
   try {
-    const response = await fetch(apiUrl(path), { ...options, headers, signal: controller.signal });
-    if (response.status === 401 && auth) { localStorage.removeItem('adminToken'); window.location.assign('/admin-login'); }
+    const response = await fetch(apiUrl(path), { ...options, ...(auth ? { cache: 'no-store' } : {}), headers, signal: controller.signal });
+    if (response.status === 401 && auth) clearAdminSession(requestToken);
     const raw = await response.text();
     let data;
     try { data = raw ? JSON.parse(raw) : {}; }

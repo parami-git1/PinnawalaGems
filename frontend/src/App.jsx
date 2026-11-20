@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import Footer from './Footer';
 import Navbar from './Navbar';
@@ -6,6 +6,8 @@ import WhatsAppWidget from './WhatsAppWidget';
 import NotFound from './NotFound';
 import { useRemoteResource } from './hooks/useRemoteResource';
 import { warmPageHero } from './pageHeroWarmup';
+import { AdminBoundary, AdminProtectedRoute } from './AdminAccess';
+import { ADMIN_LOGIN_PATH, ADMIN_PORTAL_PATH } from './adminPaths';
 
 const AdminInventory = lazy(() => import('./AdminInventory'));
 const Home = lazy(() => import('./Home'));
@@ -34,12 +36,6 @@ export function PublicLayout() {
   );
 }
 
-function AdminProtectedRoute() {
-  const location = useLocation();
-  const token = localStorage.getItem('adminToken');
-  return token ? <Outlet /> : <Navigate to="/admin-login" replace state={{ from: location }} />;
-}
-
 function RouteScroll() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
@@ -66,9 +62,11 @@ function App() {
           <Route path="/gem/:stoneId" element={<GemDetails />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-        <Route path="/admin-login" element={<Login />} />
-        <Route element={<AdminProtectedRoute />}>
-          <Route path="/admin/*" element={<AdminInventory />} />
+        <Route element={<AdminBoundary />}>
+          <Route path={ADMIN_LOGIN_PATH} element={<Login />} />
+          <Route element={<AdminProtectedRoute />}>
+            <Route path={`${ADMIN_PORTAL_PATH}/*`} element={<AdminInventory />} />
+          </Route>
         </Route>
       </Routes>
       </Suspense>

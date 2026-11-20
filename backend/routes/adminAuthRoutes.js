@@ -1,18 +1,19 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { loginIpLimiter, loginAccountLimiter } = require('../middleware/security');
+const requireAdmin = require('../middleware/adminAuth');
+const { allowedGoogleEmails, signAdminToken, publicAdminIdentity } = require('../utils/adminSession');
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-function getAllowedEmails() {
-  return (process.env.ADMIN_GOOGLE_EMAILS || process.env.ADMIN_EMAIL || '')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
+router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+
+// Read-only verification before the frontend mounts any administrator screen.
+router.get('/session', requireAdmin, (req, res) => {
+  res.json({ admin: publicAdminIdentity(req.admin), expiresAt: req.admin.exp * 1000 });
+});
 
 function matchesSecret(value, expected) {
   if (typeof value !== 'string' || typeof expected !== 'string' || !value || !expected) return false;
@@ -35,11 +36,7 @@ router.post('/login', loginIpLimiter, loginAccountLimiter, (req, res) => {
     return res.status(401).json({ message: 'Invalid admin username or password' });
   }
 
-  const token = jwt.sign(
-    { sub: `password-admin:${configuredUsername}`, username: configuredUsername },
-    process.env.JWT_SECRET,
-    { expiresIn: '8h' }
-  );
+  const token = signAdminToken({ sub: `password-admin:${configuredUsername}`, username: configuredUsername });
 
   res.json({ token, admin: { username: configuredUsername } });
 });
@@ -57,17 +54,13 @@ router.post('/google-login', loginIpLimiter, async (req, res) => {
     });
     const payload = ticket.getPayload();
     const email = payload?.email?.toLowerCase();
-    const allowedEmails = getAllowedEmails();
+    const allowedEmails = allowedGoogleEmails();
 
-    if (!payload?.email_verified || !email || !allowedEmails.includes(email)) {
+    if (payload?.email_verified !== true || typeof payload.sub !== 'string' || !payload.sub.trim() || payload.sub.length > 512 || !email || !allowedEmails.includes(email)) {
       return res.status(403).json({ message: 'This Google account is not authorized as an admin' });
     }
 
-    const token = jwt.sign(
-      { sub: payload.sub, email, name: payload.name || '' },
-      process.env.JWT_SECRET,
-      { expiresIn: '8h' }
-    );
+    const token = signAdminToken({ sub: payload.sub, email, name: payload.name || '' });
 
     res.json({ token, admin: { email, name: payload.name || '' } });
   } catch (error) {

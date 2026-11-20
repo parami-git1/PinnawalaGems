@@ -36,7 +36,7 @@ const signatures = {
 
 async function api(path, { method = 'GET', body, token = true } = {}) {
   const headers = {};
-  if (token) headers.Authorization = `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'synthetic-gem-media-admin' }, SECRET, { expiresIn: '1h' })}`;
+  if (token) headers.Authorization = `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'synthetic-gem-media-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}`;
   if (body) headers['Content-Type'] = 'application/json';
   const response = await fetch(base + path, { method, headers, ...(body ? { body: JSON.stringify(body) } : {}) });
   return { status: response.status, body: await response.json() };
@@ -46,7 +46,7 @@ async function upload({ type = 'image/png', name = 'synthetic.png', bytes = sign
   const body = new FormData();
   if (bytes) body.append(field, new Blob([bytes], { type }), name);
   if (second) body.append(field, new Blob([signatures['image/png']], { type: 'image/png' }), 'second.png');
-  const headers = token ? { Authorization: `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'synthetic-gem-media-admin' }, SECRET, { expiresIn: '1h' })}` } : {};
+  const headers = token ? { Authorization: `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'synthetic-gem-media-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}` } : {};
   const response = await fetch(`${base}/api/media/upload`, { method: 'POST', headers, body });
   return { status: response.status, body: await response.json() };
 }
