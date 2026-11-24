@@ -1,4 +1,4 @@
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './AdminLogin.css';
@@ -6,6 +6,7 @@ import { apiRequest } from './api';
 import { safeAdminReturnPath } from './adminPaths';
 import { rememberVerifiedAdminSession, setAdminToken } from './adminSession';
 import { verifyAdminSession } from './adminSessionApi';
+import { fetchAdminAuthOptions } from './adminAuthOptions';
 
 function LoginIcon({ type = 'shield' }) {
   const paths = {
@@ -20,6 +21,33 @@ function LoginIcon({ type = 'shield' }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type]} /></svg>;
 }
 
+function GoogleSignIn({ clientId, disabled, onSuccess, onError, onRetry }) {
+  const [scriptState, setScriptState] = useState('loading');
+  const [buttonWidth, setButtonWidth] = useState(200);
+  const control = useRef(null);
+  useEffect(() => {
+    if (scriptState !== 'loading') return undefined;
+    const timer = window.setTimeout(() => setScriptState('error'), 8000);
+    return () => window.clearTimeout(timer);
+  }, [scriptState]);
+  useEffect(() => {
+    const node = control.current;
+    if (!node || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(([entry]) => setButtonWidth(Math.max(200, Math.min(320, Math.floor(entry.contentRect.width)))));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return <div className="admin-login-google-wrap">
+    <GoogleOAuthProvider clientId={clientId} onScriptLoadSuccess={() => setScriptState('ready')} onScriptLoadError={() => setScriptState('error')}>
+      <div ref={control} className={`admin-login-google${scriptState === 'ready' ? '' : ' is-pending'}`} inert={disabled || scriptState !== 'ready' ? true : undefined} aria-hidden={scriptState !== 'ready' || undefined}>
+        <GoogleLogin onSuccess={onSuccess} onError={onError} theme="outline" size="large" text="continue_with" width={buttonWidth} />
+      </div>
+    </GoogleOAuthProvider>
+    {scriptState === 'loading' && <p className="admin-login-progress" role="status"><span className="admin-login-spinner" />Preparing Google sign-in…</p>}
+    {scriptState === 'error' && <div className="admin-login-service-state" role="alert"><p>Google sign-in could not load. Check your connection and try again.</p><button type="button" onClick={onRetry} disabled={disabled}>Retry Google sign-in</button></div>}
+  </div>;
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,14 +56,32 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState('');
+  const [options, setOptions] = useState({ status: 'loading', data: null });
+  const [optionsRevision, setOptionsRevision] = useState(0);
+  const [googleAttempt, setGoogleAttempt] = useState(0);
   const submittingRef = useRef(false);
   const activeRequest = useRef(null);
   const mounted = useRef(true);
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; activeRequest.current?.abort(); }; }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.resolve().then(async () => {
+      if (controller.signal.aborted) return;
+      setOptions({ status: 'loading', data: null });
+      try {
+        const data = await fetchAdminAuthOptions(controller.signal);
+        if (!controller.signal.aborted) setOptions({ status: 'ready', data });
+      } catch {
+        if (!controller.signal.aborted) setOptions({ status: 'error', data: null });
+      }
+    });
+    return () => controller.abort();
+  }, [optionsRevision]);
+  const passwordEnabled = options.status === 'ready' && options.data.passwordEnabled;
+  const googleEnabled = options.status === 'ready' && options.data.googleEnabled;
 
   const signIn = async (path, payload, method) => {
-    if (submittingRef.current) return;
+    if (submittingRef.current || (method === 'google' ? !googleEnabled : !passwordEnabled)) return;
     submittingRef.current = true;
     setErrorMsg('');
     setSubmitting(method);
@@ -74,19 +120,23 @@ export default function Login() {
         <span className="admin-login-security-icon"><LoginIcon /></span>
         <p className="admin-login-eyebrow">Secure admin portal</p>
         <h2 id="admin-login-title">Welcome back</h2>
-        <p className="admin-login-description">Sign in with your administrator account to continue.</p>
+        <p className="admin-login-description">{googleEnabled && !passwordEnabled ? 'Continue with the Google account authorised to manage this website.' : 'Sign in with your administrator account to continue.'}</p>
 
         {errorMsg && <div className="admin-login-error" role="alert"><span>{errorMsg}</span><button type="button" aria-label="Dismiss sign-in error" onClick={() => setErrorMsg('')}><LoginIcon type="close" /></button></div>}
 
-        {googleClientId && <><div className="admin-login-google" inert={submitting ? true : undefined}><GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setErrorMsg('Google sign-in failed. Please try again.')} theme="outline" size="large" text="continue_with" /></div><div className="admin-login-divider"><span />Or use admin credentials<span /></div></>}
+        {options.status === 'loading' && <p className="admin-login-progress" role="status"><span className="admin-login-spinner" />Checking secure sign-in…</p>}
+        {options.status === 'error' && <div className="admin-login-service-state" role="alert"><p>Secure sign-in is temporarily unavailable. Please try again.</p><button type="button" onClick={() => setOptionsRevision((value) => value + 1)}>Try again</button></div>}
+        {options.status === 'ready' && !passwordEnabled && !googleEnabled && <div className="admin-login-service-state" role="status"><p>Administrator sign-in is not available yet. Contact the website owner to complete setup.</p><button type="button" onClick={() => setOptionsRevision((value) => value + 1)}>Check again</button></div>}
+        {googleEnabled && <GoogleSignIn key={`${options.data.googleClientId}:${googleAttempt}`} clientId={options.data.googleClientId} disabled={Boolean(submitting)} onSuccess={handleGoogleSuccess} onError={() => setErrorMsg('Google sign-in failed. Please try again.')} onRetry={() => setGoogleAttempt((value) => value + 1)} />}
+        {googleEnabled && passwordEnabled && <div className="admin-login-divider"><span />Or use admin credentials<span /></div>}
 
-        <form onSubmit={handlePasswordLogin} aria-label="Administrator sign in" aria-busy={Boolean(submitting)}>
+        {passwordEnabled && <form onSubmit={handlePasswordLogin} aria-label="Administrator sign in" aria-busy={Boolean(submitting)}>
           <div className="admin-login-field"><label htmlFor="admin-username">Username</label><input id="admin-username" name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck="false" placeholder="Enter your username" required disabled={Boolean(submitting)} /></div>
           <div className="admin-login-field"><label htmlFor="admin-password">Password</label><div className="admin-login-password"><input id="admin-password" name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="Enter your password" required disabled={Boolean(submitting)} /><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)} disabled={Boolean(submitting)}><LoginIcon type={showPassword ? 'eye-off' : 'eye'} /></button></div></div>
           <button type="submit" className="admin-login-submit" disabled={Boolean(submitting)}>{submitting ? <><span className="admin-login-spinner" />Signing in…</> : <>Sign in<LoginIcon type="arrow" /></>}</button>
-        </form>
+        </form>}
 
-        {!googleClientId && <p className="admin-login-google-note">Google sign-in is unavailable. Use your admin credentials above.</p>}
+        {submitting === 'google' && <p className="admin-login-progress" role="status"><span className="admin-login-spinner" />Verifying your administrator access…</p>}
         <div className="admin-login-authorisation"><LoginIcon /><p>Access is restricted to authorised administrators.</p></div>
       </div>
       <p className="admin-login-copyright">Pinnawala Gems · Administrative workspace</p>

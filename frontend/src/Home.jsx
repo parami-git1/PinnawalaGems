@@ -297,7 +297,7 @@ export default function Home() {
     </section>
 
     <section className="pg-origin pg-section" aria-labelledby="pg-origin-title"><div className="pg-container pg-origin-layout">
-      <div className="pg-origin-copy" data-reveal><h2 id="pg-origin-title">Rooted in Sri Lanka.<br /><em>Chosen with care.</em></h2><p>{BUSINESS.name} is based in {BUSINESS.location}. {BUSINESS.license}</p><p>Visit us on Main Street or speak with our team about your next gemstone.</p><Link to="/contact" className="pg-button pg-button--navy">Visit us in Eheliyagoda<Arrow /></Link></div>
+      <div className="pg-origin-copy" data-reveal><h2 id="pg-origin-title">Rooted in Sri Lanka.<br /><em>Chosen with care.</em></h2><p>{BUSINESS.name} is based in {BUSINESS.location}. {BUSINESS.license}</p><p>Visit us on Main Street or speak with our team about your next gemstone.</p><a href={BUSINESS.mapsUrl} target="_blank" rel="noopener noreferrer" className="pg-button pg-button--navy">Visit us in Eheliyagoda<Arrow /></a></div>
       <figure className="pg-origin-art" data-reveal><Image src="/images/ceylon-landscape.webp" fallback="/images/ceylon-landscape.webp" alt="An editorial view of lush Sri Lankan hills and a sapphire on an atelier workbench" width="1440" height="614" fetchPriority="low" /><span className="pg-origin-corner" aria-hidden="true"><Facet /></span></figure>
     </div></section>
 
