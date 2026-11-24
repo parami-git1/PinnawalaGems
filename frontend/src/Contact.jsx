@@ -55,18 +55,6 @@ function Contact() {
     return () => controller.abort();
   }, []);
 
-  /* inject fonts */
-  useEffect(() => {
-    if (!document.getElementById('pg-luxury-fonts')) {
-      const link = document.createElement('link');
-      link.id   = 'pg-luxury-fonts';
-      link.rel  = 'stylesheet';
-      link.href =
-        'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap';
-      document.head.appendChild(link);
-    }
-  }, []);
-
   const changeForm  = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const submitForm  = (e) => {
     e.preventDefault();
@@ -134,7 +122,7 @@ function Contact() {
   ].filter(Boolean);
 
   return (
-    <div className="pg-contact min-h-screen overflow-hidden bg-[#F7F5F0] font-[Jost,sans-serif] text-[#101936]">
+    <div className="pg-contact min-h-screen overflow-hidden bg-[#F7F5F0] text-[#101936]">
       {/* ── keyframes ── */}
       <style>{`
         @keyframes pgReveal {
@@ -185,7 +173,7 @@ function Contact() {
           </p>
 
           <h1
-            className="pg-reveal font-[Cormorant_Garamond,serif] text-6xl leading-none md:text-7xl"
+            className="pg-reveal pg-contact-serif text-6xl leading-none md:text-7xl"
             style={{ animationDelay: '.1s', textShadow: '0 4px 24px rgba(0,0,0,0.6)' }}
           >
             Contact <em className="italic text-[#D9B64A]">us</em>
@@ -228,7 +216,7 @@ function Contact() {
       ════════════════════════════════════════════ */}
       {isEditing && (
         <div className="mx-auto mt-16 max-w-5xl rounded-2xl border border-[#E8E3D3] bg-white p-8">
-          <h2 className="font-[Cormorant_Garamond,serif] text-3xl">Edit Contact Details</h2>
+          <h2 className="pg-contact-serif text-3xl">Edit Contact Details</h2>
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {[
               'address','landlineNumber','landlineNumber2','mobileNumber',
@@ -278,7 +266,7 @@ function Contact() {
                 </p>
 
                 {/* heading */}
-                <h2 className="mt-3 font-[Cormorant_Garamond,serif] text-4xl leading-none text-white md:text-5xl">
+                <h2 className="pg-contact-serif mt-3 text-4xl leading-none text-white md:text-5xl">
                   Get in<br />
                   <em className="text-[#D9B64A]">touch.</em>
                 </h2>
@@ -304,12 +292,12 @@ function Contact() {
                         {item.href ? (
                           <a
                             href={item.href}
-                            className="mt-1 block break-words font-[Cormorant_Garamond,serif] text-lg text-white transition-colors hover:text-[#D9B64A]"
+                            className="pg-contact-serif mt-1 block break-words text-lg text-white transition-colors hover:text-[#D9B64A]"
                           >
                             {item.value}
                           </a>
                         ) : (
-                          <p className="mt-1 font-[Cormorant_Garamond,serif] text-lg leading-6 text-white">
+                          <p className="pg-contact-serif mt-1 text-lg leading-6 text-white">
                             {item.value}
                           </p>
                         )}
@@ -358,7 +346,7 @@ function Contact() {
               {/* header */}
               <div className="flex items-end justify-between gap-4">
                 <div>
-                  <h2 className="font-[Cormorant_Garamond,serif] text-4xl leading-none text-[#0B1330] md:text-5xl">
+                  <h2 className="pg-contact-serif text-4xl leading-none text-[#0B1330] md:text-5xl">
                     Send us a <em className="text-[#B8901F]">message.</em>
                   </h2>
                 </div>
@@ -367,7 +355,7 @@ function Contact() {
               {/* success state */}
               {sent ? (
                 <div className="mt-12 rounded-xl border border-emerald-200 bg-emerald-50 p-7 text-center">
-                  <p className="font-[Cormorant_Garamond,serif] text-3xl text-[#0B1330]">
+                  <p className="pg-contact-serif text-3xl text-[#0B1330]">
                     Thank you.
                   </p>
                   <p className="mt-2 text-sm text-slate-600">
@@ -496,7 +484,7 @@ function Contact() {
                   <p className="text-[9px] font-semibold uppercase tracking-[.25em] text-[#B8901F]">
                     {card.title}
                   </p>
-                  <p className="mt-2 font-[Cormorant_Garamond,serif] text-[1.18rem] leading-6 text-[#0B1330]">
+                  <p className="pg-contact-serif mt-2 text-[1.18rem] leading-6 text-[#0B1330]">
                     {card.body}
                   </p>
                 </div>
@@ -514,7 +502,7 @@ function Contact() {
                 <p className="text-[9px] font-semibold uppercase tracking-[.35em] text-[#B8901F]">
                   Come and see us
                 </p>
-                <h2 className="mt-3 font-[Cormorant_Garamond,serif] text-4xl text-[#0B1330] md:text-5xl">
+                <h2 className="pg-contact-serif mt-3 text-4xl text-[#0B1330] md:text-5xl">
                   Find us in <em className="text-[#B8901F]">Eheliyagoda.</em>
                 </h2>
               </div>
@@ -546,7 +534,7 @@ function Contact() {
                 <p className="text-[9px] font-semibold uppercase tracking-[.25em] text-[#D9B64A]">
                   {BUSINESS.name}
                 </p>
-                <p className="mt-1 max-w-[200px] font-[Cormorant_Garamond,serif] text-lg leading-5">
+                <p className="pg-contact-serif mt-1 max-w-[200px] text-lg leading-5">
                   {contactInfo.address}
                 </p>
               </div>

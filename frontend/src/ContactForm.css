@@ -1,3 +1,5 @@
+.pg-contact { font-family: 'Inter', system-ui, sans-serif; }
+.pg-contact .pg-contact-serif { font-family: 'Playfair Display', Georgia, serif; }
 .contact-enquiry-form :is(input, textarea) { font-family: 'Inter', system-ui, sans-serif !important; font-size: 14px !important; font-weight: 400 !important; line-height: 1.6 !important; letter-spacing: 0 !important; }
 .contact-enquiry-form :is(input, textarea)::placeholder { color: #647087 !important; opacity: 1 !important; font-family: 'Inter', system-ui, sans-serif !important; font-size: 13px !important; font-weight: 400 !important; letter-spacing: 0 !important; text-transform: none !important; }
 .pg-contact-banner { background: #081323; }
