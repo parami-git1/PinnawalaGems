@@ -1,5 +1,7 @@
 # Pinnawala Gems — Production Readiness Report
 
+> **Latest login update — 25 November 2026:** The owner now requests both email/password and Google sign-in. Current setup is `ADMIN_AUTH_MODE=mixed`; see [ADMIN_LOGIN_SETUP.md](ADMIN_LOGIN_SETUP.md). Requested credentials were explicitly configured only in ignored local `backend/.env` and successfully checked through local authentication/session routes. Backend 72/72 tests, frontend 19/19 production-build checks, lint and build PASS. A real Google Web client ID and live environment/deployment verification remain PENDING. Previous Google-only instructions below are optional historical setup, not the current requested mode.
+
 > **Latest finalization — 24 November 2026:** The screenshot's unfinished hero is corrected by waiting for real Home data and critical photographs; the former 3.5-second forced reveal is removed. Single-owner Gmail access is implemented and tested, with operator setup in [ADMIN_GOOGLE_SETUP.md](ADMIN_GOOGLE_SETUP.md). See the finalization addendum at the end. Deployment, the owner's actual Gmail/Google Console setup and live release verification remain **PENDING**. Earlier loading-policy descriptions and performance measurements below are historical, not certification of this updated candidate.
 
 > **24 November 2026 follow-up:** Home loading, category banner reveal, mobile navigation and gallery discovery were verified on the local production build. See the dated addendum below. Local checks PASS; the repeated cold-mobile 2.5-second LCP target remains FAIL, and deployment/live verification remain PENDING. Earlier measurements and PDFs are historical evidence.
@@ -203,3 +205,20 @@ The frontend obtains only public sign-in capabilities/client ID from `/api/admin
 Manual handoff: [ADMIN_GOOGLE_SETUP.md](ADMIN_GOOGLE_SETUP.md), [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md), [FINAL_GIT_RELEASE.md](FINAL_GIT_RELEASE.md). The current candidate has not been deployed by the assistant. The earlier 2.752-second lab median predates this complete-reveal policy and must not be presented as a fresh measurement of it; production performance acceptance remains pending.
 
 Current workspace evidence: `.tmp/home-complete-reveal/results.json` and loading/ready screenshots, `.tmp/mobile-native-polish/results.json` and `footer-widget-results.json`, `.tmp/mobile-gallery-refinement/results.json`, `.tmp/gem-magnifier-admin-security/magnifier-results.json`, `.tmp/category-banner-ui/complete-reveal-results.json`, `.tmp/google-owner-frontend/results.json`, and the backend test output. The current groups total 189 browser assertions and 65 backend tests. None is a runtime dependency or a ZIP release package.
+
+## Dual-method administrator login — 25 November 2026
+
+The login entry form no longer disappears when sign-in capability discovery is unavailable. Email/username and password fields stay available during discovery failures; a successful server policy that disables password access is still respected. Actual login and `/api/admin/session` verification remain mandatory before storing a token or loading private screens. Missing backend routes now explain the required backend update instead of leaving only an unhelpful retry control.
+
+`POST /api/admin/login` supports the existing `username` field and an `email` alias. Email identifiers match case-insensitively, ordinary legacy usernames and passwords remain case sensitive, conflicting aliases/types are rejected, and both aliases share the same bounded guess limiter. Invalid Google client configuration disables only Google in mixed mode and cannot hide or disable a properly configured password method. Google allowlist checks and optional strict Google-only policy remain enforced by the backend.
+
+| Gate | Status | Evidence |
+| --- | --- | --- |
+| Requested local credentials | PASS | Explicit owner request applied only to Git-ignored `backend/.env`; actual local auth router accepted the requested account and verified its session. Wrong-password and anonymous-session checks rejected access. Disposable test signing key; no database/cloud or production login requests. |
+| Backend tests | PASS | 72/72, including 7 additional dual-login validation, identity, limiter and Google configuration regressions. |
+| Frontend login checks | PASS | 19/19 on the local production build: both entry methods, discovery failure recovery, server-policy denial, no token/private screen before session verification, incorrect credentials and mobile layouts. |
+| Frontend lint / production build | PASS | Full checks passed. Existing deferred Three.js size warning unchanged. |
+| Actual Google sign-in activation | PENDING | No valid Google Web client ID configured locally or supplied by the owner. The Google option explicitly indicates setup is required; no provider is faked. |
+| Live administrator access | PENDING | Three unauthenticated read-only GET probes to auth-options, session and health all reached the 15-second timeout. This does not establish the deployed backend version or a specific hosting fault. No live credential login, environment write, push or deployment was performed. |
+
+The password is absent from tracked source, tests and operator documentation. Existing database, JWT and Cloudinary settings were preserved. An ignored local environment file does not reach Render through Git; the operator must configure the corresponding Render values and deploy the matching backend before the frontend. Follow [ADMIN_LOGIN_SETUP.md](ADMIN_LOGIN_SETUP.md). Workspace evidence: `.tmp/admin-dual-login/local-config-smoke-results.json`, `.tmp/admin-dual-login/live-readonly-status.json` and `.tmp/dual-login-frontend/results.json`.

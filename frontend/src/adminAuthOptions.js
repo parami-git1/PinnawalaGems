@@ -15,8 +15,9 @@ function pauseBeforeRetry(signal) {
   });
 }
 
-// The server is authoritative. A stale frontend build must never re-enable a
-// password form or load Google with a different application's client ID.
+// A successful policy response is authoritative. If this discovery endpoint is
+// unavailable, the page may still present credentials for server verification;
+// neither login nor the protected session check is bypassed.
 export async function fetchAdminAuthOptions(signal) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {

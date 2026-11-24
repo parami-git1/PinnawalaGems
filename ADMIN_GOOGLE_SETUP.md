@@ -1,5 +1,7 @@
 # Pinnawala Gems — එකම Gmail account එකට admin access
 
+> **25 November 2026 — current request:** Email/password සහ Google දෙකම භාවිතා කිරීමට [ADMIN_LOGIN_SETUP.md](ADMIN_LOGIN_SETUP.md) අනුගමනය කරන්න. Current mode එක **`ADMIN_AUTH_MODE=mixed`**. පහළ Google-only mode එක optional විකල්පයක් පමණයි; එය password login අක්‍රිය කරනවා. Google Console setup කොටස දෙකටම භාවිතා කළ හැකියි. Requested account details local ignored `.env` එකේ configure කරලා තියෙනවා; Google Web client ID එක තවම අවශ්‍යයි.
+
 Updated: **24 November 2026 · Asia/Colombo**
 
 මේ document එකේ steps ඔයා manually කරන්න ඕන. මේ session එකෙන් Google Console, Render හෝ Vercel settings වෙනස් කරලා නැහැ; deploy කරලා නැහැ. **ඔයාගේ admin Gmail address එක තවම ලබාදී නැති නිසා පහළ `REPLACE_WITH_YOUR_GMAIL` තැනට ඒ එකම account එක දාන්න.** Website එකේ contact email එක admin account එක කියලා අපි assume කරලා නැහැ.

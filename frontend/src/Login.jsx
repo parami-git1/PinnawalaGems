@@ -21,6 +21,10 @@ function LoginIcon({ type = 'shield' }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[type]} /></svg>;
 }
 
+function validGoogleClientId(value) {
+  return typeof value === 'string' && /^[a-z\d._-]+\.apps\.googleusercontent\.com$/i.test(value.trim()) ? value.trim() : '';
+}
+
 function GoogleSignIn({ clientId, disabled, onSuccess, onError, onRetry }) {
   const [scriptState, setScriptState] = useState('loading');
   const [buttonWidth, setButtonWidth] = useState(200);
@@ -71,14 +75,21 @@ export default function Login() {
       try {
         const data = await fetchAdminAuthOptions(controller.signal);
         if (!controller.signal.aborted) setOptions({ status: 'ready', data });
-      } catch {
-        if (!controller.signal.aborted) setOptions({ status: 'error', data: null });
+      } catch (error) {
+        if (!controller.signal.aborted) setOptions({ status: 'error', data: null, error });
       }
     });
     return () => controller.abort();
   }, [optionsRevision]);
-  const passwordEnabled = options.status === 'ready' && options.data.passwordEnabled;
-  const googleEnabled = options.status === 'ready' && options.data.googleEnabled;
+  const policyKnown = options.status === 'ready';
+  // Rendering an entry form does not authorize access. When the options route
+  // is unavailable, the login endpoint and mandatory session check still make
+  // the decision. A verified Google-only policy continues to disable passwords.
+  const passwordEnabled = !policyKnown || options.data.passwordEnabled;
+  const googleClientId = policyKnown
+    ? options.data.googleEnabled ? options.data.googleClientId : ''
+    : validGoogleClientId(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+  const googleEnabled = Boolean(googleClientId);
 
   const signIn = async (path, payload, method) => {
     if (submittingRef.current || (method === 'google' ? !googleEnabled : !passwordEnabled)) return;
@@ -97,14 +108,16 @@ export default function Login() {
       rememberVerifiedAdminSession(data.token, session);
       navigate(safeAdminReturnPath(location.state?.from), { replace: true });
     } catch (error) {
-      if (mounted.current && !controller.signal.aborted) setErrorMsg(error.message || 'Unable to sign in. Please check your connection and try again.');
+      if (mounted.current && !controller.signal.aborted) setErrorMsg(error.status === 404
+        ? 'Sign-in needs the latest backend update before administrator access can be verified.'
+        : error.message || 'Unable to sign in. Please check your connection and try again.');
     } finally {
       submittingRef.current = false;
       activeRequest.current = null;
       if (mounted.current) setSubmitting('');
     }
   };
-  const handlePasswordLogin = (event) => { event.preventDefault(); signIn('/api/admin/login', { username, password }, 'password'); };
+  const handlePasswordLogin = (event) => { event.preventDefault(); signIn('/api/admin/login', { username: username.trim(), password }, 'password'); };
   const handleGoogleSuccess = (credentialResponse) => signIn('/api/admin/google-login', { credential: credentialResponse.credential }, 'google');
 
   return <main id="main-content" className="admin-login">
@@ -120,21 +133,22 @@ export default function Login() {
         <span className="admin-login-security-icon"><LoginIcon /></span>
         <p className="admin-login-eyebrow">Secure admin portal</p>
         <h2 id="admin-login-title">Welcome back</h2>
-        <p className="admin-login-description">{googleEnabled && !passwordEnabled ? 'Continue with the Google account authorised to manage this website.' : 'Sign in with your administrator account to continue.'}</p>
+        <p className="admin-login-description">{googleEnabled && !passwordEnabled ? 'Continue with the Google account authorised to manage this website.' : 'Use your administrator email and password, or continue with Google.'}</p>
 
         {errorMsg && <div className="admin-login-error" role="alert"><span>{errorMsg}</span><button type="button" aria-label="Dismiss sign-in error" onClick={() => setErrorMsg('')}><LoginIcon type="close" /></button></div>}
 
         {options.status === 'loading' && <p className="admin-login-progress" role="status"><span className="admin-login-spinner" />Checking secure sign-in…</p>}
-        {options.status === 'error' && <div className="admin-login-service-state" role="alert"><p>Secure sign-in is temporarily unavailable. Please try again.</p><button type="button" onClick={() => setOptionsRevision((value) => value + 1)}>Try again</button></div>}
-        {options.status === 'ready' && !passwordEnabled && !googleEnabled && <div className="admin-login-service-state" role="status"><p>Administrator sign-in is not available yet. Contact the website owner to complete setup.</p><button type="button" onClick={() => setOptionsRevision((value) => value + 1)}>Check again</button></div>}
-        {googleEnabled && <GoogleSignIn key={`${options.data.googleClientId}:${googleAttempt}`} clientId={options.data.googleClientId} disabled={Boolean(submitting)} onSuccess={handleGoogleSuccess} onError={() => setErrorMsg('Google sign-in failed. Please try again.')} onRetry={() => setGoogleAttempt((value) => value + 1)} />}
-        {googleEnabled && passwordEnabled && <div className="admin-login-divider"><span />Or use admin credentials<span /></div>}
+        {options.status === 'error' && <div className="admin-login-service-state" role="status"><p>{options.error?.status === 404 ? 'The sign-in settings need a backend update. You can enter your admin email and password below; access will still be verified.' : 'Sign-in settings could not load. You can try your admin email and password below.'}</p><button type="button" onClick={() => setOptionsRevision((value) => value + 1)}>Check sign-in options</button></div>}
+        {policyKnown && !passwordEnabled && !googleEnabled && <div className="admin-login-service-state" role="status"><p>Administrator sign-in is disabled in this website’s settings. Contact the website owner to complete setup.</p><button type="button" onClick={() => setOptionsRevision((value) => value + 1)}>Check sign-in options</button></div>}
+        {googleEnabled ? <GoogleSignIn key={`${googleClientId}:${googleAttempt}`} clientId={googleClientId} disabled={Boolean(submitting)} onSuccess={handleGoogleSuccess} onError={() => setErrorMsg('Google sign-in failed. Please try again.')} onRetry={() => setGoogleAttempt((value) => value + 1)} /> : <div className="admin-login-google-unavailable"><button type="button" disabled><span aria-hidden="true">G</span>Continue with Google</button><p>{policyKnown ? 'Google sign-in is not enabled for this website yet.' : 'Google sign-in will be available after its website setup is complete.'}</p></div>}
+        <div className="admin-login-divider"><span />Or use email and password<span /></div>
 
-        {passwordEnabled && <form onSubmit={handlePasswordLogin} aria-label="Administrator sign in" aria-busy={Boolean(submitting)}>
-          <div className="admin-login-field"><label htmlFor="admin-username">Username</label><input id="admin-username" name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck="false" placeholder="Enter your username" required disabled={Boolean(submitting)} /></div>
-          <div className="admin-login-field"><label htmlFor="admin-password">Password</label><div className="admin-login-password"><input id="admin-password" name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="Enter your password" required disabled={Boolean(submitting)} /><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)} disabled={Boolean(submitting)}><LoginIcon type={showPassword ? 'eye-off' : 'eye'} /></button></div></div>
-          <button type="submit" className="admin-login-submit" disabled={Boolean(submitting)}>{submitting ? <><span className="admin-login-spinner" />Signing in…</> : <>Sign in<LoginIcon type="arrow" /></>}</button>
-        </form>}
+        {!passwordEnabled && <p className="admin-login-method-note">Email and password sign-in is disabled. Use the authorised Google account above.</p>}
+        <form onSubmit={handlePasswordLogin} aria-label="Administrator sign in" aria-busy={submitting === 'password'}>
+          <div className="admin-login-field"><label htmlFor="admin-username">Email or username</label><input id="admin-username" name="username" type="text" inputMode="email" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" autoCapitalize="none" spellCheck="false" placeholder="Enter your admin email" required disabled={!passwordEnabled || Boolean(submitting)} /></div>
+          <div className="admin-login-field"><label htmlFor="admin-password">Password</label><div className="admin-login-password"><input id="admin-password" name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="Enter your password" required disabled={!passwordEnabled || Boolean(submitting)} /><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)} disabled={!passwordEnabled || Boolean(submitting)}><LoginIcon type={showPassword ? 'eye-off' : 'eye'} /></button></div></div>
+          <button type="submit" className="admin-login-submit" disabled={!passwordEnabled || Boolean(submitting)}>{submitting === 'password' ? <><span className="admin-login-spinner" />Signing in…</> : <>Sign in<LoginIcon type="arrow" /></>}</button>
+        </form>
 
         {submitting === 'google' && <p className="admin-login-progress" role="status"><span className="admin-login-spinner" />Verifying your administrator access…</p>}
         <div className="admin-login-authorisation"><LoginIcon /><p>Access is restricted to authorised administrators.</p></div>

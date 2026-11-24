@@ -37,7 +37,10 @@ const secureHeaders = helmet({
 const common = { standardHeaders: 'draft-8', legacyHeaders: false, message: { message: 'Too many requests. Please wait and try again.' } };
 const apiLimiter = rateLimit({ ...common, windowMs: 5 * 60 * 1000, limit: 600 });
 const loginIpLimiter = rateLimit({ ...common, windowMs: 15 * 60 * 1000, limit: 20, skipSuccessfulRequests: true, message: { message: 'Too many sign-in attempts. Please try again in 15 minutes.' } });
-const loginAccountLimiter = rateLimit({ ...common, windowMs: 15 * 60 * 1000, limit: 10, skipSuccessfulRequests: true, keyGenerator: (req) => `${ipKeyGenerator(req.ip)}:${createHash('sha256').update(typeof req.body?.username === 'string' ? req.body.username.trim().toLowerCase().slice(0, 256) : 'invalid').digest('hex')}`, message: { message: 'Too many sign-in attempts. Please try again in 15 minutes.' } });
+const loginAccountLimiter = rateLimit({ ...common, windowMs: 15 * 60 * 1000, limit: 10, skipSuccessfulRequests: true, keyGenerator: (req) => {
+  const identifier = typeof req.body?.email === 'string' ? req.body.email : req.body?.username;
+  return `${ipKeyGenerator(req.ip)}:${createHash('sha256').update(typeof identifier === 'string' ? identifier.trim().toLowerCase().slice(0, 256) : 'invalid').digest('hex')}`;
+}, message: { message: 'Too many sign-in attempts. Please try again in 15 minutes.' } });
 const feedbackLimiter = rateLimit({ ...common, windowMs: 15 * 60 * 1000, limit: 5, message: { message: 'You have submitted several reviews recently. Please try again in 15 minutes.' } });
 const uploadLimiter = rateLimit({ ...common, windowMs: 15 * 60 * 1000, limit: 60, message: { message: 'Too many media uploads. Please wait before uploading more files.' } });
 

@@ -1,5 +1,7 @@
 # Pinnawala Gems production release checklist
 
+> **25 November 2026 login preference:** Both methods are requested. Use [ADMIN_LOGIN_SETUP.md](ADMIN_LOGIN_SETUP.md) and `ADMIN_AUTH_MODE=mixed`; earlier Google-only settings below are optional. Local requested credentials have been configured and checked, but ignored `.env` does not deploy through Git. Actual Google client setup, Render environment changes and live access remain operator steps.
+
 Prepared 17 November 2026. **No deployment is authorized by this document.** Source changes must be committed and the exact release SHA approved before anyone triggers production deployment. No ZIP files are needed; deploy from this Git repository.
 
 Latest performance evidence: `LCP_OPTIMIZATION_REPORT.md`. Repeated traced normal-motion cold-mobile LCP improved from median 3.116s to 2.664s, still above 2.5s. Production performance and release sign-off remain PENDING. `FINAL_GIT_RELEASE.md` records the review/staging procedure; no commit or push has been performed.

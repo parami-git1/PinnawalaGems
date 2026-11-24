@@ -35,6 +35,10 @@
 .admin-login-description { margin-top: 10px !important; color: #8a96a7; font-size: 12px; line-height: 1.8; }
 .admin-login-google { display: flex; justify-content: center; margin-top: 24px; min-width: 0; overflow: hidden; }
 .admin-login-google-wrap { min-width: 0; }
+.admin-login-google-unavailable { margin-top: 24px; }
+.admin-login-google-unavailable > button { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid #dfe5ed; border-radius: 6px; color: #7d8899; background: #f7f8fa; font-size: 13px; cursor: not-allowed; }
+.admin-login-google-unavailable > button > span { font: 600 18px/1 Arial, sans-serif; }
+.admin-login-google-unavailable > p, .admin-login-method-note { margin-top: 10px !important; color: #7d8899; font-size: 11px; line-height: 1.7; }
 .admin-login-google.is-pending { height: 0; min-height: 0; margin-top: 0; overflow: hidden; visibility: hidden; }
 .admin-login-progress { display: flex; align-items: center; gap: 10px; margin-top: 23px !important; color: #62728a; font-size: 12px; line-height: 1.7; }
 .admin-login-progress .admin-login-spinner { flex-shrink: 0; }

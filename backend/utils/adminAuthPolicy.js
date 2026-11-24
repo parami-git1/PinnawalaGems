@@ -15,7 +15,7 @@ function adminAuthPolicy() {
   const emails = addresses.map(normalizeEmail);
   const validEmails = emails.length > 0 && emails.every(Boolean);
   const googleClientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
-  const hasClient = googleClientId.length > 0 && googleClientId.length <= 512;
+  const hasClient = googleClientId.length <= 512 && /^[a-z\d._-]+\.apps\.googleusercontent\.com$/i.test(googleClientId);
   const hasSecret = typeof process.env.JWT_SECRET === 'string' && Boolean(process.env.JWT_SECRET);
   const strictOwner = Boolean(singleOwner) && addresses.length === 1 && validEmails && /^[a-z0-9][a-z0-9.+_-]*@gmail\.com$/.test(emails[0]);
   const valid = mode === 'mixed' || (mode === 'google' && strictOwner);

@@ -1,5 +1,7 @@
 # Deploy the audited Pinnawala Gems backend
 
+> **25 November 2026 — current login choice:** the owner now requests both email/password and Google login. Use `ADMIN_AUTH_MODE=mixed` with the existing `ADMIN_USERNAME`/`ADMIN_PASSWORD` settings and an allowed Google email/client ID. The prior Google-only instructions remain an optional stricter mode, not the current requested configuration. Never commit actual passwords or replace unrelated environment secrets.
+
 Deploy the current Git source after explicit approval using [the production release checklist](../RELEASE_CHECKLIST.md). ZIP files from the earlier handoff are historical snapshots and are not required. The source includes security, data-validation, catalogue-pagination, media-upload and API-cache fixes, along with appointments, notes and planner APIs. Updating the frontend alone cannot add these backend routes.
 
 This handoff is prepared for manual deployment. It has not been pushed or deployed automatically. Deploy the matching updated frontend too, so its bounded requests, catalogue pagination and image-loading fixes use the same API revision.
@@ -170,3 +172,21 @@ Successful anonymous public data GETs have a short cache policy: `public, max-ag
 ## Final browser check
 
 Use the existing administrator account and normal intended business operations. Confirm that the frontend uses the same API origin verified above, login reaches the workspace, inventory and pagination load, appointments/notes connect, and public pages render the expected data. Confirm an existing gemstone's photographs and optional video are visible without refreshing the browser. The delivered local tests cover create/edit/delete, media boundaries and recovery using synthetic data; real uploads, Google provider behavior and production CDN caching must be confirmed on the deployed service when those features are used.
+
+## Email/password plus Google login — 25 November 2026
+
+Configure both methods on the existing Render service without changing MongoDB, Cloudinary or JWT secrets:
+
+```dotenv
+ADMIN_AUTH_MODE=mixed
+ADMIN_USERNAME=YOUR_ADMIN_EMAIL
+ADMIN_PASSWORD=YOUR_PRIVATE_PASSWORD
+ADMIN_GOOGLE_EMAIL=YOUR_ALLOWED_GOOGLE_EMAIL
+GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+```
+
+`ADMIN_USERNAME` can hold the administrator's email address. `POST /api/admin/login` accepts either `{ "email": "…", "password": "…" }` or the existing `{ "username": "…", "password": "…" }` contract. Email identifiers are trimmed and compared without case; existing non-email usernames and all passwords remain case sensitive. Supplying conflicting email/username aliases or malformed input is rejected. Both aliases share the same password-guess rate limit, and successful login keeps the configured canonical identity in its signed session.
+
+A missing or malformed Google client ID disables Google login only in `mixed` mode; a correctly configured password method remains available. A public Web client ID must end in `.apps.googleusercontent.com`; a placeholder is not a working Google configuration. The Google account still needs to match the server allowlist after Google verifies its token. `ADMIN_AUTH_MODE=google` continues to disable password login and is not the setting for enabling both methods.
+
+After the approved backend deployment, `/api/admin/auth-options` should report `passwordEnabled:true` and `googleEnabled:true` when both are fully configured. The frontend still must verify `/api/admin/session` before opening protected screens. Showing a sign-in form when capability discovery is unavailable never replaces backend authentication or permits trusting an unverified token. Deploy matching backend code before the frontend; no database seed or administrator record creation is required.

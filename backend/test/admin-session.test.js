@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { before, beforeEach, after, mock, test } = require('node:test');
 const { once } = require('node:events');
+const { createHash } = require('node:crypto');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { OAuth2Client } = require('google-auth-library');
@@ -11,7 +12,7 @@ const SECRET = 'ADMIN_SESSION_TEST_ONLY_NOT_A_PRODUCTION_SECRET_123456';
 process.env.JWT_SECRET = SECRET;
 process.env.ADMIN_USERNAME = 'synthetic-session-admin';
 process.env.ADMIN_PASSWORD = 'SYNTHETIC_SESSION_PASSWORD';
-process.env.GOOGLE_CLIENT_ID = 'SYNTHETIC_SESSION_GOOGLE_CLIENT';
+process.env.GOOGLE_CLIENT_ID = 'synthetic-session.apps.googleusercontent.com';
 process.env.ADMIN_GOOGLE_EMAILS = 'admin-google@example.test';
 process.env.ALLOWED_ORIGINS = 'https://shop.example.test';
 process.env.NODE_ENV = 'test';
@@ -60,13 +61,16 @@ beforeEach(() => {
   process.env.JWT_SECRET = SECRET;
   process.env.ADMIN_USERNAME = 'synthetic-session-admin';
   process.env.ADMIN_PASSWORD = 'SYNTHETIC_SESSION_PASSWORD';
-  process.env.GOOGLE_CLIENT_ID = 'SYNTHETIC_SESSION_GOOGLE_CLIENT';
+  process.env.GOOGLE_CLIENT_ID = 'synthetic-session.apps.googleusercontent.com';
   process.env.ADMIN_GOOGLE_EMAILS = 'admin-google@example.test';
   delete process.env.ADMIN_AUTH_MODE;
   delete process.env.ADMIN_GOOGLE_EMAIL;
   delete process.env.ADMIN_EMAIL;
   const security = require('../middleware/security');
   security.loginIpLimiter.resetKey('127.0.0.1');
+  for (const identifier of ['synthetic-session-admin', 'operator.admin@example.test', 'owner.dual@gmail.com', 'invalid']) {
+    security.loginAccountLimiter.resetKey(`127.0.0.1:${createHash('sha256').update(identifier).digest('hex')}`);
+  }
   modelTouches = [];
   googleVerificationCalls = [];
   googlePayload = { sub: 'synthetic-google-subject', email: 'admin-google@example.test', name: 'Synthetic Google Admin', email_verified: true };
@@ -327,7 +331,7 @@ test('Google configuration without a client ID or signing secret cannot advertis
   for (const missing of ['GOOGLE_CLIENT_ID', 'JWT_SECRET']) {
     configureOwner();
     process.env.JWT_SECRET = SECRET;
-    process.env.GOOGLE_CLIENT_ID = 'SYNTHETIC_SESSION_GOOGLE_CLIENT';
+    process.env.GOOGLE_CLIENT_ID = 'synthetic-session.apps.googleusercontent.com';
     delete process.env[missing];
     assert.deepEqual((await api('/api/admin/auth-options')).data, { passwordEnabled: false, googleEnabled: false, googleClientId: '' });
     assert.equal((await googleLogin()).status, 503);
@@ -341,5 +345,120 @@ test('mixed-mode allowlist edits also revoke scoped Google tokens instead of tru
   assert.equal((await api('/api/admin/session', { token })).status, 200);
   process.env.ADMIN_GOOGLE_EMAILS = 'different-account@example.test';
   assert.equal((await api('/api/admin/session', { token })).status, 403);
+  assert.deepEqual(modelTouches, []);
+});
+
+test('email and legacy username payloads authenticate one configured email and preserve canonical session identity', async () => {
+  process.env.ADMIN_USERNAME = 'Operator.Admin@Example.test';
+  for (const body of [
+    { email: ' operator.admin@example.test ', password: process.env.ADMIN_PASSWORD },
+    { username: ' OPERATOR.ADMIN@EXAMPLE.TEST ', password: process.env.ADMIN_PASSWORD },
+    { email: 'operator.admin@example.test', username: 'Operator.Admin@Example.test', password: process.env.ADMIN_PASSWORD },
+  ]) {
+    const response = await api('/api/admin/login', { method: 'POST', body });
+    assert.equal(response.status, 200);
+    const claims = jwt.verify(response.data.token, SECRET, { algorithms: ['HS256'], issuer: ADMIN_ISSUER, audience: ADMIN_AUDIENCE });
+    assert.equal(claims.sub, `password-admin:${process.env.ADMIN_USERNAME}`);
+    assert.equal(claims.username, process.env.ADMIN_USERNAME);
+    const session = await api('/api/admin/session', { token: response.data.token });
+    assert.equal(session.status, 200);
+    assert.equal(session.data.admin.username, process.env.ADMIN_USERNAME);
+  }
+  assert.deepEqual(modelTouches, []);
+});
+
+test('legacy non-email usernames and all password values remain case sensitive', async () => {
+  const username = process.env.ADMIN_USERNAME;
+  assert.equal((await api('/api/admin/login', { method: 'POST', body: { username: username.toUpperCase(), password: process.env.ADMIN_PASSWORD } })).status, 401);
+  assert.equal((await api('/api/admin/login', { method: 'POST', body: { username, password: process.env.ADMIN_PASSWORD.toLowerCase() } })).status, 401);
+  assert.equal((await api('/api/admin/login', { method: 'POST', body: { username: ` ${username} `, password: process.env.ADMIN_PASSWORD } })).status, 200);
+  assert.deepEqual(modelTouches, []);
+});
+
+test('email login rejects malformed types, oversized values and conflicting account aliases without issuing tokens', async () => {
+  process.env.ADMIN_USERNAME = 'operator.admin@example.test';
+  const valid = { email: process.env.ADMIN_USERNAME, password: process.env.ADMIN_PASSWORD };
+  const cases = [
+    { ...valid, email: {} }, { ...valid, email: [] }, { ...valid, email: null },
+    { ...valid, email: '' }, { ...valid, email: 'not-an-email' },
+    { ...valid, email: 'x'.repeat(257) }, { ...valid, username: {} },
+    { ...valid, username: [] }, { ...valid, username: 'x'.repeat(257) },
+    { ...valid, username: 'another.admin@example.test' },
+    { ...valid, password: {} }, { ...valid, password: [] }, { ...valid, password: 'x'.repeat(1025) },
+    { username: [], password: valid.password }, { password: valid.password },
+  ];
+  const security = require('../middleware/security');
+  for (const body of cases) {
+    // Validation coverage is independent of the dedicated abuse-limit test.
+    const identifier = typeof body.email === 'string' ? body.email : body.username;
+    const key = typeof identifier === 'string' ? identifier.trim().toLowerCase().slice(0, 256) : 'invalid';
+    security.loginAccountLimiter.resetKey(`127.0.0.1:${createHash('sha256').update(key).digest('hex')}`);
+    security.loginIpLimiter.resetKey('127.0.0.1');
+    const response = await api('/api/admin/login', { method: 'POST', body });
+    assert.equal(response.status, 400);
+    assert.equal(response.data.token, undefined);
+  }
+  assert.deepEqual(modelTouches, []);
+});
+
+test('wrong email and wrong password return the same generic denial without reflecting credentials', async () => {
+  process.env.ADMIN_USERNAME = 'operator.admin@example.test';
+  const wrongEmail = await api('/api/admin/login', { method: 'POST', body: { email: 'somebody.else@example.test', password: process.env.ADMIN_PASSWORD } });
+  const wrongPassword = await api('/api/admin/login', { method: 'POST', body: { email: process.env.ADMIN_USERNAME, password: 'WRONG_SYNTHETIC_PASSWORD' } });
+  assert.equal(wrongEmail.status, 401);
+  assert.equal(wrongPassword.status, 401);
+  assert.deepEqual(wrongEmail.data, wrongPassword.data);
+  assert.doesNotMatch(JSON.stringify(wrongEmail.data), /operator\.admin|somebody\.else|SYNTHETIC_PASSWORD/);
+  assert.equal(wrongEmail.data.token, undefined);
+  assert.deepEqual(modelTouches, []);
+});
+
+test('mixed mode permits both configured email/password and the one allowed Google account', async () => {
+  process.env.ADMIN_AUTH_MODE = 'mixed';
+  process.env.ADMIN_USERNAME = 'owner.dual@gmail.com';
+  process.env.ADMIN_GOOGLE_EMAIL = process.env.ADMIN_USERNAME;
+  googlePayload.email = process.env.ADMIN_USERNAME;
+  assert.deepEqual((await api('/api/admin/auth-options')).data, { passwordEnabled: true, googleEnabled: true, googleClientId: process.env.GOOGLE_CLIENT_ID });
+  for (const login of [
+    await api('/api/admin/login', { method: 'POST', body: { email: process.env.ADMIN_USERNAME, password: process.env.ADMIN_PASSWORD } }),
+    await googleLogin(),
+  ]) {
+    assert.equal(login.status, 200);
+    assert.equal((await api('/api/admin/session', { token: login.data.token })).status, 200);
+  }
+  googlePayload.email = 'unrelated.account@gmail.com';
+  assert.equal((await googleLogin()).status, 403);
+  assert.deepEqual(modelTouches, []);
+});
+
+test('a missing or malformed Google client disables only Google in mixed mode and cannot block valid password login', async () => {
+  for (const client of ['', 'not-configured', 'example.com', 'https://client.apps.googleusercontent.com', 'x'.repeat(513)]) {
+    process.env.GOOGLE_CLIENT_ID = client;
+    assert.deepEqual((await api('/api/admin/auth-options')).data, { passwordEnabled: true, googleEnabled: false, googleClientId: '' });
+    const login = await api('/api/admin/login', { method: 'POST', body: { username: process.env.ADMIN_USERNAME, password: process.env.ADMIN_PASSWORD } });
+    assert.equal(login.status, 200);
+    assert.equal((await api('/api/admin/session', { token: login.data.token })).status, 200);
+    assert.equal((await googleLogin()).status, 503);
+  }
+  configureOwner();
+  process.env.GOOGLE_CLIENT_ID = 'not-configured';
+  assert.deepEqual((await api('/api/admin/auth-options')).data, { passwordEnabled: false, googleEnabled: false, googleClientId: '' });
+  assert.equal((await googleLogin()).status, 503);
+  assert.equal((await api('/api/admin/login', { method: 'POST', body: { email: 'owner.only@gmail.com', password: process.env.ADMIN_PASSWORD } })).status, 403);
+  assert.deepEqual(googleVerificationCalls, []);
+  assert.deepEqual(modelTouches, []);
+});
+
+test('email and username aliases share the same bounded password-guess limiter', async () => {
+  process.env.ADMIN_USERNAME = 'operator.admin@example.test';
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const identifier = attempt % 2 === 0 ? { email: ' OPERATOR.ADMIN@EXAMPLE.TEST ' } : { username: 'operator.admin@example.test' };
+    const response = await api('/api/admin/login', { method: 'POST', body: { ...identifier, password: 'WRONG_SYNTHETIC_PASSWORD' } });
+    assert.equal(response.status, 401);
+  }
+  const blocked = await api('/api/admin/login', { method: 'POST', body: { username: 'Operator.Admin@Example.test', password: process.env.ADMIN_PASSWORD } });
+  assert.equal(blocked.status, 429);
+  assert(blocked.headers.get('retry-after'));
+  assert.equal(blocked.data.token, undefined);
   assert.deepEqual(modelTouches, []);
 });

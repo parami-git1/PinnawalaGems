@@ -26,11 +26,32 @@ function matchesSecret(value, expected) {
   return crypto.timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
+// An administrator can use an email address as the existing configured login
+// identifier. Keep legacy usernames case sensitive and never normalize secrets.
+function normalizeIdentifier(value) {
+  return normalizeEmail(value) || value.trim();
+}
+
+function loginIdentifier(body) {
+  const hasEmail = Object.hasOwn(body, 'email');
+  const hasUsername = Object.hasOwn(body, 'username');
+  if (!hasEmail && !hasUsername) return null;
+  if (hasUsername && (typeof body.username !== 'string' || !body.username.trim() || body.username.length > 256)) return null;
+  if (hasEmail && (typeof body.email !== 'string' || body.email.length > 256 || !normalizeEmail(body.email))) return null;
+  const email = hasEmail ? normalizeEmail(body.email) : null;
+  const username = hasUsername ? normalizeIdentifier(body.username) : null;
+  // Do not silently choose one account when callers supply conflicting aliases.
+  if (hasEmail && hasUsername && email !== username) return null;
+  return email || username;
+}
+
 router.post('/login', loginIpLimiter, loginAccountLimiter, (req, res) => {
   const policy = adminAuthPolicy();
   if (policy.mode !== 'mixed' || !policy.valid) return res.status(403).json({ message: 'Password sign-in is disabled. Use the authorized Google account.' });
-  const { username, password } = req.body || {};
-  if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password || username.length > 256 || password.length > 1024) return res.status(400).json({ message: 'Enter a valid admin username and password.' });
+  const body = req.body || {};
+  const identifier = loginIdentifier(body);
+  const { password } = body;
+  if (!identifier || typeof password !== 'string' || !password || password.length > 1024) return res.status(400).json({ message: 'Enter a valid administrator email or username and password.' });
   const configuredUsername = process.env.ADMIN_USERNAME;
   const configuredPassword = process.env.ADMIN_PASSWORD;
 
@@ -38,8 +59,8 @@ router.post('/login', loginIpLimiter, loginAccountLimiter, (req, res) => {
     return res.status(503).json({ message: 'Password authentication is not configured' });
   }
 
-  if (!matchesSecret(username.trim(), configuredUsername) || !matchesSecret(password, configuredPassword)) {
-    return res.status(401).json({ message: 'Invalid admin username or password' });
+  if (!matchesSecret(identifier, normalizeIdentifier(configuredUsername)) || !matchesSecret(password, configuredPassword)) {
+    return res.status(401).json({ message: 'Invalid email, username or password' });
   }
 
   const token = signAdminToken({ sub: `password-admin:${configuredUsername}`, username: configuredUsername });
