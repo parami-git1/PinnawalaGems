@@ -24,11 +24,14 @@ export function PublicLayout() {
   const { pathname } = useLocation();
   const home = useRemoteResource('home');
   const categoriesResource = useRemoteResource('inventory/categories');
+  // Start the homepage selection alongside its settings, before the lazy page
+  // module arrives. Other routes do not fetch this homepage-only inventory.
+  const featuredResource = useRemoteResource(pathname === '/' ? 'inventory/top-gems' : null);
   return (
     <>
       <Navbar categories={categoriesResource.data} />
       <Suspense fallback={<main className="route-loading" role="status">Opening Pinnawala Gems…</main>}>
-        <Outlet context={{ home, categoriesResource }} />
+        <Outlet context={{ home, categoriesResource, featuredResource }} />
       </Suspense>
       {pathname === '/' && <WhatsAppWidget contactData={home.data || {}} />}
       <Footer contactData={home.data || {}} />

@@ -85,7 +85,9 @@ export default function CategoryView() {
   if (filters.certificate) query.set('hasCertificate', String(filters.certificate === 'certified'));
   if (filters.min !== '') query.set('minWeight', filters.min);
   if (filters.max !== '') query.set('maxWeight', filters.max);
-  const stonesResource = useRemoteResource(`inventory/stones?${query}`, { loader: loadCollectionResource, timeout: 60000 });
+  // A slug needs its category ID first. Fetching an unfiltered collection here
+  // wastes bandwidth and can briefly surface inventory from another category.
+  const stonesResource = useRemoteResource(selectedCategory === 'unknown' ? null : `inventory/stones?${query}`, { loader: loadCollectionResource, timeout: 60000 });
   const stones = useMemo(() => Array.isArray(stonesResource.data?.stones) ? stonesResource.data.stones : [], [stonesResource.data]);
   const isLoading = stonesResource.status === 'loading' || categoriesResource.status === 'loading';
   const hasError = stonesResource.status === 'error' || categoriesResource.status === 'error';
@@ -130,7 +132,7 @@ export default function CategoryView() {
           <Link to="/">Home</Link><span aria-hidden="true">/</span>
           <span aria-current="page">{allCategories ? 'Collection' : activeCategory?.title || 'Collection'}</span>
         </nav>
-        <CollectionBanner key={selectedCategory} category={activeCategory || {}} all={allCategories} />
+        <CollectionBanner key={selectedCategory} category={activeCategory || { title: categorySlug ? categorySlug.replace(/-/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'The collection' }} all={allCategories} pending={!allCategories && !activeCategory && categoriesResource.status === 'loading'} />
 
         <div className="collection-below-banner" id="collection-edit">
           <button type="button" className="collection-categories-toggle" onClick={() => setIsCategoriesOpen((open) => !open)} aria-expanded={isCategoriesOpen} aria-controls="collection-categories">

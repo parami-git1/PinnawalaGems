@@ -1,0 +1,31 @@
+/* Keep the existing navy banner and readable copy visible while the native
+   image downloads. Reveal the entire photograph together after it is decoded. */
+.gem-collection-banner .gem-collection-banner__cover {
+  opacity: 0;
+  background: transparent;
+  transition: opacity 220ms ease-out;
+}
+.gem-collection-banner .gem-collection-banner__cover[data-banner-state="ready"] { opacity: 1; }
+.gem-collection-banner .gem-collection-banner__cover--curated { width: min(100%, 760px); object-position: right center; }
+.gem-collection-banner__retry {
+  position: absolute;
+  z-index: 1;
+  right: 22px;
+  bottom: 42px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid rgb(207 183 135 / .45);
+  border-radius: 5px;
+  color: #f5e9cd;
+  background: rgb(8 15 27 / .9);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.gem-collection-banner__retry:focus-visible { outline: 2px solid #ddcba5; outline-offset: 3px; }
+@media (max-width: 599px) {
+  .gem-collection-banner__retry { right: 13px; bottom: 32px; max-width: 42%; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gem-collection-banner .gem-collection-banner__cover { transition: none; }
+}

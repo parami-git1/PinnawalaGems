@@ -180,3 +180,18 @@ Deploy the backend first. The new frontend intentionally refuses to mount admini
 6. If rollback is required, restore the previous frontend **before** removing the new backend session endpoint. A previous frontend can use the updated backend's compatible bearer-token login; the new frontend must not be left paired with a backend that cannot verify sessions. Preserve all existing production records and media.
 
 A long route reduces casual guessing; a public JavaScript bundle can still disclose its path. The API remains the authorization boundary. This release preserves the current stateless bearer-token storage/transport to avoid breaking the cross-origin Render/Vercel deployment. It does not add HttpOnly cookies, a BFF, MFA, individual token revocation, or a hosting access gateway; it must not be described as complete OWASP compliance. Those require a separately coordinated authentication/deployment change. See [OWASP authorization](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html) and [session management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html).
+
+## Home loading and mobile release checks — 24 November 2026
+
+No additional environment variables, image uploads or data migrations are required. Keep `VITE_API_URL`, the existing optional Google client ID, portal path, Render origins and all server secrets unchanged. Include the new `frontend/src/CollectionBanner.css` in the authorized Git release. Use the existing Render-first compatibility checks above, followed by the matching Vercel build; frontend root/build/output remain `frontend` / `npm run build` / `dist`.
+
+After an explicitly authorized, completed deployment, use the real website without fixtures and without production writes:
+
+- [ ] On a cold Home visit, verify the configured welcome never flashes a different fallback title. Under a slow API, the loading overlay must release after its bounded wait and keep a neutral heading skeleton until real settings arrive; it must not require refresh.
+- [ ] Verify the first three featured primary photos request before scrolling, later images remain lazy, and transient failures recover. Check both cold and warm cache on a mobile network. Confirm the current 3D scene starts preparing after the welcome reveal and before scrolling, with unchanged gold logo, facets, animation and cursor.
+- [ ] At 320, 360, 390, 430 and tablet widths, check compact navbar text, 44 px targets, direct Collection navigation, category labels, menu focus/close behavior and absence of horizontal page overflow.
+- [ ] Open category deep links and move rapidly between categories. Text/navy background should remain readable; each complete banner photograph fades in together. Check custom artwork, image-error retry, correct inventory/category filtering and browser Back/refresh.
+- [ ] Open an existing item with multiple photos/videos. Thumbnail boxes and counts must appear above the main image immediately. Check selection, horizontal thumbnail scrolling, touch swipe, video playback, magnifier and enlarged in-page viewer; do not create or edit records.
+- [ ] Measure repeated real-network LCP/CLS and actual user-visible loading, recording cache/network/CPU conditions and image/API errors. The latest local median 2.752 s is not a production acceptance result. Keep production sign-off PENDING until real verification passes or the owner explicitly accepts documented limits.
+
+If these frontend checks fail, restore the recorded compatible previous Vercel deployment. If the coordinated backend also requires rollback, restore a compatible frontend before removing `/api/admin/session`. Preserve all MongoDB data, Cloudinary assets and credentials.

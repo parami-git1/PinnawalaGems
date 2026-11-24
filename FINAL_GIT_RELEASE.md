@@ -70,3 +70,23 @@ Preserve MongoDB/JWT/admin/Cloudinary/Google secrets. Deploy the exact approved 
 Run real cold/warm/mobile navigation and image tests only after the authorized deployment is complete, with actual APIs/fonts/CDN and no fixtures. Keep administrator edits paused during cutover; do not create test records or uploads. Verify original Cloudinary/local asset access and the unchanged 3D appearance. Production LCP/CLS/INP remain PENDING until measured honestly.
 
 If critical contracts fail, stop promotion, keep auto-deploys paused and restore recorded compatible deployment artifacts through Render/Vercel rollback controls. Do not roll back MongoDB, delete fields/CMS documents or remove Cloudinary originals. Review older singleton-reader behavior if CMS saves occurred. Reenable deployments only after explicit operator acceptance. No ZIP upload is needed.
+
+## Current Home/mobile follow-up — 24 November 2026
+
+The older whitelist above describes the historical performance change. This follow-up was reviewed against `ea883e1` and changes these application files:
+
+```text
+frontend/src/App.jsx
+frontend/src/CategoryView.jsx
+frontend/src/CollectionBanner.jsx
+frontend/src/CollectionBanner.css   (new; include in the eventual release)
+frontend/src/GemMediaGallery.jsx
+frontend/src/GemMediaGallery.css
+frontend/src/Home.jsx
+frontend/src/HomeFinal.css
+frontend/src/Navbar.css
+```
+
+The accompanying documentation changes are `PRODUCTION_READINESS_REPORT.md`, `FINAL_GIT_RELEASE.md` and `RELEASE_CHECKLIST.md`. Inspect the actual `git status --short`, `git diff --check` and complete diff before any authorized staging/commit; concurrent changes need their own review. No files were staged or committed here. Preserve real `.env` files, credentials, production data, images/model assets, lockfiles and current design. No new dependency, environment variable, upload or database migration is required by this follow-up.
+
+Use the dated readiness addendum for the latest 146 browser assertions, 56 backend tests and repeated lab measurements. The 2.5-second cold-mobile target remains unmet. Follow the existing backend-first rollout if the matching admin session endpoint has not yet been deployed; the frontend must not be promoted against an older incompatible API. Record the exact approved Git SHA and both deployment IDs; this document does not authorize a commit, push or deployment.

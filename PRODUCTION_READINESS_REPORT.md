@@ -1,5 +1,7 @@
 # Pinnawala Gems — Production Readiness Report
 
+> **24 November 2026 follow-up:** Home loading, category banner reveal, mobile navigation and gallery discovery were verified on the local production build. See the dated addendum below. Local checks PASS; the repeated cold-mobile 2.5-second LCP target remains FAIL, and deployment/live verification remain PENDING. Earlier measurements and PDFs are historical evidence.
+
 > Latest LCP review (17 November 2026): see LCP_OPTIMIZATION_REPORT.md and FINAL_GIT_RELEASE.md. Current matched traced cold-mobile median is 2.664s (2.620–2.740s), improved from 3.116s but still FAIL against 2.5s. Production remains PENDING. Timing sections below are the earlier readiness baseline, not the latest measurements.
 
 17 November 2026 · Asia/Colombo
@@ -129,3 +131,45 @@ Real cold/warm/mobile-network, catalog images, route transitions, API failures, 
 Evidence directory: `production-readiness-evidence/`, including exact test results, original/variant image manifest, repeated timing runs and a source SHA-256 fingerprint. The fingerprint records this working tree; it does not substitute for the eventual Git commit or deployed revision.
 
 Platform reference details and supported rollback behavior are linked in RELEASE_CHECKLIST.md. Earlier audit/performance PDFs remain historical evidence, not current release acceptance.
+
+## Home loading and mobile refinement — 24 November 2026
+
+Reviewed starting commit: `ea883e1`. These are additional working-tree changes; no staging, commit, push, deployment, secret change or production write was performed in this follow-up.
+
+| Gate | Status | Evidence |
+| --- | --- | --- |
+| Correct initial welcome and early featured images | PASS | 41/41 local production-build Home checks. Settings and featured requests begin 1–2 ms apart; the first three primary photos load before scrolling, while later images remain lazy. Delayed custom heroes use readiness for their own source. |
+| Bounded initial loading and real recovery | PASS | Initial loader exits as soon as settings/current hero/visible selection are ready, capped at 3.5 seconds plus the existing short fade. Slow settings retain a neutral title skeleton instead of showing an incorrect temporary heading. API 503 and actual image-request failures recover without refresh. |
+| Collection banner and category requests | PASS | 21/21 checks: full native load/decode before image reveal, readable navy/copy while pending, custom-image fallback, terminal-error retry, rapid navigation, cache, filters and unknown categories. Unresolved category slugs make no unfiltered inventory request. |
+| Mobile navigation and media discovery | PASS | 58/58 navbar/gallery checks plus 5/5 category-label widths. Compact phone typography, 44 px controls, direct Collection navigation and thumbnail boxes above the main image. 320–1280 px layouts covered, including landscape. |
+| Magnifier and media functionality | PASS | 21/21 checks, including actual rendered pixels, portrait/landscape pointer mapping, watermark, expanded photos, swipe and video behavior. |
+| Backend regression / frontend lint and build | PASS | 56/56 backend tests; full frontend lint and production build successful. Existing deferred Three.js size warning remains. |
+| Cold-mobile LCP at or below 2.5 seconds | FAIL | Latest narrow scheduling experiment: median 2.752 s, range 2.728–2.880 s. This is a local lab result, not live production performance. |
+| Production deployment and real-network verification | PENDING | No production requests or writes in this follow-up. Render/Vercel revisions, real API/CDN/fonts, physical phones, cold/warm loading and live cache/routing still require the authorized deployment and checks below. |
+
+All 146 browser assertions use synthetic read-only APIs; photo requests and the final WebGL first-frame check use real local assets. The isolated Home UI cases hold 3D responses to test readiness races deterministically; a separate native-scene case verifies GLB/HDR requests start after the loader closes, before any scrolling, and the actual scene renders. No image files, model geometry/materials, business records, Cloudinary assets or credentials changed.
+
+### Measured 3D preparation scheduling experiment
+
+Both versions already include the welcome/featured/banner/mobile fixes. The only experimental change is preparing the offscreen 3D scene immediately after the initial loading overlay closes instead of preparing it while critical welcome content is pending. It still starts before scrolling; geometry, quality, animations and interactions are unchanged. This can delay 3D readiness by approximately one second in the constrained lab case, while reducing contention during the welcome reveal.
+
+Three cold Chrome traces per version: actual Vite production builds, 390×844, DPR 1, CPU 4× slowdown, 150 ms latency, 200,000 B/s download, fresh browser cache, reduced motion, blocked external fonts, synthetic settings delayed 1,200 ms and featured API delayed 800 ms. Real local image/model/HDR bytes were used. These conditions differ from the historical report and do not measure Render or Vercel.
+
+| Measurement | Prepare during welcome | Prepare after reveal |
+| --- | ---: | ---: |
+| Median LCP | 2.932 s | 2.752 s |
+| Minimum–maximum LCP | 2.784–3.120 s | 2.728–2.880 s |
+| Maximum CLS | 0 | 0 |
+| Median TTFB | 0.013 s | 0.013 s |
+| Median resource load delay | 0.273 s | 0.257 s |
+| Median resource load duration | 0.569 s | 0.573 s |
+| Median element render delay | 2.065 s | 1.913 s |
+| Median loading overlay removal | 4.250 s | 4.020 s |
+| Comparable page-image transfer, excluding the unchanged 3D texture | 134,084 B | 134,084 B |
+| Completed image transfer at the 8-second observation limit | 256,283 B | 134,084 B |
+
+Subpart medians are computed independently. The lower completed-image total is **not a compression saving**: the same 122,199 B 3D logo texture now completes after the observation window. Image asset bytes and quality are unchanged. The first three featured images are intentionally eager at low priority; this can request an additional offscreen primary image on narrow phones, while the remaining images remain lazy.
+
+Three samples per version, collected in successive groups, are insufficient to establish that this scheduling change caused the small LCP difference. In all six traces, 3D requests start after LCP, so 3D is not the cause of the measured initial LCP. The remaining dominant subpart is element render delay; no unverified attribution to a particular animation or font is made. The retained improvement is the verified separation of welcome rendering and 3D preparation. No further quality reduction, animation removal or speculative architecture change was introduced.
+
+Workspace evidence: `.tmp/home-loading-final/production-qa-results.json`, `cold-mobile-before-results.json`, `cold-mobile-after-results.json` and six corresponding Chrome trace JSONs; `.tmp/category-banner-ui/complete-reveal-results.json`; `.tmp/mobile-gallery-refinement/results.json` and `category-labels-results.json`; `.tmp/gem-magnifier-admin-security/magnifier-results.json`. The `.tmp` directory is outside the Git repository and is not a release dependency.
