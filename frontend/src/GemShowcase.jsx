@@ -89,7 +89,7 @@ export default function GemShowcase({ preload = false, onSettled }) {
       </header>
       <div className="pg-gem-studio__composition">
         <aside className="pg-gem-studio__note pg-gem-studio__note--left" aria-label="Gemstone detail">
-          <span>01 / THE COLOUR</span><h3>A world within blue.</h3><p>Light and colour meet across a carefully cut surface.</p><i aria-hidden="true" />
+          <span>01 / CEYLON HERITAGE</span><h3>Ethically sourced from Sri Lanka.</h3><p>Hand-selected directly from the legendary gem-bearing soils of Ratnapura, ensuring traceable and responsible origin.</p><i aria-hidden="true" />
         </aside>
         <div ref={viewer} className={`pg-gem-studio__viewer${ready ? ' is-ready' : ' is-preparing'}`} tabIndex={0} role="group" aria-busy={!ready && !unavailable} aria-label="Interactive three-dimensional sapphire; drag to rotate or use arrow keys" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown" onKeyDown={handleKeys}>
           <span className="pg-gem-studio__shadow" aria-hidden="true" />
@@ -97,7 +97,7 @@ export default function GemShowcase({ preload = false, onSettled }) {
           {!ready && <GemPoster unavailable={unavailable} />}
         </div>
         <aside className="pg-gem-studio__note pg-gem-studio__note--right" aria-label="Signature detail">
-          <span>02 / THE SIGNATURE</span><h3>Our mark. Your discovery.</h3><p>The Pinnawala Gems emblem, set over its top facet.</p><i aria-hidden="true" />
+          <span>02 / CERTIFIED PURITY</span><h3>100% natural &amp; lab-certified.</h3><p>Every stone undergoes rigorous gemological verification for unheated brilliance, clarity, and lasting investment value.</p><i aria-hidden="true" />
         </aside>
       </div>
     </div>
