@@ -99,7 +99,18 @@ export default function PhotoMagnifier({ frameRef }) {
     };
     const imageLoaded = () => { if (pointer) schedule(); };
     const imageFailed = () => { lens.hidden = true; frame.removeAttribute('data-magnifying'); };
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(hide) : null;
+    let observedWidth = frame.clientWidth;
+    let observedHeight = frame.clientHeight;
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+      const width = frame.clientWidth;
+      const height = frame.clientHeight;
+      // ResizeObserver delivers an initial notification even without a resize.
+      // Do not discard a first hover that arrived just before that callback.
+      if (width === observedWidth && height === observedHeight) return;
+      observedWidth = width;
+      observedHeight = height;
+      hide();
+    }) : null;
     observer?.observe(frame);
     frame.addEventListener('pointermove', move, { passive: true });
     frame.addEventListener('pointerleave', hide);

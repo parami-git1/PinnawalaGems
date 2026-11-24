@@ -1,6 +1,7 @@
-import { cloneElement, isValidElement, useEffect, useId, useRef } from 'react';
+import { cloneElement, isValidElement, useContext, useId, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import ResponsiveImage from '../ResponsiveImage';
+import { AdminAccessLockContext } from '../adminAccessContext';
 
 const ICONS = {
   grid: 'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
@@ -49,16 +50,22 @@ export function AdminIcon({ name = 'gem', size = 20, ...props }) {
 
 export function AdminModal({ title, description, children, onClose, busy = false, size = 'lg' }) {
   const dialog = useRef(null);
+  const returnFocus = useRef(null);
+  const resumeFocus = useRef(null);
+  const accessLocked = useContext(AdminAccessLockContext);
   const titleId = useId();
   const descriptionId = useId();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = dialog.current;
-    const previousFocus = document.activeElement;
+    if (accessLocked) { if (node.open) node.close(); return undefined; }
+    if (!returnFocus.current) returnFocus.current = document.activeElement;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    const editingField = resumeFocus.current;
     node.showModal();
-    return () => { node.close(); document.body.style.overflow = previousOverflow; previousFocus?.focus(); };
-  }, []);
+    if (editingField?.isConnected) editingField.focus({ preventScroll: true });
+    return () => { node.close(); document.body.style.overflow = previousOverflow; returnFocus.current?.focus({ preventScroll: true }); };
+  }, [accessLocked]);
   const containFocus = (event) => {
     if (event.key !== 'Tab') return;
     const items = [...dialog.current.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')].filter((node) => node.getClientRects().length && !node.closest('fieldset:disabled'));
@@ -67,7 +74,7 @@ export function AdminModal({ title, description, children, onClose, busy = false
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   };
-  return createPortal(<dialog ref={dialog} className={`admin-app admin-modal admin-modal--${size}`} aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined} aria-busy={busy} onKeyDown={containFocus} onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }} onClick={(event) => { if (event.target === dialog.current && !busy) { const box = dialog.current.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) onClose(); } }}><header className="admin-modal-header"><div><h2 id={titleId}>{title}</h2>{description && <p id={descriptionId}>{description}</p>}</div><button type="button" className="admin-icon-button" onClick={onClose} disabled={busy} aria-label="Close dialog"><AdminIcon name="close" /></button></header><div className="admin-modal-body">{children}</div></dialog>, document.body);
+  return createPortal(<dialog ref={dialog} className={`admin-app admin-modal admin-modal--${size}`} hidden={accessLocked} inert={accessLocked} aria-hidden={accessLocked || undefined} aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined} aria-busy={busy} onFocusCapture={(event) => { resumeFocus.current = event.target; }} onKeyDown={containFocus} onCancel={(event) => { event.preventDefault(); if (!busy && !accessLocked) onClose(); }} onClick={(event) => { if (event.target === dialog.current && !busy && !accessLocked) { const box = dialog.current.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) onClose(); } }}><header className="admin-modal-header"><div><h2 id={titleId}>{title}</h2>{description && <p id={descriptionId}>{description}</p>}</div><button type="button" className="admin-icon-button" onClick={onClose} disabled={busy || accessLocked} aria-label="Close dialog"><AdminIcon name="close" /></button></header><div className="admin-modal-body">{children}</div></dialog>, document.body);
 }
 
 export function AdminEmptyState({ icon = 'box', title = 'Nothing here yet', description, action, children }) {

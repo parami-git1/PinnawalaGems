@@ -168,7 +168,7 @@ Stop promotion/sign-off on wrong revision, failed health/CORS, API shape mismatc
 
 Platform references: [Render deployment/auto-deploy controls](https://render.com/docs/deploys), [Render health checks](https://render.com/docs/health-checks), [Render rollback semantics](https://render.com/docs/rollbacks), [Vercel configuration](https://vercel.com/docs/project-configuration/vercel-json), [Vercel rollback](https://vercel.com/docs/instant-rollback), [Cloudinary access controls](https://cloudinary.com/documentation/control_access_to_media). Source configuration and local tests establish intended behavior; the dashboard and live checks establish deployed behavior.
 
-## Verified admin portal and photograph magnifier release — 20 November 2026
+## Verified admin portal and photograph magnifier release — 24 November 2026
 
 Deploy the backend first. The new frontend intentionally refuses to mount administrator screens until `GET /api/admin/session` verifies the bearer token and returns an administrator identity plus a future `expiresAt` timestamp in milliseconds. An older backend without this endpoint cannot safely support the new frontend; a network error or 404 must never bypass verification.
 

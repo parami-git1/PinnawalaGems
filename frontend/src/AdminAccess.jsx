@@ -3,6 +3,7 @@ import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ADMIN_LOGIN_PATH } from './adminPaths';
 import { clearAdminSession, getAdminToken, getVerifiedAdminSession, rememberVerifiedAdminSession, subscribeAdminSession } from './adminSession';
 import { verifyAdminSession } from './adminSessionApi';
+import { AdminAccessLockContext } from './adminAccessContext';
 import './AdminAccess.css';
 
 export function AdminBoundary() {
@@ -50,6 +51,7 @@ export function AdminProtectedRoute() {
   const hasVerifiedSession = result.token === token && Boolean(result.session);
   const permitted = hasVerifiedSession && ['authenticated', 'revalidating'].includes(result.status);
   const expiresAt = hasVerifiedSession ? result.session.expiresAt : null;
+  const failed = result.token === token && result.status === 'error';
   useEffect(() => {
     if (!token || !expiresAt) return undefined;
     const timer = window.setTimeout(() => clearAdminSession(token), Math.max(0, expiresAt - Date.now()));
@@ -65,14 +67,17 @@ export function AdminProtectedRoute() {
     return () => { window.clearTimeout(timer); window.removeEventListener('focus', revalidate); document.removeEventListener('visibilitychange', revalidate); };
   }, [token, expiresAt]);
 
+  useEffect(() => {
+    if (failed && hasVerifiedSession) document.getElementById('admin-access-title')?.focus({ preventScroll: true });
+  }, [failed, hasVerifiedSession]);
+
   if (!token) return <Navigate to={ADMIN_LOGIN_PATH} replace state={{ from: location }} />;
-  const failed = result.token === token && result.status === 'error';
   return <>
-    {hasVerifiedSession && <div hidden={!permitted} inert={!permitted} aria-hidden={!permitted || undefined}><Outlet /></div>}
+    {hasVerifiedSession && <AdminAccessLockContext.Provider value={!permitted}><div hidden={!permitted} inert={!permitted} aria-hidden={!permitted || undefined}><Outlet /></div></AdminAccessLockContext.Provider>}
     {!permitted && <main id="main-content" className="admin-access" aria-labelledby="admin-access-title">
     <div><img src="/logo.png" alt="" width="78" height="54" />
       <p className="admin-access__eyebrow">Pinnawala Gems</p>
-      <h1 id="admin-access-title">{failed ? 'Unable to verify access' : 'Verifying your access'}</h1>
+      <h1 id="admin-access-title" tabIndex={-1}>{failed ? 'Unable to verify access' : 'Verifying your access'}</h1>
       <p role="status">{failed ? 'Your workspace remains locked while sign-in verification is unavailable. Please try again.' : 'Checking your administrator session…'}</p>
       {failed && <div className="admin-access__actions"><button type="button" onClick={() => setRevision((value) => value + 1)}>Try again</button><button type="button" onClick={() => clearAdminSession(token)}>Sign out</button></div>}
       <Link to="/">Back to website</Link>

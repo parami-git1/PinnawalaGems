@@ -7,7 +7,11 @@ export function getAdminToken() {
 }
 
 export function subscribeAdminSession(callback) {
-  const storage = (event) => { if (event.key === TOKEN_KEY || event.key === null) callback(); };
+  const storage = (event) => {
+    if (event.key !== TOKEN_KEY && event.key !== null) return;
+    verified = null;
+    callback();
+  };
   window.addEventListener(CHANGE_EVENT, callback);
   window.addEventListener('storage', storage);
   return () => { window.removeEventListener(CHANGE_EVENT, callback); window.removeEventListener('storage', storage); };
