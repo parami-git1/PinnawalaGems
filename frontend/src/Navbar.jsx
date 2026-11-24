@@ -83,7 +83,7 @@ function Navbar({ adminSlot = null, categories = null }) {
         mobileToggleRef.current?.focus({ preventScroll: true });
       }
       if (event.key === 'Tab') {
-        const focusable = [...(navRef.current?.querySelectorAll('a[href], button:not([disabled])') || [])]
+        const focusable = [...(navRef.current?.querySelectorAll('a[href], button:not([disabled]):not([tabindex="-1"])') || [])]
           .filter((element) => element.getClientRects().length > 0);
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
@@ -214,6 +214,7 @@ function Navbar({ adminSlot = null, categories = null }) {
         </div>
       </div>
 
+      {mobileOpen && <button type="button" className="pg-nav__mobile-backdrop" tabIndex={-1} aria-label="Close navigation overlay" onClick={closeMenus} />}
       {mobileOpen && (
         <div ref={mobilePanelRef} className="pg-nav__mobile" id="pg-mobile-navigation">
           <p className="pg-nav__mobile-eyebrow">Discover Pinnawala</p>

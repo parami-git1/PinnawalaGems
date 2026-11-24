@@ -21,6 +21,7 @@
     { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
     { "source": "/workspace/(.*)", "headers": [
       { "key": "Cache-Control", "value": "no-store" },
+      { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" },
       { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" }
     ] }
   ]

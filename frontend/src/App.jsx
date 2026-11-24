@@ -8,6 +8,7 @@ import { useRemoteResource } from './hooks/useRemoteResource';
 import { warmPageHero } from './pageHeroWarmup';
 import { AdminBoundary, AdminProtectedRoute } from './AdminAccess';
 import { ADMIN_LOGIN_PATH, ADMIN_PORTAL_PATH } from './adminPaths';
+import HomeLoading from './HomeLoading';
 
 const AdminInventory = lazy(() => import('./AdminInventory'));
 const Home = lazy(() => import('./Home'));
@@ -27,11 +28,12 @@ export function PublicLayout() {
   // Start the homepage selection alongside its settings, before the lazy page
   // module arrives. Other routes do not fetch this homepage-only inventory.
   const featuredResource = useRemoteResource(pathname === '/' ? 'inventory/top-gems' : null);
+  const eventsResource = useRemoteResource(pathname === '/' ? 'event-ads' : null);
   return (
     <>
       <Navbar categories={categoriesResource.data} />
-      <Suspense fallback={<main className="route-loading" role="status">Opening Pinnawala Gems…</main>}>
-        <Outlet context={{ home, categoriesResource, featuredResource }} />
+      <Suspense fallback={pathname === '/' ? <HomeLoading /> : <main className="route-loading" role="status">Opening Pinnawala Gems…</main>}>
+        <Outlet context={{ home, categoriesResource, featuredResource, eventsResource }} />
       </Suspense>
       {pathname === '/' && <WhatsAppWidget contactData={home.data || {}} />}
       <Footer contactData={home.data || {}} />

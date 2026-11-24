@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { useRemoteResource } from './hooks/useRemoteResource';
 import ResponsiveImage from './ResponsiveImage';
 import HomeLoading from './HomeLoading';
 import GemShowcase from './GemShowcase';
@@ -18,6 +17,8 @@ const HERO_MOBILE = '/images/home-ceylon-ivory-hero-mobile-v1.webp';
 let initialHomeRevealed = false;
 const featuredGems = (data) => Array.isArray(data) ? data.filter((gem) => gem && typeof gem === 'object' && gem._id).slice(0, 10) : [];
 const gemImageKey = (gem) => JSON.stringify([gem._id, gem.image]);
+const categoryImage = (category) => category.mainImage || category.image || category.coverImage || getDefaultCategoryBanner(category);
+const categoryImageKey = (category) => JSON.stringify([category._id || category.title, categoryImage(category)]);
 
 function isDefaultHeroImage(source) {
   if (typeof source !== 'string' || !source.trim()) return true;
@@ -111,13 +112,13 @@ function SectionIntro({ number, label, title, children, link, to = '/catalog', s
   </div>;
 }
 
-function CategoryCard({ category, index }) {
+function CategoryCard({ category, index, requestImages, onImageSettled, mediaRetry }) {
   const fallback = getDefaultCategoryBanner(category);
-  const source = category.mainImage || category.image || category.coverImage || fallback;
+  const source = categoryImage(category);
   return <div data-reveal data-delay={index * 45}>
     <Link className={`pg-category pg-category--${category.tone || 'sapphire'}`} to={`/collections/${categorySlug(category)}`}>
       <div className={`pg-category-visual${source === fallback ? ' pg-category-visual--local' : ''}`}><span className="pg-category-number">0{index + 1}</span>
-        <ResponsiveImage src={source} fallback={fallback} alt={category.title} width="640" height="720" maxWidth={640} sizes="(max-width: 599px) 44vw, 23vw" />
+        {requestImages && <ResponsiveImage src={source} fallback={fallback} alt={category.title} width="640" height="720" maxWidth={640} sizes="(max-width: 599px) 44vw, 23vw" loading="eager" fetchPriority="low" retryKey={mediaRetry} onLoad={() => onImageSettled(categoryImageKey(category), true)} onError={() => onImageSettled(categoryImageKey(category), false)} />}
         <span className="pg-category-explore"><Arrow diagonal /></span>
       </div>
       <div className="pg-category-caption"><h3>{category.title}</h3><p>{category.description || 'Explore the collection'}</p></div>
@@ -125,14 +126,14 @@ function CategoryCard({ category, index }) {
   </div>;
 }
 
-function GemCard({ gem, index, onPrimaryReady }) {
+function GemCard({ gem, index, onPrimaryReady, mediaRetry }) {
   const title = gem.title || 'Natural gemstone';
   const secondary = Array.isArray(gem.additionalImages) ? gem.additionalImages.find(Boolean) : null;
   const facts = [['Carat weight', gem.weight ? `${gem.weight}${/ct|carat/i.test(String(gem.weight)) ? '' : ' ct'}` : null], ['Shape', gem.shape], ['Origin', gem.origin], ['Cut', gem.cut]].filter(([, value]) => value);
   return <article className="pg-gem-card" data-reveal data-delay={(index % 4) * 40}>
     <Link to={`/gem/${gem._id}`} className="pg-gem-link">
       <div className="pg-gem-visual"><div className="pg-gem-label"><span>{String(index + 1).padStart(2, '0')}</span></div>
-        <Image src={gem.image} alt={title} width="600" height="600" className="pg-gem-primary" loading={index < 3 ? 'eager' : 'lazy'} fetchPriority="low" onReady={() => onPrimaryReady(gemImageKey(gem))} />
+        <Image src={gem.image} alt={title} width="600" height="600" className="pg-gem-primary" loading={index < 3 ? 'eager' : 'lazy'} fetchPriority="low" retryKey={mediaRetry} onLoad={() => onPrimaryReady(gemImageKey(gem), true)} onError={() => onPrimaryReady(gemImageKey(gem), false)} />
         {secondary && <Image src={secondary} alt={`${title}, alternate view`} width="400" height="400" maxWidth={600} className="pg-gem-alternate" fade={false} fallback={gem.image || '/gem.png'} />}
       </div>
       <div className="pg-gem-meta">
@@ -145,7 +146,7 @@ function GemCard({ gem, index, onPrimaryReady }) {
   </article>;
 }
 
-function FeaturedCollection({ resource, onPrimaryReady }) {
+function FeaturedCollection({ resource, onPrimaryReady, mediaRetry }) {
   const track = useRef(null);
   const [position, setPosition] = useState({ start: true, end: false });
   const gems = featuredGems(resource.data);
@@ -167,7 +168,7 @@ function FeaturedCollection({ resource, onPrimaryReady }) {
   return <section className="pg-featured pg-section" aria-labelledby="pg-featured-title"><div className="pg-container">
     <SectionIntro showEyebrow={false} title={<span id="pg-featured-title">Rare by nature.<br /><em>Remarkable by choice.</em></span>} link="Explore all gemstones">Handpicked gems, chosen for colour and character.</SectionIntro>
     {resource.status === 'loading' && !gems.length ? <div className="pg-gem-skeletons" role="status" aria-label="Loading featured gemstones">{[0, 1, 2, 3].map((item) => <div className="pg-gem-skeleton" key={item}><div /><span /><span /></div>)}</div> : gems.length ? <>
-      <div id="pg-gem-track" className={`pg-gem-track${gems.length === 1 ? ' pg-gem-track--single' : ''}`} ref={track} tabIndex={0} role="region" aria-label="Featured gemstones; swipe or use the arrow controls">{gems.map((gem, index) => <GemCard key={gem._id} gem={gem} index={index} onPrimaryReady={onPrimaryReady} />)}</div>
+      <div id="pg-gem-track" className={`pg-gem-track${gems.length === 1 ? ' pg-gem-track--single' : ''}`} ref={track} tabIndex={0} role="region" aria-label="Featured gemstones; swipe or use the arrow controls">{gems.map((gem, index) => <GemCard key={gem._id} gem={gem} index={index} onPrimaryReady={onPrimaryReady} mediaRetry={mediaRetry} />)}</div>
       {gems.length > 1 && <div className="pg-track-footer"><div className="pg-track-controls"><button type="button" onClick={() => move(-1)} disabled={position.start} aria-label="Previous gemstones" aria-controls="pg-gem-track"><Arrow /></button><button type="button" onClick={() => move(1)} disabled={position.end} aria-label="Next gemstones" aria-controls="pg-gem-track"><Arrow /></button></div></div>}
     </> : <div className="pg-collection-empty" data-reveal><img src="/gem.png" alt="Illustration of a blue sapphire" width="200" height="200" /><div><h3>Your next discovery awaits.</h3><p>{resource.status === 'error' ? 'Our selection is taking a little longer to load. Explore the collection or speak with our team to find your stone.' : 'Let us help you find a gemstone with the colour and character you have in mind.'}</p><div className="pg-empty-actions"><Link className="pg-text-link" to="/catalog">Browse the collection<Arrow /></Link>{resource.status === 'error' && <button type="button" className="pg-retry" onClick={resource.retry}>Try again</button>}</div></div></div>}
   </div></section>;
@@ -220,18 +221,20 @@ function PosterDialog({ event, onClose }) {
 }
 
 export default function Home() {
-  const { home, categoriesResource, featuredResource: gemsResource } = useOutletContext();
+  const { home, categoriesResource, featuredResource: gemsResource, eventsResource } = useOutletContext();
   const homeData = withBusinessDetails(home.data);
   const [readyHeroSource, setReadyHeroSource] = useState('');
-  const [settledGemImages, setSettledGemImages] = useState(() => new Set());
-  const [initialGemCount] = useState(() => window.matchMedia('(max-width: 599px)').matches ? 1 : 3);
-  const onPrimaryReady = useCallback((key) => setSettledGemImages((current) => current.has(key) ? current : new Set([...current, key])), []);
+  const [settledGemImages, setSettledGemImages] = useState({});
+  const [settledCategoryImages, setSettledCategoryImages] = useState({});
+  const [heroFailed, setHeroFailed] = useState('');
+  const [mediaRetry, setMediaRetry] = useState(0);
+  const onPrimaryReady = useCallback((key, ready) => setSettledGemImages((current) => current[key] === ready ? current : { ...current, [key]: ready }), []);
+  const onCategoryReady = useCallback((key, ready) => setSettledCategoryImages((current) => current[key] === ready ? current : { ...current, [key]: ready }), []);
   const root = useRef(null);
   const [showFilm, setShowFilm] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [failedHeroImage, setFailedHeroImage] = useState('');
-  const [showLoader, setShowLoader] = useState(() => !initialHomeRevealed);
-  const [deadlineReached, setDeadlineReached] = useState(false);
+  const [showLoader, setShowLoader] = useState(() => !initialHomeRevealed || [home, categoriesResource, gemsResource, eventsResource].some((resource) => resource.data == null));
   useScrollReveals(root);
   const loadedCategories = Array.isArray(categoriesResource.data) ? categoriesResource.data.filter((category) => category && typeof category.title === 'string' && category.title.trim()) : [];
   const categories = loadedCategories.length ? [...loadedCategories].sort((a, b) => (b.gemCount ?? b.count ?? 0) - (a.gemCount ?? a.count ?? 0)).slice(0, 4) : DEFAULT_CATEGORIES;
@@ -245,32 +248,41 @@ export default function Home() {
   const useDefaultHero = !customHeroImage || customHeroImage === failedHeroImage;
   const heroSource = useDefaultHero ? HERO_IMAGE : customHeroImage;
   const heroReady = readyHeroSource === heroSource;
-  const settingsPending = home.data == null && home.status === 'loading';
-  const initialGemMedia = featuredGems(gemsResource.data).slice(0, initialGemCount);
-  const selectionSettled = gemsResource.status !== 'loading' && initialGemMedia.every((gem) => settledGemImages.has(gemImageKey(gem)));
-  // Release as soon as the real heading, hero and visible selection are ready.
-  // Slow/offline APIs still cannot trap visitors behind a global loading screen.
-  const readyToReveal = (!settingsPending && heroReady && selectionSettled) || deadlineReached;
-  const eventsResource = useRemoteResource(heroReady ? 'event-ads' : null);
+  const initialGemMedia = featuredGems(gemsResource.data).slice(0, 3);
+  const requiredResources = [
+    { resource: home, valid: home.data != null && typeof home.data === 'object' && !Array.isArray(home.data) },
+    ...[categoriesResource, gemsResource, eventsResource].map((resource) => ({ resource, valid: Array.isArray(resource.data) })),
+  ];
+  const dataReady = requiredResources.every(({ resource, valid }) => valid && ['success', 'error'].includes(resource.status));
+  const selectionReady = initialGemMedia.every((gem) => settledGemImages[gemImageKey(gem)] === true);
+  const categoriesReady = categories.every((category) => settledCategoryImages[categoryImageKey(category)] === true);
+  const mediaFailed = heroFailed === heroSource || initialGemMedia.some((gem) => settledGemImages[gemImageKey(gem)] === false)
+    || categories.some((category) => settledCategoryImages[categoryImageKey(category)] === false);
+  const loadingFailed = requiredResources.some(({ resource, valid }) => (resource.status === 'error' && resource.data == null) || (resource.status === 'success' && !valid)) || mediaFailed;
+  // A time limit must never expose an unfinished hero. Remain on the branded
+  // loading surface until real critical content is ready, or offer recovery.
+  const readyToReveal = dataReady && heroReady && selectionReady && categoriesReady;
   const events = Array.isArray(eventsResource.data) ? eventsResource.data.filter((event) => event && typeof event === 'object') : [];
-  useEffect(() => {
-    if (!showLoader) return undefined;
-    const deadline = window.setTimeout(() => setDeadlineReached(true), 3500);
-    return () => window.clearTimeout(deadline);
-  }, [showLoader]);
   useEffect(() => {
     if (!readyToReveal || !showLoader) return undefined;
     initialHomeRevealed = true;
     const reveal = window.setTimeout(() => setShowLoader(false), window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180);
     return () => window.clearTimeout(reveal);
   }, [readyToReveal, showLoader]);
-  return <>{showLoader && <HomeLoading leaving={readyToReveal} message="Preparing your collection" />}<main id="main-content" className="pg-home" ref={root}>
+  const retryLoading = () => {
+    requiredResources.filter(({ resource, valid }) => resource.status === 'error' || !valid).forEach(({ resource }) => resource.retry());
+    if (mediaFailed) {
+      setHeroFailed(''); setFailedHeroImage(''); setSettledGemImages({}); setSettledCategoryImages({});
+      setReadyHeroSource(''); setMediaRetry((value) => value + 1);
+    }
+  };
+  return <>{showLoader && <HomeLoading leaving={readyToReveal} failed={loadingFailed} onRetry={retryLoading} message="Preparing your collection" />}<main id="main-content" className="pg-home" ref={root} aria-hidden={showLoader || undefined} inert={showLoader}>
     <section className={`pg-hero${useDefaultHero ? ' pg-hero--ivory' : ''}`} aria-labelledby="pg-hero-title">
-      <div className="pg-hero-picture" style={{ '--pg-hero-preview': `url("${HOME_HERO_PREVIEW}")`, '--pg-hero-mobile-preview': `url("${HOME_MOBILE_PREVIEW}")` }}><ResponsiveImage src={heroSource} mobileSrc={useDefaultHero ? HERO_MOBILE : undefined} fallback={useDefaultHero ? HERO_IMAGE : undefined} width="1774" height="887" maxWidth={1800} sizes="100vw" alt={useDefaultHero ? 'Ceylon gemstones on ivory silk with Sigiriya and a white Sri Lankan stupa in the misty background' : 'Pinnawala Gems featured collection'} fetchPriority="high" loading="eager" preservePrevious onReady={({ failed }) => { if (!failed) setReadyHeroSource(heroSource); }} onError={() => { if (!useDefaultHero) setFailedHeroImage(customHeroImage); }} /></div>
+      <div className="pg-hero-picture" style={{ '--pg-hero-preview': `url("${HOME_HERO_PREVIEW}")`, '--pg-hero-mobile-preview': `url("${HOME_MOBILE_PREVIEW}")` }}><ResponsiveImage src={heroSource} mobileSrc={useDefaultHero ? HERO_MOBILE : undefined} fallback={useDefaultHero ? HERO_IMAGE : undefined} width="1774" height="887" maxWidth={1800} sizes="100vw" alt={useDefaultHero ? 'Ceylon gemstones on ivory silk with Sigiriya and a white Sri Lankan stupa in the misty background' : 'Pinnawala Gems featured collection'} fetchPriority="high" loading="eager" retryKey={mediaRetry} preservePrevious onLoad={(event) => { const image = event.currentTarget; const selected = image.currentSrc; const reveal = () => { if (image.isConnected && image.currentSrc === selected && image.complete && image.naturalWidth) setReadyHeroSource(heroSource); }; if (image.decode) image.decode().then(reveal, reveal); else reveal(); }} onError={() => { if (!useDefaultHero) setFailedHeroImage(customHeroImage); else setHeroFailed(heroSource); }} /></div>
       <div className="pg-hero-shade" />
       <div className="pg-container pg-hero-inner"><div className="pg-hero-copy">
         <p className="pg-eyebrow pg-hero-enter">{BUSINESS.name}</p>
-        <h1 id="pg-hero-title" className={`pg-hero-enter${settingsPending ? ' pg-hero-title--pending' : ''}`} aria-busy={settingsPending}>{settingsPending ? <><span className="pg-sr-only">Preparing your welcome</span><span className="pg-hero-title-line" aria-hidden="true" /><span className="pg-hero-title-line" aria-hidden="true" /></> : <>{words.join(' ')}{' '}<em>{lastWord}</em></>}</h1>
+        <h1 id="pg-hero-title" className="pg-hero-enter">{words.join(' ')}{' '}<em>{lastWord}</em></h1>
         <p className="pg-hero-description pg-hero-enter">{BUSINESS.tagline}</p>
         <div className="pg-hero-actions pg-hero-enter"><Link to="/catalog" className="pg-button pg-button--gold">Discover the collection</Link></div>
         {safeWebUrl(homeData.heroVideo) && <button type="button" className="pg-film-button" onClick={() => setShowFilm(true)}><span aria-hidden="true">▷</span> Watch our story</button>}
@@ -279,9 +291,9 @@ export default function Home() {
 
     {homeData.showEvent && homeData.eventText && <aside className="pg-announcement pg-container"><span className="pg-caption-dot" /><p>{homeData.eventText}</p>{eventLink && <a href={eventLink} target="_blank" rel="noopener noreferrer" className="pg-text-link">Learn more<Arrow diagonal /></a>}</aside>}
 
-    <section id="collections" className="pg-section pg-categories" aria-labelledby="pg-categories-title"><div className="pg-container"><SectionIntro showEyebrow={false} title={<span id="pg-categories-title">The colours of Ceylon.<br /><em>Find your kind of brilliance.</em></span>} link="View the collection" /><div className="pg-category-grid" aria-busy={categoriesResource.status === 'loading'}>{categories.map((category, index) => <CategoryCard key={category._id || category.title} category={category} index={index} />)}</div></div></section>
+    <section id="collections" className="pg-section pg-categories" aria-labelledby="pg-categories-title"><div className="pg-container"><SectionIntro showEyebrow={false} title={<span id="pg-categories-title">The colours of Ceylon.<br /><em>Find your kind of brilliance.</em></span>} link="View the collection" /><div className="pg-category-grid" aria-busy={categoriesResource.status === 'loading'}>{categories.map((category, index) => <CategoryCard key={category._id || category.title} category={category} index={index} requestImages={categoriesResource.data != null} onImageSettled={onCategoryReady} mediaRetry={mediaRetry} />)}</div></div></section>
 
-    <FeaturedCollection resource={gemsResource} onPrimaryReady={onPrimaryReady} />
+    <FeaturedCollection resource={gemsResource} onPrimaryReady={onPrimaryReady} mediaRetry={mediaRetry} />
 
     {/* Prepare the offscreen scene immediately after the initial page reveal,
         keeping shader work out of the welcome/content rendering path. */}

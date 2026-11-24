@@ -55,6 +55,7 @@
 }
 @media (max-width: 599px) {
   .pg-whatsapp { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
+  .pg-whatsapp.is-footer-muted { transform: translate3d(0, 8px, 0); transition: opacity 220ms ease, transform 280ms ease, visibility 0s linear 280ms; }
   .pg-whatsapp__caption { display: none; }
   .pg-whatsapp__trigger { flex-basis: 88px; width: 88px; height: 132px; }
   .pg-whatsapp__badge { width: 28px; height: 28px; }
@@ -63,6 +64,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pg-whatsapp__assistant { animation: none; transform: none; }
+  .pg-whatsapp.is-footer-muted { transition: none; transform: none; }
   .pg-whatsapp, .pg-whatsapp__caption, .pg-whatsapp__trigger, .pg-whatsapp__link { transition: none; }
   .pg-whatsapp, .pg-whatsapp__caption { transform: none; }
   .pg-whatsapp__trigger:hover { transform: none; }

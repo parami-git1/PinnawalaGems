@@ -58,15 +58,15 @@ Correct proxy configuration matters because login, feedback, upload and general 
 Retain the current Render values; `.env.example` is a blank reference and must not replace real configuration.
 
 - Startup requires `MONGO_URI` and `JWT_SECRET`.
-- Password login uses `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
+- Password login uses `ADMIN_USERNAME` and `ADMIN_PASSWORD` in the compatibility `mixed` mode; `ADMIN_AUTH_MODE=google` disables that method and its existing sessions without deleting these stored values.
 - Media uploads use `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET`.
-- Google administrator login, when enabled, uses `GOOGLE_CLIENT_ID` plus `ADMIN_GOOGLE_EMAILS` or `ADMIN_EMAIL`. Keep the frontend's Google client ID aligned with that configuration.
+- Gmail-only administrator login uses `ADMIN_AUTH_MODE=google`, one `ADMIN_GOOGLE_EMAIL`, and the public Google Web OAuth `GOOGLE_CLIENT_ID`. Legacy `ADMIN_GOOGLE_EMAILS` / `ADMIN_EMAIL` lists apply only to compatible mixed-mode configuration and cannot broaden the strict single-owner policy. The current frontend reads the authoritative public client ID from `/api/admin/auth-options`; it no longer requires a matching `VITE_GOOGLE_CLIENT_ID`.
 
 Existing JWT sessions use an eight-hour expiry. Preserve `JWT_SECRET` during this routine deployment to retain compatible sessions. The backend now checks HS256 and the session-age limit explicitly.
 
 ## Verified administrator access: deploy backend first
 
-The matching frontend verifies `GET /api/admin/session` before rendering protected screens. Deploy this backend revision on Render **before** deploying that frontend on Vercel. A missing endpoint must remain a deployment error; the frontend must not fall back to trusting the presence of a browser token. No new environment variables, database migration, administrator password changes or Cloudinary changes are required.
+The matching frontend verifies `GET /api/admin/session` before rendering protected screens. Deploy this backend revision on Render **before** deploying that frontend on Vercel. A missing endpoint must remain a deployment error; the frontend must not fall back to trusting the presence of a browser token. Session verification itself needs no database migration, administrator password changes or Cloudinary changes. Enabling single-owner Gmail access additionally requires the explicit configuration below.
 
 The session endpoint is read-only. A valid administrator bearer token receives `{ "admin": { "role": "admin", "subject": "..." }, "expiresAt": 1234567890000 }`, with optional existing `username`, `email` and `name` identity fields. `expiresAt` is an absolute Unix timestamp in **milliseconds**. The response never includes the bearer token, password or unrelated JWT fields. Authentication and private responses use `Cache-Control: no-store`.
 
@@ -85,6 +85,34 @@ Expect **401**, JSON `Admin authentication required`, and `Cache-Control: no-sto
 If rollback is needed, restore the previous frontend first, then the previous backend revision. Keep the same production data, uploaded assets and environment secrets throughout. The previous frontend can use the existing bearer endpoints while this backend is active; the new frontend requires the session-verification endpoint.
 
 The authorization approach follows the [OWASP Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html) and [REST Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html). This source change and local test suite do not certify the deployment, credentials, proxy configuration or external identity provider.
+
+## Single Gmail owner mode
+
+Follow [ADMIN_GOOGLE_SETUP.md](../ADMIN_GOOGLE_SETUP.md) for the complete manual Google Console, Render and Vercel setup. The owner email has not been supplied or guessed in source. Replace the placeholders with the sole intended Gmail address and Google Web OAuth client ID in the existing Render service:
+
+```dotenv
+ADMIN_AUTH_MODE=google
+ADMIN_GOOGLE_EMAIL=REPLACE_WITH_YOUR_GMAIL
+GOOGLE_CLIENT_ID=REPLACE_WITH_YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+```
+
+Do not copy these placeholders into the running configuration. Preserve the current database, signing secret, administrator credentials and Cloudinary settings. No Gmail password, Google client secret, Gmail API or mailbox scopes are required. Without the explicit `google` mode, the default `mixed` mode preserves previously configured login methods; source preparation alone does not activate Gmail-only access.
+
+After the authorized backend deployment, `/api/health` must include both `admin-session-verification` and `google-owner-policy`. Read-only `GET /api/admin/auth-options` must return `Cache-Control: no-store` and the following public capabilities, with the real public client ID:
+
+```json
+{
+  "passwordEnabled": false,
+  "googleEnabled": true,
+  "googleClientId": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com"
+}
+```
+
+The endpoint never discloses the owner's email or server secrets. Missing, multiple or invalid owner configuration and an unknown authentication mode fail closed; the public website continues working. A missing endpoint is an incompatible deployment, not permission to enable a frontend password fallback.
+
+The backend verifies Google's signed token and intended client, then requires a verified email matching the exact configured owner. Every private API request rechecks the current owner policy for scoped and compatible legacy JWTs. Google-only mode rejects previous password sessions; changing/removing the owner rejects that account's subsequent private requests. Previously rendered client data can remain visible until the next session revalidation or sign-out; the frontend's 60-second verification cache is not an automatic remote-logout timer. This does not authorize another server read or write.
+
+Application sessions remain stateless bearer tokens with an eight-hour expiry. Signing out of Google alone does not revoke an already issued application token. The website's Sign out clears its local session; individual stolen-token revocation, HttpOnly cookies, device binding and app-enforced MFA are not introduced here. Enable Google's two-step verification for the owner account. Rollback must retain a policy-aware compatible backend: an older backend can ignore `ADMIN_AUTH_MODE` and reinstate older login methods. Production Gmail-only access remains pending until the documented operator setup, matching deployments and live checks are complete.
 
 ## Commit and deploy manually
 
@@ -116,7 +144,7 @@ curl -i https://pinnawalagems.onrender.com/api/stock/stones
 
 Expected results without an Authorization header:
 
-- **Health:** HTTP 200, `status: "ok"`, `database: "connected"`. The feature list contains `appointments`, `admin-notes`, `planner-notifications`, `gem-media`, `catalog-pagination` and `security-hardening`. When Render supplies `RENDER_GIT_COMMIT`, `revision` matches the deployed commit.
+- **Health:** HTTP 200, `status: "ok"`, `database: "connected"`. The feature list contains `appointments`, `admin-notes`, `planner-notifications`, `gem-media`, `catalog-pagination`, `security-hardening`, `admin-session-verification` and `google-owner-policy`. When Render supplies `RENDER_GIT_COMMIT`, `revision` matches the deployed commit.
 - **Appointments, admin notes, planner notifications and stock:** HTTP 401 with `Admin authentication required`. Stock reads are now private too. A 401 demonstrates that each route is mounted and protected without reading administrator records.
 - **404:** the source revision, Render root directory, branch or requested API origin still differs from this package.
 - **Health 503:** database readiness has not been reached or the connection was lost. Check the deployment's database connection and environment configuration.

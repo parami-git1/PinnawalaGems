@@ -17,12 +17,12 @@ process.env.ADMIN_PASSWORD = 'SYNTHETIC_TEST_ONLY_PASSWORD';
 process.env.ALLOWED_ORIGINS = 'https://shop.example.test';
 process.env.NODE_ENV = 'test';
 process.env.TRUST_PROXY_HOPS = '0';
-for (const name of ['MONGO_URI', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET', 'GOOGLE_CLIENT_ID', 'ADMIN_GOOGLE_EMAILS', 'ADMIN_EMAIL']) delete process.env[name];
+for (const name of ['MONGO_URI', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET', 'GOOGLE_CLIENT_ID', 'ADMIN_GOOGLE_EMAILS', 'ADMIN_EMAIL', 'ADMIN_AUTH_MODE', 'ADMIN_GOOGLE_EMAIL']) delete process.env[name];
 const security = require('../middleware/security');
 let server, base, Feedback;
 let reviews = [], uploads = [];
 const PNG = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
-const token = (options = {}) => jwt.sign({ sub: 'synthetic-security-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h', ...options });
+const token = (options = {}) => jwt.sign({ sub: 'password-admin:synthetic-admin', username: 'synthetic-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h', ...options });
 
 async function api(route, { method = 'GET', body, headers = {}, raw, auth = false } = {}) {
   const response = await fetch(base + route, { method, headers: { ...(body !== undefined || raw !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(auth ? { Authorization: `Bearer ${token()}` } : {}), ...headers }, ...(body !== undefined ? { body: JSON.stringify(body) } : raw !== undefined ? { body: raw } : {}) });

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { adminAuthPolicy, identityAllowed } = require('./adminAuthPolicy');
 
 const ADMIN_ISSUER = 'pinnawala-gems-admin';
 const ADMIN_AUDIENCE = 'pinnawala-gems-api';
@@ -6,8 +7,7 @@ const MAX_SESSION_SECONDS = 8 * 60 * 60;
 const CLOCK_TOLERANCE_SECONDS = 5;
 
 function allowedGoogleEmails() {
-  return (process.env.ADMIN_GOOGLE_EMAILS || process.env.ADMIN_EMAIL || '')
-    .split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
+  return adminAuthPolicy().googleEmails;
 }
 
 function unauthorized(message = 'Invalid or expired admin token') {
@@ -35,17 +35,14 @@ function verifyAdminToken(token) {
 
   if (Object.hasOwn(claims, 'role')) {
     if (claims.role !== 'admin' || claims.iss !== ADMIN_ISSUER || claims.aud !== ADMIN_AUDIENCE) throw forbidden();
+    if (!identityAllowed(claims)) throw forbidden();
     return claims;
   }
 
   // Existing eight-hour sessions predate explicit role/issuer/audience claims.
   // Accept only identities that the existing administrator login could issue.
   if (claims.iss !== undefined || claims.aud !== undefined) throw forbidden();
-  const passwordAdmin = typeof process.env.ADMIN_USERNAME === 'string' && process.env.ADMIN_USERNAME
-    && claims.username === process.env.ADMIN_USERNAME && claims.sub === `password-admin:${process.env.ADMIN_USERNAME}`;
-  const googleAdmin = typeof claims.email === 'string' && claims.email.trim()
-    && allowedGoogleEmails().includes(claims.email.toLowerCase());
-  if (!passwordAdmin && !googleAdmin) throw forbidden();
+  if (!identityAllowed(claims)) throw forbidden();
   return claims;
 }
 

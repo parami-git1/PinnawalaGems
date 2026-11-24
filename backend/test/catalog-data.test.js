@@ -10,7 +10,9 @@ const CATEGORY = '000000000000000000000071';
 const IMAGE = 'https://media.example.test/cover.jpg';
 process.env.JWT_SECRET = SECRET;
 process.env.NODE_ENV = 'test';
-for (const name of ['MONGO_URI','CLOUDINARY_CLOUD_NAME','CLOUDINARY_API_KEY','CLOUDINARY_API_SECRET','GOOGLE_CLIENT_ID']) delete process.env[name];
+process.env.ADMIN_USERNAME = 'synthetic-catalog-admin';
+process.env.ADMIN_PASSWORD = 'SYNTHETIC_CATALOG_PASSWORD';
+for (const name of ['MONGO_URI','CLOUDINARY_CLOUD_NAME','CLOUDINARY_API_KEY','CLOUDINARY_API_SECRET','GOOGLE_CLIENT_ID', 'ADMIN_AUTH_MODE', 'ADMIN_GOOGLE_EMAIL', 'ADMIN_GOOGLE_EMAILS', 'ADMIN_EMAIL']) delete process.env[name];
 const Stone = require('../models/Stone');
 const Category = require('../models/GemCategory');
 const StockStone = require('../models/StockStone');
@@ -23,7 +25,7 @@ let server, base, rows = [], pipelines = [], updates = [], singletonWrites = [],
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 async function api(route, { method = 'GET', body, anonymous = false } = {}) {
-  const response = await fetch(base + route, { method, headers: { ...(!anonymous ? { Authorization: `Bearer ${jwt.sign({ sub: 'synthetic-catalog-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const response = await fetch(base + route, { method, headers: { ...(!anonymous ? { Authorization: `Bearer ${jwt.sign({ sub: 'password-admin:synthetic-catalog-admin', username: 'synthetic-catalog-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   return { status: response.status, body: await response.json() };
 }
 const create = (body = {}) => api('/api/inventory/stones', { method: 'POST', body: { title: 'Synthetic sapphire', image: IMAGE, categoryId: CATEGORY, ...body } });

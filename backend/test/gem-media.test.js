@@ -16,7 +16,9 @@ const IMAGE = 'https://media.example.test/sapphire-cover.jpg';
 const VIDEO = 'https://media.example.test/sapphire-turn.mp4';
 process.env.JWT_SECRET = SECRET;
 process.env.NODE_ENV = 'test';
-for (const name of ['MONGO_URI', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET', 'GOOGLE_CLIENT_ID', 'ADMIN_USERNAME', 'ADMIN_PASSWORD', 'ADMIN_EMAIL', 'ADMIN_GOOGLE_EMAILS']) delete process.env[name];
+for (const name of ['MONGO_URI', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET', 'GOOGLE_CLIENT_ID', 'ADMIN_EMAIL', 'ADMIN_GOOGLE_EMAILS', 'ADMIN_AUTH_MODE', 'ADMIN_GOOGLE_EMAIL']) delete process.env[name];
+process.env.ADMIN_USERNAME = 'synthetic-gem-media-admin';
+process.env.ADMIN_PASSWORD = 'SYNTHETIC_GEM_MEDIA_PASSWORD';
 
 let server;
 let base;
@@ -36,7 +38,7 @@ const signatures = {
 
 async function api(path, { method = 'GET', body, token = true } = {}) {
   const headers = {};
-  if (token) headers.Authorization = `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'synthetic-gem-media-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}`;
+  if (token) headers.Authorization = `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'password-admin:synthetic-gem-media-admin', username: 'synthetic-gem-media-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}`;
   if (body) headers['Content-Type'] = 'application/json';
   const response = await fetch(base + path, { method, headers, ...(body ? { body: JSON.stringify(body) } : {}) });
   return { status: response.status, body: await response.json() };
@@ -46,7 +48,7 @@ async function upload({ type = 'image/png', name = 'synthetic.png', bytes = sign
   const body = new FormData();
   if (bytes) body.append(field, new Blob([bytes], { type }), name);
   if (second) body.append(field, new Blob([signatures['image/png']], { type: 'image/png' }), 'second.png');
-  const headers = token ? { Authorization: `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'synthetic-gem-media-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}` } : {};
+  const headers = token ? { Authorization: `Bearer ${typeof token === 'string' ? token : jwt.sign({ sub: 'password-admin:synthetic-gem-media-admin', username: 'synthetic-gem-media-admin', role: 'admin', iss: 'pinnawala-gems-admin', aud: 'pinnawala-gems-api' }, SECRET, { expiresIn: '1h' })}` } : {};
   const response = await fetch(`${base}/api/media/upload`, { method: 'POST', headers, body });
   return { status: response.status, body: await response.json() };
 }

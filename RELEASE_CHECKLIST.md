@@ -195,3 +195,18 @@ After an explicitly authorized, completed deployment, use the real website witho
 - [ ] Measure repeated real-network LCP/CLS and actual user-visible loading, recording cache/network/CPU conditions and image/API errors. The latest local median 2.752 s is not a production acceptance result. Keep production sign-off PENDING until real verification passes or the owner explicitly accepts documented limits.
 
 If these frontend checks fail, restore the recorded compatible previous Vercel deployment. If the coordinated backend also requires rollback, restore a compatible frontend before removing `/api/admin/session`. Preserve all MongoDB data, Cloudinary assets and credentials.
+
+## Final complete-reveal and Gmail-owner release — 24 November 2026
+
+This update supersedes the earlier checklist instruction to reveal a title skeleton after a bounded initial wait. Home now reveals only after real required data, its hero, four displayed category photographs and the first three featured photographs are ready. A slow service stays on the branded loader with exit links; failures offer actual retry. Validate both successful loading and recovery without exposing the screenshot's unfinished hero.
+
+For the requested sole Gmail administrator, follow [ADMIN_GOOGLE_SETUP.md](ADMIN_GOOGLE_SETUP.md). New backend settings are `ADMIN_AUTH_MODE=google`, one exact `ADMIN_GOOGLE_EMAIL`, and the public Google Web `GOOGLE_CLIENT_ID`. Preserve all actual existing secrets and records. The frontend reads policy/client ID from the backend; current code does not require `VITE_GOOGLE_CLIENT_ID`. Do not mistake the default compatibility mode for enabled Gmail-only production access.
+
+- [ ] Complete the Google Console origin/client setup and record the sole owner Gmail privately.
+- [ ] Deploy the approved matching Render backend first. Health must advertise `google-owner-policy`; `/api/admin/auth-options` must return `passwordEnabled:false`, `googleEnabled:true` and the correct public client ID. Anonymous `/api/admin/session` must return JSON 401.
+- [ ] Deploy/promote the matching Vercel build. Verify `/workspace/*` hosted no-store/noindex and popup-compatible `Cross-Origin-Opener-Policy: same-origin-allow-popups`. An old API missing auth-options must not be bypassed by frontend fallback login.
+- [ ] Verify actual owner Google login, rejection of a different account, password-method denial, session verification and website sign-out. Use existing records for read-only checks; do not create production test content/uploads.
+- [ ] Test the full Home loader on cold/warm mobile connections and slow/failed requests, the decoded category banner reveal, smooth phone navigation and category filters. Confirm public pages do not load the administrator Google SDK.
+- [ ] Measure fresh LCP/CLS and the actual time the loading overlay disappears. Old lab medians are historical after this loading-policy change. Record real request errors and physical-device behavior before sign-off.
+
+Google sign-out alone does not revoke an app JWT. Current owner policy blocks every new unauthorized private API request; already delivered browser data can remain until revalidation/sign-out. A rollback to old backend code can re-enable password/old allowlist behavior, so use a reviewed policy-aware rollback pair or a forward fix. Never reset MongoDB or delete Cloudinary assets for an authentication rollout.

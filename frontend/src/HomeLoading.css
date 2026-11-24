@@ -9,5 +9,10 @@
 .pg-home-loading p { margin: 13px 0 0; color: #5f6875; font: 400 14px/1.8 'Inter', system-ui, sans-serif; }
 .pg-home-loading__line { display: block; width: 144px; height: 2px; margin-top: 31px; overflow: hidden; background: #e5ddcc; }
 .pg-home-loading__line i { display: block; width: 40%; height: 100%; background: #a88b50; animation: pg-loading-line 1500ms ease-in-out infinite; }
+.pg-home-loading__content > p { max-width: 310px; }
+.pg-home-loading__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 16px; max-width: 380px; margin-top: 25px; }
+.pg-home-loading__actions :is(a, button) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 14px; border: 1px solid #d8cbae; border-radius: 6px; color: #70572b; background: transparent; font: 500 13px/1.4 'Inter', system-ui, sans-serif; text-decoration: none; cursor: pointer; }
+.pg-home-loading__actions button { color: #fff; background: #14243a; border-color: #14243a; }
+.pg-home-loading__actions :is(a, button):focus-visible { outline: 2px solid #9b7a3c; outline-offset: 3px; }
 @keyframes pg-loading-line { from { transform: translateX(-110%); } to { transform: translateX(370%); } }
 @media (prefers-reduced-motion: reduce) { .pg-home-loading, .pg-home-loading::backdrop { transition: none; } .pg-home-loading__line i { animation: none; } .pg-home-loading__line i { width: 100%; opacity: .5; } }
