@@ -272,7 +272,7 @@ export default function Home() {
         <p className="pg-eyebrow pg-hero-enter">{BUSINESS.name}</p>
         <h1 id="pg-hero-title" className={`pg-hero-enter${settingsPending ? ' pg-hero-title--pending' : ''}`} aria-busy={settingsPending}>{settingsPending ? <><span className="pg-sr-only">Preparing your welcome</span><span className="pg-hero-title-line" aria-hidden="true" /><span className="pg-hero-title-line" aria-hidden="true" /></> : <>{words.join(' ')}{' '}<em>{lastWord}</em></>}</h1>
         <p className="pg-hero-description pg-hero-enter">{BUSINESS.tagline}</p>
-        <div className="pg-hero-actions pg-hero-enter"><Link to="/catalog" className="pg-button pg-button--gold">Discover the collection<Arrow /></Link></div>
+        <div className="pg-hero-actions pg-hero-enter"><Link to="/catalog" className="pg-button pg-button--gold">Discover the collection</Link></div>
         {safeWebUrl(homeData.heroVideo) && <button type="button" className="pg-film-button" onClick={() => setShowFilm(true)}><span aria-hidden="true">▷</span> Watch our story</button>}
       </div><div className="pg-hero-footer"><a href="#collections" className="pg-scroll-link"><span>Scroll to discover</span><Arrow /></a></div></div>
     </section>
