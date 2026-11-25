@@ -15,6 +15,7 @@ import {
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import { apiRequest } from './api';
 import './ContactForm.css';
+import './ContactPhone.css';
 import ContactHeroImage from './ContactHeroImage';
 
 /* ─── constants ────────────────────────────────────────────────────── */
@@ -249,10 +250,10 @@ function Contact() {
         <main id="main-content" className="pg-contact-main relative mx-auto max-w-6xl px-5 pb-28 md:px-10">
 
           {/* ── two-column white card — sits on top of the wave ── */}
-          <section className="pg-reveal relative z-10 -mt-16 overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_28px_80px_rgba(11,19,48,.16)] md:-mt-24 md:grid md:grid-cols-[.9fr_1.1fr]">
+          <section className="pg-contact-panel pg-reveal relative z-10 -mt-16 overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_28px_80px_rgba(11,19,48,.16)] md:-mt-24 md:grid md:grid-cols-[.9fr_1.1fr]">
 
             {/* ── LEFT: Get in touch ── */}
-            <div className="relative overflow-hidden rounded-t-[2rem] bg-[#0B1330] px-7 py-10 md:rounded-[2rem_7rem_7rem_2rem] md:px-10 md:py-12">
+            <div className="pg-contact-information relative overflow-hidden rounded-t-[2rem] bg-[#0B1330] px-7 py-10 md:rounded-[2rem_7rem_7rem_2rem] md:px-10 md:py-12">
 
               {/* soft orbital lines make the dark panel feel more organic */}
               <span className="pointer-events-none absolute -right-44 top-1/2 h-[32rem] w-[32rem] -translate-y-1/2 rounded-full border border-[#D9B64A]/10" />
@@ -261,25 +262,25 @@ function Contact() {
 
               <div className="relative z-10">
                 {/* eyebrow */}
-                <p className="text-[9px] font-semibold uppercase tracking-[.35em] text-[#D9B64A]">
+                <p className="pg-contact-intro-eyebrow text-[9px] font-semibold uppercase tracking-[.35em] text-[#D9B64A]">
                   A considered conversation
                 </p>
 
                 {/* heading */}
-                <h2 className="pg-contact-serif mt-3 text-4xl leading-none text-white md:text-5xl">
+                <h2 className="pg-contact-info-heading pg-contact-serif mt-3 text-4xl leading-none text-white md:text-5xl">
                   Get in<br />
                   <em className="text-[#D9B64A]">touch.</em>
                 </h2>
 
-                <p className="mt-5 max-w-xs text-sm leading-6 text-slate-400">
+                <p className="pg-contact-info-intro mt-5 max-w-xs text-sm leading-6 text-slate-400">
                   Whether you are searching for a meaningful gift or a stone to keep forever,
                   begin with a conversation.
                 </p>
 
                 {/* info cards */}
-                <div className="mt-9 space-y-5">
+                <div className="pg-contact-methods mt-9 space-y-5">
                   {infoCards.map((item) => (
-                    <div key={item.label} className="group flex items-start gap-4">
+                    <div key={item.label} className="pg-contact-method group flex items-start gap-4">
                       {/* icon diamond */}
                       <span className="flex h-11 w-11 shrink-0 rotate-45 items-center justify-center rounded-xl bg-[#C9A227]/15 text-[#D9B64A] shadow-lg transition-all duration-300 group-hover:bg-[#C9A227] group-hover:text-[#0B1330]">
                         <span className="-rotate-45 transition-transform duration-300">{item.icon}</span>
@@ -308,7 +309,7 @@ function Contact() {
 
                 {/* social links */}
                 {socials.length > 0 && (
-                  <div className="mt-9 border-t border-white/10 pt-6">
+                  <div className="pg-contact-socials mt-9 border-t border-white/10 pt-6">
                     <div className="flex gap-2">
                       {socials.map(([href, icon, label, hoverBg, hoverText, hoverBorder]) => (
                         <a
@@ -342,7 +343,7 @@ function Contact() {
             </div>
 
             {/* ── RIGHT: Send us a message ── */}
-            <div className="relative bg-white px-7 py-10 md:rounded-l-[4rem] md:px-10 md:py-12">
+            <div className="pg-contact-message relative bg-white px-7 py-10 md:rounded-l-[4rem] md:px-10 md:py-12">
               {/* header */}
               <div className="flex items-end justify-between gap-4">
                 <div>
@@ -454,7 +455,7 @@ function Contact() {
           {/* ════════════════════════════════════════════
               QUICK-INFO STAT STRIP
           ════════════════════════════════════════════ */}
-          <section className="mt-16 grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <section className="pg-contact-practical mt-16 grid grid-cols-1 gap-5 sm:grid-cols-3">
             {[
               {
                 icon: <FaClock />,
@@ -495,7 +496,7 @@ function Contact() {
           {/* ════════════════════════════════════════════
               MAP SECTION
           ════════════════════════════════════════════ */}
-          <section className="relative mt-20 md:mt-28">
+          <section className="pg-contact-map relative mt-20 md:mt-28">
             {/* section header */}
             <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
               <div>

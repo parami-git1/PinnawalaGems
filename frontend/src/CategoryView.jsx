@@ -5,6 +5,7 @@ import { loadCollectionResource } from './collectionData';
 import CollectionBanner from './CollectionBanner';
 import ResponsiveImage from './ResponsiveImage';
 import './CollectionPolish.css';
+import './Catalog.mobile.css';
 
 const EMPTY_FILTERS = { search: '', shape: '', cut: '', origin: '', color: '', certificate: '', min: '', max: '' };
 const PAGE_SIZE = 30;

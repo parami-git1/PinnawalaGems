@@ -1,5 +1,23 @@
 # Pinnawala Gems production release checklist
 
+## 26 November 2026: page-specific phone layouts
+
+**PASS locally; live deployment and physical-device checks remain PENDING.** This is a frontend presentation update. It does not change API contracts, authentication, environment variables, production data or image assets. No commit, push or deployment was performed.
+
+The new layouts apply only at viewport widths **767px and below**. Home, Collection, Feedback, Contact, Workshop and gem details each have their own phone stylesheet. Navbar/footer phone rules are shared. Include `Home.mobile.css`, `Catalog.mobile.css`, `Feedback.mobile.css`, `ContactPhone.css`, `WorkshopPhone.css`, `GemDetailsPhone.css` and `PublicPhoneNavigation.css` plus their component imports/hooks when preparing the approved Git release. This UI change itself requires no Render update; retain the matching backend required by the earlier functional releases below.
+
+- Feedback now uses a short photo journal and a separate light review card. Repeated marketing introductions and duplicate review navigation dots are hidden only on phones. Full photos, photo controls, all three required fields, rating controls, validation, privacy text, error recovery, submission and approved-review navigation remain available.
+- Home has shorter headers, practical category links, horizontal featured summaries, the existing 3D viewer and shorter supporting sections. The shortened hero image is explicitly bounded so it cannot cover the next section heading. Full gem specifications remain in the detail page.
+- Collection has a shorter banner, two-row browsing toolbar and compact cards; search, category selection, sorting, filters, filter clearing, pagination and item links are retained.
+- Contact prioritizes phone/WhatsApp, address and email before the enquiry form. All five fields, opening hours, map and direct contact links remain. Workshop uses one active phone card, image-side controls and a scrollable detail dialog; complete story/contact/location details remain in that dialog. Gem details retain the gallery, certificate and inquiry actions with smaller spacing and 48px actions.
+- The phone menu/footer remove repeated decoration and marketing while retaining navigation, licence and business contacts. Tablet/desktop rules remain untouched.
+
+Verification used the local production build with all APIs/external requests intercepted. Six routes at **320/360/390/430/767px** passed layout checks (30 combinations); comparisons at **768/900/1440px** passed all 18 checks for unchanged rendered desktop/tablet layout. Seventeen matched computed styles and geometry; the 1440px Workshop comparison had identical geometry and byte-identical full-page PNGs, with only computed physical auto-margin serialization differing. Fifteen mobile interaction checks cover photos, rating/required-field validation, failed review submission and successful retry with the retained draft, direct Collection navigation, filters and item/WhatsApp links. Eight further checks cover Workshop long-content sizing, next-card navigation, details/contact/map links and Contact field/native validation at 320/390/767px and 667×375 landscape. Frontend helper tests **31/31**, complete lint and production build passed. Existing large Three.js chunk warning is unchanged.
+
+With the same synthetic content at 390×1000px, Feedback document height fell from **2785px to 1718px**, Home from **6082px to 3877px**, and Contact from **3566px to 2295px**. Feedback's actual form begins around **385px instead of 904px**. These are layout measurements, not loading-speed or live performance claims. Production content and fonts can change exact heights. Evidence: workspace `.tmp/mobile-page-redesign-qa/{baseline,final}/measurements.json`, `comparisons.json`, `interactions.json`, `page-actions.json` and screenshots.
+
+After an authorized Vercel release, check real customer photos, long category/story names, phone keyboard/menu behavior, all contact actions and the review form on an actual phone. Verify desktop appearance before sign-off. No production review, enquiry, WhatsApp message, upload or stock action is needed without separate authorization.
+
 ## 25 November 2026: gemstone inquiries, sold batches and mobile feedback
 
 **Local PASS; deployment and real production checks PENDING.** This change does not authorize a commit, push, deployment, production write or credential change.

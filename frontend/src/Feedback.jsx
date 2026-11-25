@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom';
 import { API_BASE, useRemoteResource } from './hooks/useRemoteResource';
 import './Feedback.css';
+import './Feedback.mobile.css';
 import FeedbackGallery from './FeedbackGallery';
 import { FEEDBACK_STARTER } from './pageHeroAssets';
 

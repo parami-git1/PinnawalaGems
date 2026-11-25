@@ -11,6 +11,7 @@ import './Home.css';
 import './HomeRefinements.css';
 import './HeroRefinement.css';
 import './HomeFinal.css';
+import './Home.mobile.css';
 
 const HERO_IMAGE = '/images/home-ceylon-ivory-hero-v1.webp';
 const HERO_MOBILE = '/images/home-ceylon-ivory-hero-mobile-v1.webp';

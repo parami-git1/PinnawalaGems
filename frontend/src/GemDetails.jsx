@@ -3,6 +3,7 @@ import { useParams, Link, useOutletContext } from 'react-router-dom';
 import { FaWhatsapp } from 'react-icons/fa';
 import { MdEmail, MdVerified } from 'react-icons/md';
 import './GemDetailsPolish.css';
+import './GemDetailsPhone.css';
 import GemMediaGallery from './GemMediaGallery';
 import CertificateViewer from './CertificateViewer';
 import { withBusinessDetails } from './businessDetails';

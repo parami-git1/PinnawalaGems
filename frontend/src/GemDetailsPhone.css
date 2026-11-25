@@ -1,0 +1,34 @@
+/* The item photo, reference and practical details get a phone-sized rhythm. */
+@media (max-width: 767px) {
+  .gem-detail-polish .gem-detail-main { padding: 86px 14px 32px; }
+  .gem-detail-polish .gem-detail-main > div:first-child { margin-bottom: 12px; }
+  .gem-detail-polish .gem-detail-back { padding: 9px 13px; font-size: 12px; letter-spacing: .02em; }
+  .gem-detail-polish .gem-detail-card { border-radius: 14px; box-shadow: 0 8px 26px rgb(11 19 48 / .04); }
+  .gem-detail-polish .gem-detail-card .gem-detail-gallery.pg-gem-media { padding: 12px; border-radius: 14px 14px 0 0; }
+  .gem-detail-polish .pg-gem-media__heading { margin-bottom: 8px; }
+  .gem-detail-polish .pg-gem-media__edition { display: none; }
+  .gem-detail-polish .pg-gem-media__thumbnails { margin-bottom: 8px; gap: 7px; }
+  .gem-detail-polish .pg-gem-media__thumbnail { flex-basis: 56px; height: 60px; }
+  .gem-detail-polish .pg-gem-media__stage .pg-gem-media__asset { aspect-ratio: 1.16; max-height: 360px; }
+  .gem-detail-polish .pg-gem-media__stage .pg-gem-media__asset > img { padding: 14px; }
+  .gem-detail-polish .pg-gem-media__toolbar { min-height: 50px; padding-block: 5px; }
+  .gem-detail-polish .pg-gem-media__expand,
+  .gem-detail-polish .pg-gem-media__toolbar button { width: 44px; height: 44px; }
+  .gem-detail-polish .gem-detail-copy { padding: 20px 16px; }
+  .gem-detail-polish .gem-detail-title { padding-bottom: 16px; margin-bottom: 16px; }
+  .gem-detail-polish .gem-detail-title h1 { margin-bottom: 10px; font-size: clamp(25px, 6.6vw, 30px); line-height: 1.2; }
+  .gem-detail-polish .gem-detail-title p { font-size: 11px; letter-spacing: .02em; }
+  .gem-detail-polish .gem-detail-description { margin-bottom: 16px; font-size: 15px; line-height: 1.7; }
+  .gem-detail-polish .gem-detail-specs { margin-bottom: 18px; padding-block: 16px; row-gap: 15px; column-gap: 14px; }
+  .gem-detail-polish .gem-detail-specs > div > span:first-child { font-size: 11px; letter-spacing: .04em; }
+  .gem-detail-polish .gem-detail-specs > div > span:last-child { font-size: 14px; line-height: 1.5; }
+  .gem-detail-polish .gem-detail-certificate { margin-bottom: 18px; padding: 14px; border-radius: 9px; }
+  .gem-detail-polish .gem-detail-certificate > div:first-child { margin-bottom: 9px; }
+  .gem-detail-polish .gem-detail-certificate > div:first-child span { font-size: 11px; letter-spacing: .03em; }
+  .gem-detail-polish .gem-detail-actions { gap: 10px; padding-top: 18px; }
+  .gem-detail-polish .gem-detail-actions :is(a, button) { min-height: 48px; padding: 12px; border-radius: 9px; font-size: 12px; font-weight: 600; letter-spacing: .025em; line-height: 1.5; box-shadow: none; }
+  .gem-detail-polish .gem-detail-actions > a { background: #208b60; color: #fff; }
+  .gem-detail-polish .gem-detail-actions > a:hover { background: #186c4a; }
+  .pg-gem-media-dialog > header p { font-size: 19px; }
+  .pg-gem-media-dialog button { width: 44px; height: 44px; }
+}

@@ -1,0 +1,45 @@
+/* Workshop stories use one readable card at a time on a phone. */
+@media (max-width: 767px) {
+  .pg-workshop-page { min-height: 0; }
+  .pg-workshop-hero { min-height: 0; padding: 106px 0 38px; clip-path: polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 34px) 100%,0 100%); }
+  .pg-workshop-hero .pg-workshop-hero__layout { width: calc(100% - 40px); }
+  .pg-workshop-hero .pg-workshop-hero__eyebrow { margin-bottom: 12px; font-size: 10px; letter-spacing: .06em; }
+  .pg-workshop-hero .pg-workshop-hero__eyebrow > span,
+  .pg-workshop-hero .pg-workshop-hero__frame { display: none; }
+  .pg-workshop-hero h1 { font-size: clamp(30px, 7.5vw, 38px); line-height: 1.16; }
+  .pg-workshop-hero .pg-workshop-hero__description { max-width: 32ch; margin-top: 14px; font-size: 14px; line-height: 1.65; }
+  .pg-workshop-hero .pg-workshop-hero__link { margin-top: 12px; font-size: 12px; letter-spacing: .03em; }
+  .pg-workshop-hero .pg-workshop-hero__link svg { display: none; }
+  .pg-workshop-archive { padding: 28px 16px 32px; }
+  .pg-workshop-archive > div:first-child { gap: 0; margin-bottom: 18px; }
+  .pg-workshop-archive > div:first-child h2 { font-size: 27px; line-height: 1.2; }
+  .pg-workshop-archive > div:first-child > p { display: none; }
+  .pg-workshop-archive .workshop-track { height: var(--workshop-cards-height, 470px); min-height: 0; }
+  .pg-workshop-archive .workshop-event { width: calc(100% - 8px); border-radius: 16px; box-shadow: 0 8px 24px rgb(11 19 48 / .07); }
+  .pg-workshop-archive .workshop-event[data-active='false'] { display: none; }
+  .pg-workshop-archive .workshop-event-image { height: 180px; }
+  .pg-workshop-archive .workshop-event-image > div:first-child { height: 100%; aspect-ratio: auto; border: 0; border-radius: 0; box-shadow: none; }
+  .pg-workshop-archive .workshop-event-image > span { display: none; }
+  .pg-workshop-archive .workshop-event-copy { padding: 20px; }
+  .pg-workshop-archive .workshop-event-copy > span:first-child { margin-bottom: 10px; font-size: 10px; letter-spacing: .08em; }
+  .pg-workshop-archive .workshop-event-copy > span:nth-child(2) { display: none; }
+  .pg-workshop-archive .workshop-event-copy h3 { font-size: clamp(24px, 6.5vw, 28px); line-height: 1.16; }
+  .pg-workshop-archive .workshop-event-copy > p { margin-top: 12px; font-size: 14px; line-height: 1.65; -webkit-line-clamp: 2; }
+  .pg-workshop-archive .workshop-event-copy > div:last-child { padding-top: 18px; font-size: 11px; letter-spacing: .06em; }
+  .pg-workshop-archive .workshop-event-copy > div:last-child > span:first-child { display: none; }
+  .pg-workshop-archive .pg-workshop-metadata.is-compact { margin-top: 12px; gap: 6px; }
+  .pg-workshop-archive .pg-workshop-metadata.is-compact > p { font-size: 12px; line-height: 1.55; }
+  .pg-workshop-archive .pg-workshop-contacts.is-compact { margin-top: 14px; gap: 8px; }
+  .pg-workshop-archive .pg-workshop-contacts.is-compact > a { font-size: 12px; }
+  .pg-workshop-archive button[aria-label='Previous workshop'],
+  .pg-workshop-archive button[aria-label='Next workshop'] { top: 90px; width: 44px; height: 44px; }
+  .pg-workshop-dialog .pg-workshop-dialog__photo { padding: 12px; }
+  .pg-workshop-dialog .pg-workshop-dialog__photo > div { max-height: 200px; border-radius: 9px; }
+  .pg-workshop-dialog .pg-workshop-dialog__copy { padding: 20px; }
+  .pg-workshop-dialog h2 { font-size: 30px; line-height: 1.12; }
+  .pg-workshop-dialog .pg-workshop-dialog__rule { margin-block: 14px; }
+  .pg-workshop-dialog .pg-workshop-dialog__description { margin-top: 16px; font-size: 15px; line-height: 1.7; }
+  .pg-workshop-dialog .pg-workshop-dialog__signature { display: none; }
+  .pg-workshop-dialog .pg-workshop-metadata { margin-top: 16px; padding-block: 12px; }
+  .pg-workshop-dialog .pg-workshop-contacts { margin-top: 18px; }
+}

@@ -1,0 +1,51 @@
+/* Collection browsing on phones puts the search, refinements and stones ahead
+   of desktop decoration. All controls and the full item pages stay available. */
+@media (max-width: 767px) {
+  .collection-polish .collection-shell { width: calc(100% - 28px); }
+  .collection-polish .collection-breadcrumb { display: none; }
+  .collection-polish .gem-collection-banner { min-height: 116px; margin-top: 12px; border-radius: 8px; }
+  .collection-polish .gem-collection-banner__copy { max-width: 74%; padding: 18px; }
+  .collection-polish .gem-collection-banner h1 { font-size: clamp(27px, 7.4vw, 34px); line-height: 1.05; letter-spacing: -.7px; overflow-wrap: break-word; }
+  .collection-polish .collection-eyebrow,
+  .collection-polish .gem-collection-banner__signature { display: none; }
+  .collection-polish .collection-below-banner { margin-top: 10px; }
+  .collection-polish .collection-categories-toggle { margin-bottom: 8px; min-height: 44px; border-radius: 7px; font-size: 13px !important; }
+  .collection-polish .collection-category-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .collection-polish .gem-category-option { min-height: 52px; padding: 8px; gap: 8px; }
+  .collection-polish .gem-category-photo { width: 28px; height: 28px; flex-basis: 28px; }
+  .collection-polish .gem-category-name { font-size: 13px; line-height: 1.4; overflow-wrap: break-word; }
+  .collection-polish .gem-category-count { font-size: 12px; }
+  .collection-polish .collection-aligned-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; padding: 10px; margin-bottom: 12px; }
+  .collection-polish .collection-search { width: 100%; min-height: 44px; }
+  .collection-polish .collection-search input { height: 44px; font-size: 16px; }
+  .collection-polish .collection-controls__right { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 112px) auto; gap: 8px; width: 100%; }
+  .collection-polish .collection-result-count { grid-column: 1; grid-row: 1; min-width: 0; font-size: 12px; line-height: 1.4; white-space: normal; }
+  .collection-polish .collection-sort { grid-column: 2; grid-row: 1; }
+  .collection-polish .collection-sort select { width: 100%; min-height: 44px; padding-inline: 8px; font-size: 16px; }
+  .collection-polish .collection-refine-toggle { grid-column: 3; grid-row: 1; min-height: 44px; padding-inline: 10px; gap: 5px; font-size: 12px !important; }
+  .collection-polish .collection-clear { grid-column: 1 / -1; grid-row: 2; min-height: 44px; text-align: right; font-size: 12px !important; }
+  .collection-polish .collection-catalog:not(:has(.collection-active-filters)) .collection-clear { display: none; }
+  .collection-polish .collection-filter-panel { padding: 12px; }
+  .collection-polish .collection-filter-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .collection-polish .collection-filter-field > span,
+  .collection-polish .collection-filter-field legend { font-size: 13px; }
+  .collection-polish .collection-filter-field select,
+  .collection-polish .collection-filter-field input { height: 44px; font-size: 16px; }
+  .collection-polish .collection-weight { grid-column: 1 / -1; }
+  .collection-polish .gem-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+  .collection-polish .gem-product-photo { aspect-ratio: 1.15; }
+  .collection-polish .gem-product-reference,
+  .collection-polish .gem-product-arrow { display: none; }
+  .collection-polish .gem-product-photo__bottom { inset: auto 6px 6px; }
+  .collection-polish .gem-product-certificate { font-size: 10px; }
+  .collection-polish .gem-product-copy { padding: 10px 10px 6px; }
+  .collection-polish .gem-product-kicker { gap: 3px; margin-bottom: 5px; }
+  .collection-polish .gem-product-kicker > span:first-child { font-size: 11px; line-height: 1.4; white-space: normal; }
+  .collection-polish .gem-product-weight { font-size: 12px; }
+  .collection-polish .gem-product-copy h3 { font-size: 19px; line-height: 1.2; letter-spacing: -.2px; overflow-wrap: break-word; }
+  .collection-polish .gem-product-meta { font-size: 12px; line-height: 1.5; margin-block: 7px 6px; }
+  .collection-polish .gem-product-detail { min-height: 44px; padding-top: 5px; font-size: 12px; }
+  .collection-polish .collection-active-filters { gap: 7px; }
+  .collection-polish .collection-active-filters > button { min-height: 44px; }
+  .collection-polish .collection-pagination { flex-wrap: wrap; font-size: 12px; }
+}

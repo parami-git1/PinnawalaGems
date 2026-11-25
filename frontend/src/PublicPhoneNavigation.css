@@ -1,0 +1,36 @@
+/* Keep the familiar navigation, with less mobile-only ornament and repetition. */
+@media (max-width: 767px) {
+  .pg-nav .pg-nav__inner { padding-inline: 16px; }
+  .pg-nav .pg-nav__brand { gap: 7px; }
+  .pg-nav .pg-nav__wordmark > span:first-child { font-size: clamp(16px, 4.6vw, 18px); letter-spacing: -.35px; }
+  .pg-nav .pg-nav__mobile-toggle { border-radius: 8px; }
+  .pg-nav .pg-nav__mobile { padding-top: 8px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .pg-nav .pg-nav__mobile-eyebrow,
+  .pg-nav .pg-nav__mobile-note,
+  .pg-nav .pg-nav__mobile-link > svg { display: none; }
+  .pg-nav .pg-nav__mobile-link { min-height: 48px; padding-block: 10px; font-size: 15px; font-weight: 500; letter-spacing: 0; }
+  .pg-nav .pg-nav__mobile-categories { padding: 4px 0 10px 12px; }
+  .pg-nav .pg-nav__mobile-categories a { font-size: 14px; }
+  .pg-nav .pg-nav__mobile-categories .pg-nav__mobile-view-all { font-size: 13px; }
+  .pg-nav .pg-nav__mobile-visit { margin-top: 12px; font-size: 14px; }
+  .pg-footer .pg-footer__inner { width: calc(100% - 36px); }
+  .pg-footer .pg-footer__main { grid-template-columns: 1fr; gap: 20px; padding-block: 26px 22px; }
+  .pg-footer .pg-footer__brand-column { padding-bottom: 18px; border-bottom: 1px solid #293347; }
+  .pg-footer .pg-footer__brand { gap: 11px; }
+  .pg-footer .pg-footer__logo { width: 42px; height: 42px; }
+  .pg-footer .pg-footer__logo img { width: 36px; height: 36px; }
+  .pg-footer .pg-footer__brand-name { font-size: 20px; line-height: 1.2; }
+  .pg-footer .pg-footer__brand-name > span { margin-top: 5px; font-size: 10px; letter-spacing: .04em; }
+  .pg-footer .pg-footer__tagline,
+  .pg-footer .pg-footer__description > br,
+  .pg-footer .pg-footer__origin { display: none; }
+  .pg-footer .pg-footer__description { margin-top: 12px; font-size: 12px; line-height: 1.6; }
+  .pg-footer .pg-footer__contact h2 { margin-bottom: 8px; font-size: 12px; letter-spacing: .06em; }
+  .pg-footer .pg-footer__contact address > a { width: 100%; min-height: 44px; padding-block: 7px; font-size: 13px; line-height: 1.6; }
+  .pg-footer .pg-footer__contact .pg-footer__address { padding-top: 0; font-size: 13px; }
+  .pg-footer .pg-footer__whatsapp { width: 100%; min-height: 46px; margin-top: 12px; font-size: 13px; }
+  .pg-footer .pg-footer__whatsapp > svg:last-child { margin-left: auto; }
+  .pg-footer .pg-footer__bottom { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; min-height: 66px; padding-block: 10px; }
+  .pg-footer .pg-footer__bottom p { flex: 1; max-width: none; font-size: 10px; line-height: 1.6; }
+  .pg-footer .pg-footer__bottom button { flex-shrink: 0; min-height: 44px; padding: 4px 0 4px 8px; font-size: 11px; gap: 5px; }
+}

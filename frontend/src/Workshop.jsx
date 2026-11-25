@@ -2,6 +2,7 @@ import { useState, useEffect, useId, useRef } from 'react';
 import { useRemoteResource } from './hooks/useRemoteResource';
 import './WorkshopDialog.css';
 import './WorkshopHero.css';
+import './WorkshopPhone.css';
 import ResponsiveImage from './ResponsiveImage';
 import { safeWorkshopLocationUrl, workshopContactLinks, workshopDateTimeLabel, workshopEventLabel } from './workshopContent';
 import { useGSAP } from '@gsap/react';
@@ -123,7 +124,7 @@ function Workshop() {
   }, [resource.data]);
 
   return (
-    <div ref={pageRef} className="relative min-h-screen overflow-hidden bg-[#F7F5F0] font-inter text-[#101936]">
+    <div ref={pageRef} className="pg-workshop-page relative min-h-screen overflow-hidden bg-[#F7F5F0] font-inter text-[#101936]">
       <section className="pg-workshop-hero" aria-labelledby="pg-workshop-hero-title">
         <ResponsiveImage
           className="pg-workshop-hero__background"
@@ -162,6 +163,7 @@ function Workshop() {
             <article
               key={event._id || `${event.title}-${idx}`}
               data-direction={idx % 2 === 0 ? 'left' : 'right'}
+              data-active={idx === currentIndex}
               style={{
                 transform: `translateX(calc(-50% ${idx < currentIndex ? '- clamp(210px, 25vw, 330px)' : idx > currentIndex ? '+ clamp(210px, 25vw, 330px)' : ''})) scale(${idx === currentIndex ? 1 : .72})`,
                 opacity: Math.abs(idx - currentIndex) > 1 ? 0 : idx === currentIndex ? 1 : .58,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BUSINESS } from './businessDetails';
 import './Navbar.css';
+import './PublicPhoneNavigation.css';
 import ResponsiveImage from './ResponsiveImage';
 import { warmPageHero } from './pageHeroWarmup';
 
