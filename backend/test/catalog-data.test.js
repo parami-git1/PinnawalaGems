@@ -172,7 +172,8 @@ test('search input is escaped as literal text and numeric ranges stay numeric th
   const match = stages[0].$match;
   assert.deepEqual(match.__caratWeight, { $gte: 2, $lte: 10 }); assert.equal(match.hasCertificate, false);
   assert.equal(match.$or[0].title.$regex, '\\(a\\+\\)\\+\\$\\['); assert.equal(new RegExp(escapeRegex(pattern)).test(pattern), true);
-  assert.ok(pipeline[0].$set.__caratWeight.$ifNull, 'Legacy weight strings are converted before numeric matching/sorting.');
+  assert.deepEqual(pipeline[0], { $match: { archivedAt: null } }, 'Sold records are excluded before every facet.');
+  assert.ok(pipeline.find((stage) => stage.$set?.__caratWeight).$set.__caratWeight.$ifNull, 'Legacy weight strings are converted before numeric matching/sorting.');
   assert.deepEqual(stages.find((stage) => stage.$sort).$sort, { __caratMissing: 1, __caratWeight: 1, _id: 1 });
 });
 

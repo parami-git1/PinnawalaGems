@@ -248,6 +248,70 @@
   .feedback-review-card blockquote { font-size: 19px; }
   .feedback-review-nav { width: 44px; flex-basis: 44px; }
 }
+/* Give the customer photographs their own space on handheld screens. The
+   desktop editorial caption stays over the image; the mobile story follows it. */
+@media (max-width: 899px) {
+  .feedback-gallery {
+    --feedback-photo-height: clamp(260px, 74vw, 440px);
+    display: grid;
+    grid-template-rows: var(--feedback-photo-height) auto;
+    min-height: 0;
+  }
+  .feedback-gallery-preview,
+  .feedback-gallery-photo,
+  .feedback-gallery-shade,
+  .feedback-photo-controls {
+    inset: 0 0 auto;
+    height: var(--feedback-photo-height);
+  }
+  .feedback-gallery-preview { background-size: contain; background-repeat: no-repeat; }
+  .feedback-gallery-photo { object-fit: contain; background: #0b1330; }
+  .feedback-gallery-shade { background: linear-gradient(0deg, rgb(8 19 47 / .16), transparent 30%); }
+  .feedback-gallery::before,
+  .feedback-gallery::after { display: none; }
+  .feedback-gallery-caption {
+    position: relative;
+    grid-row: 2;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    max-width: none;
+    padding: 26px 28px 18px;
+    border: 0;
+    border-bottom: 1px solid rgb(214 183 94 / .2);
+    border-radius: 0;
+    background: #0b1330;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .feedback-gallery .feedback-eyebrow { font-size: 10px; letter-spacing: 1.8px; }
+  .feedback-gallery h1 { font-size: clamp(36px, 8vw, 44px); line-height: 1.02; }
+  .feedback-gallery-description { max-width: 520px; font-size: 14px; line-height: 1.75; }
+  .feedback-caption-rule { margin-block: 16px 13px; }
+  .feedback-photo-arrows > button:first-child,
+  .feedback-photo-arrows > button:last-child { top: 50%; width: 44px; height: 44px; transform: translateY(-50%); }
+  .feedback-photo-arrows > button:first-child { left: 12px; }
+  .feedback-photo-arrows > button:last-child { right: 12px; }
+  .feedback-photo-dots { margin: 10px -8px -8px; }
+  .feedback-photo-dots > button,
+  .feedback-photo-dots > button.is-active { width: 44px; height: 44px; }
+  .feedback-form-panel { padding: 30px 28px 42px; }
+  .feedback-form-heading .feedback-eyebrow { font-size: 10px; letter-spacing: 1.6px; }
+  .feedback-form-heading > p:last-child { margin-top: 20px; font-size: 14px; line-height: 1.75; }
+  .feedback-form-intro h3 { font-size: 14px; }
+  .feedback-form-intro > p { font-size: 12px; }
+  .feedback-field > label,
+  .feedback-rating legend { font-size: 12px; letter-spacing: .7px; }
+  .feedback-submit { font-size: 12px !important; letter-spacing: 1px; }
+  .feedback-submit-notices > p { font-size: 12px; }
+  .feedback-reviews { margin-top: 0; padding: 34px 28px 48px; border-radius: 32px 32px 0 0; }
+}
+@media (max-width: 599px) {
+  .feedback-gallery-caption { padding: 24px 20px 16px; }
+  .feedback-form-panel { padding-inline: 20px; }
+  .feedback-reviews { padding-inline: 20px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .pg-feedback *, .pg-feedback *::before, .pg-feedback *::after { animation: none !important; transition: none !important; }
 }

@@ -17,4 +17,26 @@
 .pg-workshop-status { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 22px; padding: 14px 18px; border: 1px solid #e2d8c3; border-radius: 8px; color: #6d6049; background: #fbf8ef; font-size: 12px; }
 .pg-workshop-status button { padding: 9px 12px; flex-shrink: 0; border: 1px solid #d5c5a3; border-radius: 5px; color: #705d35; background: #fff; }
 .workshop-event-copy > p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.pg-workshop-card-open { position: absolute; z-index: 1; inset: 0; width: 100%; border: 0; border-radius: inherit; background: transparent; cursor: pointer; }
+.pg-workshop-card-open:focus-visible { outline: 3px solid #c9a227; outline-offset: -4px; }
+.pg-workshop-metadata { display: grid; gap: 10px; margin-top: 24px; padding-block: 17px; border-block: 1px solid #dfdacd; color: #596c84; }
+.pg-workshop-metadata > p, .pg-workshop-metadata > a { display: flex; align-items: flex-start; gap: 9px; margin: 0; color: inherit; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.pg-workshop-metadata svg, .pg-workshop-contacts svg { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 2px; }
+.pg-workshop-metadata > a { position: relative; z-index: 2; width: fit-content; align-items: center; min-height: 44px; color: #86682e; text-decoration: underline; text-underline-offset: 4px; }
+.pg-workshop-metadata.is-compact { gap: 7px; margin-top: 18px; padding: 0; border: 0; color: #d8e0ed; }
+.pg-workshop-metadata.is-compact > p { font-size: 13px; line-height: 1.65; }
+.pg-workshop-metadata.is-compact svg { color: #d6b76a; width: 16px; height: 16px; flex-basis: 16px; }
+.pg-workshop-contacts { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 25px; }
+.pg-workshop-contacts > a { display: flex; flex: 1 1 155px; align-items: flex-start; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 14px; border: 1px solid #cdbb92; border-radius: 8px; background: #fffaf0; color: #705727; font-size: 14px; font-weight: 600; line-height: 1.5; }
+.pg-workshop-contacts > a:nth-child(2) { border-color: #bfd4ca; background: #f1f8f4; color: #28664f; }
+.pg-workshop-contacts small { display: block; margin-top: 3px; font-size: 12px; font-weight: 400; overflow-wrap: anywhere; }
+.pg-workshop-contacts.is-compact { gap: 9px; margin-top: 19px; }
+.pg-workshop-contacts.is-compact > a { flex: 1 1 105px; min-height: 44px; padding: 10px 12px; border-color: rgb(214 183 106 / .4); background: rgb(214 183 106 / .08); color: #ead6a5; font-size: 12px; }
+.pg-workshop-contacts.is-compact > a:nth-child(2) { border-color: rgb(137 190 166 / .35); background: rgb(137 190 166 / .09); color: #c3e2d2; }
+.pg-workshop-contacts a:focus-visible, .pg-workshop-metadata a:focus-visible { outline: 3px solid #aa8b4f; outline-offset: 3px; }
+.pg-workshop-empty { display: flex; align-items: center; flex-direction: column; gap: 14px; padding: 50px 25px; border: 1px solid #dfdacd; border-radius: 16px; background: #fffdf9; text-align: center; }
+.pg-workshop-empty > svg { width: 30px; height: 30px; color: #a48a50; }
+.pg-workshop-empty h3 { color: #14243a; font: 500 30px/1.2 'Cormorant Garamond',Georgia,serif; }
+.pg-workshop-empty p { max-width: 450px; color: #657184; font-size: 14px; line-height: 1.8; }
+.pg-workshop-empty a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 11px 20px; border: 1px solid #bfa76f; border-radius: 7px; color: #705727; font-size: 14px; }
 @media(max-width:767px) { .pg-workshop-dialog { width: calc(100vw - 22px); max-height: calc(100dvh - 24px); border-radius: 15px; } .pg-workshop-dialog > article { grid-template-columns: 1fr; } .pg-workshop-dialog__photo { padding: 18px; } .pg-workshop-dialog__photo > div { max-height: 260px; } .pg-workshop-dialog__copy { padding: 27px 24px; } .pg-workshop-dialog > header { padding: 11px 15px; } .pg-workshop-status { flex-wrap: wrap; } }

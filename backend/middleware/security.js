@@ -54,7 +54,7 @@ function configureProxy(app) {
 function apiCaching(req, res, next) {
   res.set('Cache-Control', 'no-store');
   res.vary('Authorization');
-  const publicRead = req.method === 'GET' && !req.headers.authorization && /^\/(?:home|contact|feedback|workshop|event-ads|inventory\/(?:categories(?:\/[^/]+\/stones)?|stones(?:\/[^/]+)?|top-gems))\/?$/.test(req.path);
+  const publicRead = req.method === 'GET' && !req.headers.authorization && /^\/(?:home|contact|feedback|event-ads|inventory\/(?:categories(?:\/[^/]+\/stones)?|stones(?:\/[^/]+)?|top-gems))\/?$/.test(req.path);
   const send = res.json;
   res.json = function (body) {
     if (publicRead && this.statusCode >= 200 && this.statusCode < 300) this.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');

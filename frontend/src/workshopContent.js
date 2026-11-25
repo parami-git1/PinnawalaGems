@@ -40,7 +40,7 @@ export function normalizeWorkshopPhone(value) {
 }
 
 export function safeWorkshopLocationUrl(value) {
-  if (typeof value !== 'string' || !value.trim() || value.length > 2048 || /[\\\u0000-\u001f\u007f]/.test(value)) return '';
+  if (typeof value !== 'string' || !value.trim() || value.length > 2048 || [...value].some(character => character === '\\' || character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return '';
   try {
     const url = new URL(value.trim());
     return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : '';

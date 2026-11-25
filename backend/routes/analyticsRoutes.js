@@ -8,6 +8,7 @@ router.get(['/', '/dashboard-stats'], requireAdmin, async (req, res) => {
   try {
     const [stats, categoryStats] = await Promise.all([
       Stone.aggregate([
+      { $match: { archivedAt: null } },
       {
         $facet: {
           totals: [{
@@ -60,6 +61,7 @@ router.get(['/', '/dashboard-stats'], requireAdmin, async (req, res) => {
       }
       ]),
       Stone.aggregate([
+        { $match: { archivedAt: null } },
         { $addFields: { numericWeight: { $cond: [{ $regexMatch: { input: { $toString: { $ifNull: ['$weight', ''] } }, regex: '^\\d+(\\.\\d+)?$' } }, { $toDouble: '$weight' }, null] } } },
         { $group: { _id: '$categoryId', stones: { $sum: 1 }, quantity: { $sum: { $ifNull: ['$quantity', 0] } }, averageWeight: { $avg: '$numericWeight' }, averagePrice: { $avg: '$price' }, minWeight: { $min: '$numericWeight' }, maxWeight: { $max: '$numericWeight' } } },
         { $lookup: { from: 'gemcategories', localField: '_id', foreignField: '_id', as: 'category' } },

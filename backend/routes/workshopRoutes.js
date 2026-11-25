@@ -1,54 +1,42 @@
 const express = require('express');
-const router = express.Router();
 const WorkshopStep = require('../models/WorkshopStep');
 const requireAdmin = require('../middleware/adminAuth');
+const { objectId, routeError } = require('../utils/catalogData');
+const { publicWorkshopQuery, workshopPayload } = require('../utils/workshopContent');
+const router = express.Router();
 
-// Get all workshop steps
-router.get('/', async (req, res) => {
-  try {
-    // 1 වෙනුවට -1 දැම්මාම අලුත්ම ඒවා (newest) උඩටම එනවා
-    const steps = await WorkshopStep.find().sort({ createdAt: -1 }); 
-    res.json(steps);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+// Read-time visibility needs no cron process and survives service restarts.
+router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+router.get('/admin', requireAdmin, async (_req, res) => {
+  try { res.json(await WorkshopStep.find({}).sort({ createdAt: -1, _id: -1 })); }
+  catch (error) { routeError(res, error); }
 });
-
-// Add a new workshop step (Admin only)
+router.get('/', async (_req, res) => {
+  try { res.json(await WorkshopStep.find(publicWorkshopQuery()).sort({ createdAt: -1, _id: -1 })); }
+  catch (error) { routeError(res, error); }
+});
 router.post('/', requireAdmin, async (req, res) => {
-  const { title, description, imageUrl } = req.body;
-  const newStep = new WorkshopStep({ title, description, imageUrl });
   try {
-    const savedStep = await newStep.save();
-    res.status(201).json(savedStep);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+    const post = new WorkshopStep(workshopPayload(req.body));
+    await post.save(); res.status(201).json(post);
+  } catch (error) { routeError(res, error); }
 });
-
-// Update a workshop step (Admin only)
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
-    const updatedStep = await WorkshopStep.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
-    if (!updatedStep) return res.status(404).json({ message: 'Workshop step not found' });
-    res.json(updatedStep);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+    const id = objectId(req.params.id, 'Workshop post');
+    const previous = await WorkshopStep.findById(id);
+    if (!previous) return res.status(404).json({ message: 'Workshop post not found' });
+    const payload = workshopPayload(req.body, previous);
+    const post = await WorkshopStep.findByIdAndUpdate(id, { $set: payload }, { new: true, runValidators: true });
+    if (!post) return res.status(404).json({ message: 'Workshop post not found' });
+    res.json(post);
+  } catch (error) { routeError(res, error); }
 });
-
-// Delete a workshop step (Admin only)
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {
-    await WorkshopStep.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Workshop step deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    const post = await WorkshopStep.findByIdAndDelete(objectId(req.params.id, 'Workshop post'));
+    if (!post) return res.status(404).json({ message: 'Workshop post not found' });
+    res.json({ message: 'Workshop post deleted successfully' });
+  } catch (error) { routeError(res, error); }
 });
-
 module.exports = router;

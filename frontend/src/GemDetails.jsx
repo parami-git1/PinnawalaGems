@@ -5,8 +5,9 @@ import { MdEmail, MdVerified } from 'react-icons/md';
 import './GemDetailsPolish.css';
 import GemMediaGallery from './GemMediaGallery';
 import CertificateViewer from './CertificateViewer';
-import { BUSINESS, withBusinessDetails } from './businessDetails';
+import { withBusinessDetails } from './businessDetails';
 import { apiRequest } from './api';
+import { gemWhatsAppUrl } from './gemInquiry';
 
 function GemDetails() {
   /* ── All existing state — untouched ─────────────────────────────────── */
@@ -22,7 +23,7 @@ function GemDetails() {
   /* ── All existing fetches — untouched ───────────────────────────────── */
   useEffect(() => {
     const controller = new AbortController();
-    apiRequest(`inventory/stones/${encodeURIComponent(stoneId)}`, { signal: controller.signal }, { auth: false })
+    apiRequest(`inventory/stones/${encodeURIComponent(stoneId)}`, { signal: controller.signal, cache: 'no-store' }, { auth: false })
       .then(data => { if (!controller.signal.aborted) { setGem(data); setLoadError(null); setLoadedStoneId(stoneId); setLoading(false); } })
       .catch((error) => { if (!controller.signal.aborted) { setGem(null); setLoadError(error); setLoadedStoneId(stoneId); setLoading(false); } });
 
@@ -30,11 +31,6 @@ function GemDetails() {
   }, [stoneId, attempt]);
 
   /* ── All existing handlers — untouched ──────────────────────────────── */
-  const handleWhatsAppInquiry = () => {
-    const message = `Hello ${BUSINESS.name}, I'm interested in the ${gem.title} (Reference ID: ${gem.stoneId || gem._id}). Could you provide more details?`;
-    window.open(`https://wa.me/${contactInfo.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
-  };
-
   const handleEmailInquiry = () => {
     const subject = `Inquiry regarding ${gem.title}`;
     const body    = `Hello,\n\nI am interested in the ${gem.title} (Reference ID: ${gem.stoneId || gem._id}) from your collection. Please send me more information.\n\nThank you.`;
@@ -149,15 +145,16 @@ function GemDetails() {
 
             {/* CTAs */}
             <div className="gem-detail-actions mt-auto flex flex-col gap-3 pt-6 border-t border-slate-200">
-              <button
-                onClick={handleWhatsAppInquiry}
+              <a
+                href={gemWhatsAppUrl(gem, contactInfo.whatsappNumber, window.location.origin)}
+                target="_blank" rel="noopener noreferrer"
                 className="w-full rounded-2xl bg-[#25D366] text-white font-inter font-bold py-4 px-5
                            tracking-[0.15em] uppercase hover:bg-[#1ebe57] transition-all duration-300
                            flex items-center justify-center gap-3 shadow-[0_18px_35px_rgba(37,211,102,0.28)] hover:-translate-y-0.5"
               >
                 <FaWhatsapp className="text-xl" />
                 Inquire via WhatsApp
-              </button>
+              </a>
               <button
                 onClick={handleEmailInquiry}
                 className="w-full rounded-2xl bg-blue-950 text-white font-inter font-bold py-4 px-5

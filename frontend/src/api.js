@@ -81,4 +81,4 @@ export async function fetchAllRecords(endpoint, { signal } = {}) {
   } finally { window.clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
 }
 
-export const fetchAllGemstones = (options) => fetchAllRecords('/inventory/stones', options);
+export const fetchAllGemstones = (options) => fetchAllRecords('/inventory/admin/stones', options);

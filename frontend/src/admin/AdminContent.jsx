@@ -46,7 +46,7 @@ export function WorkshopPanel({ workshop, onSave, onDelete, loading = false }) {
   const [search, setSearch] = useState('');
   const [publicationFilter, setPublicationFilter] = useState('all');
   const [expanded, setExpanded] = useState({ event: false, location: false, contacts: false });
-  const [now, setNow] = useState(Date.now);
+  const [now, setNow] = useState(() => Date.now());
   const [status, setStatus] = useState(null);
   const action = useRef(false);
   const editor = useRef(null);
@@ -78,9 +78,10 @@ export function WorkshopPanel({ workshop, onSave, onDelete, loading = false }) {
     window.requestAnimationFrame(() => editor.current?.querySelector(`[name="${field}"]`)?.focus());
   };
   const publicationAction = form.publicationStatus === 'scheduled' ? 'Schedule post' : form.publicationStatus === 'draft' ? 'Save draft' : isEditing ? 'Update post' : 'Publish post';
-  const save = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (action.current || loading || uploadBusy.current) return;
+    const submittedAt = new Date().getTime();
     if (!form.title.trim() || !form.description.trim() || !form.imageUrl.trim()) { setStatus({ type: 'error', message: 'Add a title, description and an image before publishing.' }); return; }
     const payload = Object.fromEntries(Object.keys(EMPTY_WORKSHOP).map((field) => [field, form[field]]));
     if (isEditing) payload._id = form._id;
@@ -90,7 +91,7 @@ export function WorkshopPanel({ workshop, onSave, onDelete, loading = false }) {
       const unchanged = original?.publicationStatus === 'scheduled' && form.publishAt === sriLankaInput(original.publishAt);
       payload.publishAt = unchanged ? original.publishAt : sriLankaInstant(form.publishAt);
       if (!payload.publishAt) { invalid('Choose a valid publication date and time in Sri Lanka time.', 'publishAt'); return; }
-      if (new Date(payload.publishAt).getTime() <= Date.now() && !unchanged) { invalid('Choose a future publication time, or select Publish now.', 'publishAt'); return; }
+      if (new Date(payload.publishAt).getTime() <= submittedAt && !unchanged) { invalid('Choose a future publication time, or select Publish now.', 'publishAt'); return; }
     }
     if (form.eventDate && !isDateKey(form.eventDate)) { invalid('Choose a valid event date.', 'eventDate', 'event'); return; }
     if (form.eventTime && (!form.eventDate || !/^([01]\d|2[0-3]):[0-5]\d$/.test(form.eventTime))) { invalid('Add an event date before setting its time.', 'eventDate', 'event'); return; }
@@ -101,8 +102,8 @@ export function WorkshopPanel({ workshop, onSave, onDelete, loading = false }) {
     }
     action.current = true; setBusy('save'); setStatus(null);
     try {
-      await onSave(payload); reset(); setNow(Date.now());
-      setStatus({ type: 'success', message: payload.publicationStatus === 'scheduled' ? `Workshop post scheduled for ${workshopDateTimeLabel(payload.publishAt)} (Sri Lanka time).` : payload.publicationStatus === 'draft' ? 'Workshop draft saved. It is not visible on the public website.' : isEditing ? 'Workshop post updated.' : 'Workshop post published.' });
+      await onSave(payload); reset(); setNow(new Date().getTime());
+      setStatus({ type: 'success', message: payload.publicationStatus === 'scheduled' ? new Date(payload.publishAt).getTime() <= submittedAt ? 'Workshop post updated. Its scheduled publication time has already arrived.' : `Workshop post scheduled for ${workshopDateTimeLabel(payload.publishAt)} (Sri Lanka time).` : payload.publicationStatus === 'draft' ? 'Workshop draft saved. It is not visible on the public website.' : isEditing ? 'Workshop post updated.' : 'Workshop post published.' });
     }
     catch (error) { setStatus({ type: 'error', message: error.message || 'The post could not be saved. Your draft is still here.' }); }
     finally { action.current = false; setBusy(''); }
@@ -116,7 +117,7 @@ export function WorkshopPanel({ workshop, onSave, onDelete, loading = false }) {
   };
   const toggleDetails = (section, open) => setExpanded((current) => current[section] === open ? current : { ...current, [section]: open });
   return <div className="admin-content-module admin-workshop-module"><ContentStatus value={status} onDismiss={() => setStatus(null)} /><div className="admin-editor-layout">
-    <form className="admin-panel admin-content-workshop-editor" ref={editor} onSubmit={save} aria-label={isEditing ? 'Edit workshop post' : 'New workshop post'} aria-busy={Boolean(busy) || uploading}>
+    <form className="admin-panel admin-content-workshop-editor" ref={editor} onSubmit={handleSubmit} aria-label={isEditing ? 'Edit workshop post' : 'New workshop post'} aria-busy={Boolean(busy) || uploading}>
       <header className="admin-panel-header"><div><h2>{isEditing ? 'Edit workshop post' : 'New workshop post'}</h2><p>{isEditing ? 'Update the story, event details or publishing schedule.' : 'Prepare a story now and choose when it goes live.'}</p></div><AdminIcon name="image" /></header>
       <fieldset className="admin-panel-body admin-content-fieldset admin-content-workshop-fields" disabled={Boolean(busy) || loading}>
         <AdminField label="Post title" required><input name="title" ref={title} value={form.title} onChange={(event) => update('title', event.target.value)} placeholder="Give your post a clear title" /></AdminField>

@@ -4,6 +4,7 @@ import { apiRequest, fetchAllGemstones, fetchAllRecords } from './api';
 import { GEM_MEDIA_LIMITS } from './mediaPolicy';
 import { getCategoryBanner, getDefaultCategoryBanner } from './categoryBannerAssets';
 import AdminImageField from './admin/AdminImageField';
+import BulkSoldGems from './admin/BulkSoldGems';
 
 const emptyCategory = { title: '', description: '', mainImage: '', coverImage: '' };
 const emptyStockStone = { categoryId: '', title: '', image: '', quantity: 1, description: '', weight: '', color: '', shape: '', cut: '', origin: '', price: '', includedInStock: true, stockStatus: 'Available', treatment: 'Unspecified', hasCertificate: false, certificateImage: '', certificateDetails: '' };
@@ -32,6 +33,7 @@ function OpsIcon({ name = 'gem', ...props }) {
     trash: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',
     check: 'm5 12 4 4L19 6',
     close: 'm6 6 12 12M6 18 18 6',
+    archive: 'M3 3h18v5H3zM5 8v13h14V8M9 12h6',
     arrow: 'M5 12h14m-5-5 5 5-5 5',
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d={paths[name] || paths.gem} /></svg>;
@@ -153,6 +155,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
   const [pending, setPending] = useState({ categories: true, stockCategories: true, stockStones: true, stones: true, ads: true, legacy: true });
   const [loaded, setLoaded] = useState({});
   const [refreshing, setRefreshing] = useState(false);
+  const [bulkSoldOpen, setBulkSoldOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editorSessions, setEditorSessions] = useState({ category: 0, stockCategory: 0, stockStone: 0, ad: 0, legacy: 0 });
@@ -260,7 +263,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
   const activeTab = tabs.find(([id]) => id === section);
 
   return <OperationsUploads.Provider value={{ track: trackUpload, active: uploading }}><div className="admin-operations">
-    <div className="ops-page-header"><div><p className="ops-kicker">Catalog management</p><h2>{activeTab[1]}</h2><p>{activeTab[2]}</p></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={refreshing || disabled}><OpsIcon name="refresh" />{refreshing ? 'Refreshing…' : 'Refresh records'}</button></div>
+    <div className="ops-page-header"><div><p className="ops-kicker">Catalog management</p><h2>{activeTab[1]}</h2><p>{activeTab[2]}</p></div><div className="admin-heading-actions">{section === 'stock' && <button type="button" className="admin-button" disabled={disabled || loading} onClick={() => setBulkSoldOpen(true)}><OpsIcon name="archive" />Remove sold gems</button>}<button type="button" className="admin-button is-secondary" onClick={load} disabled={refreshing || disabled}><OpsIcon name="refresh" />{refreshing ? 'Refreshing…' : 'Refresh records'}</button></div></div>
     <nav className="admin-subnav ops-subnav" aria-label="Operations sections">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setSection(id)} disabled={disabled} className={section === id ? 'is-active' : ''} aria-pressed={section === id}>{label}</button>)}</nav>
     {status && <div className={`ops-notice is-${status.type}`} role={status.type === 'error' ? 'alert' : 'status'}><OpsIcon name={status.type === 'success' ? 'check' : 'close'} /><p>{status.message}</p><button type="button" onClick={() => setStatus(null)} aria-label="Dismiss message"><OpsIcon name="close" /></button></div>}
     {loadErrors.length > 0 && <div className="ops-notice is-error" role="alert"><div><strong>Some records could not be refreshed</strong><ul>{loadErrors.map((error) => <li key={error}>{error}</li>)}</ul></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={loading || disabled}>Try again</button></div>}
@@ -269,6 +272,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
     {section === 'stock' && <StockOperations editorSession={editorSessions.stockStone} categorySession={editorSessions.stockCategory} categories={stockCategories} categoryForm={stockCategoryForm} setCategoryForm={setStockCategoryForm} saveCategory={saveStockCategory} deleteCategory={(category) => confirmDelete(`Delete “${category.title}” and all its stock stones? This cannot be undone.`, () => api(`/api/stock/categories/${category._id}`, { method: 'DELETE' }), 'Stock category deleted.')} stoneForm={stockStoneForm} setStoneForm={setStockStoneForm} editingStone={editingStockStone} setEditingStone={selectEditor('stockStone', setEditingStockStone)} saveStone={saveStockStone} stones={stockStones} deleteStone={(stone) => confirmDelete(`Delete “${stone.title}”? This cannot be undone.`, () => api(`/api/stock/stones/${stone._id}`, { method: 'DELETE' }), 'Stock stone deleted.')} busy={disabled} loading={loading} />}
     {section === 'ads' && <AdsOperations editorSession={editorSessions.ad} ads={ads} form={adForm} setForm={setAdForm} editing={editingAd} setEditing={selectEditor('ad', setEditingAd)} save={saveAd} deleteAd={(ad) => confirmDelete(`Delete the “${ad.title}” advertisement? This cannot be undone.`, () => api(`/api/event-ads/${ad._id}`, { method: 'DELETE' }), 'Advertisement deleted.')} busy={disabled} loading={loading} />}
     {section === 'legacy' && <LegacyOperations editorSession={editorSessions.legacy} gems={legacyGems} form={legacyForm} setForm={setLegacyForm} editing={editingLegacyGem} setEditing={selectEditor('legacy', setEditingLegacyGem)} save={saveLegacyGem} deleteGem={(gem) => confirmDelete(`Delete “${gem.title}” from the older catalog? This cannot be undone.`, () => api(`/api/gems/${gem._id}`, { method: 'DELETE' }), 'Older catalog gem deleted.')} busy={disabled} loading={loading} />}
+    {bulkSoldOpen && <BulkSoldGems scope="stock" onClose={() => setBulkSoldOpen(false)} onCompleted={() => { if (editingStockStone) { setEditingStockStone(null); setStockStoneForm(emptyStockStone); resetEditorSession('stockStone'); } load(); return onDataChanged?.(); }} />}
   </div></OperationsUploads.Provider>;
 }
 

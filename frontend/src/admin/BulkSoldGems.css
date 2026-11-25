@@ -1,0 +1,78 @@
+.bulk-gems { min-width: 0; color: #2a405d; }
+.bulk-gems svg { width: 18px; height: 18px; flex-shrink: 0; }
+.bulk-gems-intro { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid #dde6f1; border-radius: 10px; background: #f3f7fc; }
+.bulk-gems-intro > span { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; border-radius: 8px; background: #e4edf8; color: #56769f; }
+.bulk-gems-intro strong { color: #314c6d; font-size: 14px; font-weight: 600; }
+.bulk-gems-intro p, .bulk-gems-undo p { margin: 5px 0 0; color: #6b7e97; font-size: 12px; line-height: 1.8; }
+.bulk-gems-entry { display: grid; gap: 10px; margin-top: 21px; }
+.bulk-gems-entry > label { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #485f7c; font-size: 13px; font-weight: 500; }
+.bulk-gems-entry > label > span { color: #8090a4; font-size: 12px; font-weight: 400; }
+.bulk-gems-entry .bulk-gems-scope { display: grid; grid-template-columns: 100px minmax(0, 1fr); margin-bottom: 7px; }
+.bulk-gems-scope > span { color: #526b89 !important; font-size: 13px !important; }
+.admin-app .bulk-gems-entry textarea { min-height: 155px; resize: vertical; padding: 12px 14px; color: #344e70; font-family: ui-monospace,SFMono-Regular,Consolas,monospace; font-size: 13px; line-height: 1.9; }
+.bulk-gems-entry-footer { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.bulk-gems-entry-footer > p { margin: 0; color: #8290a3; font-size: 12px; line-height: 1.7; }
+.bulk-gems-entry-footer > span { flex-shrink: 0; padding-top: 2px; color: #617998; font-size: 12px; font-weight: 600; }
+.bulk-gems-entry > button { justify-self: start; min-height: 44px; margin-top: 3px; }
+.bulk-gems .bulk-gems-inline-error { margin: 0; color: #a35745; font-size: 12px; line-height: 1.7; }
+.bulk-gems-error { display: flex; align-items: flex-start; gap: 10px; margin-top: 19px; padding: 14px; border: 1px solid #edcfc6; border-radius: 9px; background: #fff5f1; color: #9b4f3d; }
+.bulk-gems-error > svg { width: 17px; height: 17px; margin-top: 2px; }
+.bulk-gems-error strong { font-size: 13px; font-weight: 600; }
+.bulk-gems-error p { margin: 5px 0 0; color: #a16c5d; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.bulk-gems-id-notice { margin-top: 15px; padding: 13px 14px; border: 1px solid #ead6b5; border-radius: 8px; background: #fff8eb; color: #8f6c33; }
+.bulk-gems-id-notice.is-info { border-color: #dce6f2; background: #f4f8fd; color: #617c9e; }
+.bulk-gems-id-notice > strong { font-size: 12px; font-weight: 600; }
+.bulk-gems-id-notice > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.bulk-gems-id-notice code { max-width: 100%; padding: 4px 6px; border-radius: 4px; background: rgb(255 255 255 / .8); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.bulk-gems-review { margin-top: 23px; border-top: 1px solid #e5eaf1; padding-top: 20px; }
+.bulk-gems-review > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bulk-gems-review > header p { margin: 0 0 5px; color: #a18a5e; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; }
+.bulk-gems-review h3, .bulk-gems-results h3 { margin: 0; color: #304a6c; font-size: 16px; font-weight: 600; }
+.bulk-gems-review > header > span { padding: 6px 9px; border-radius: 6px; background: #edf3fa; color: #5c7699; font-size: 12px; }
+.bulk-gems-row-section { min-width: 0; margin-top: 18px; }
+.bulk-gems-row-section > h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: #667c98; font-size: 12px; font-weight: 500; }
+.bulk-gems-row-section > h3 > span { padding: 3px 6px; border-radius: 4px; background: #edf1f6; color: #8090a7; font-size: 11px; }
+.bulk-gems-rows { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bulk-gems-rows > li { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 11px; border: 1px solid #e3e9f1; border-radius: 8px; background: #fff; }
+.bulk-gems-rows > li > img, .bulk-gems-rows > li > .admin-image-placeholder { width: 48px; height: 48px; flex: 0 0 48px; border: 1px solid #e9edf3; border-radius: 7px; object-fit: contain; }
+.bulk-gems-rows > li > div { flex: 1; min-width: 0; }
+.bulk-gems-rows strong { display: block; color: #415a7b; font-size: 13px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+.bulk-gems-rows code { display: block; margin-top: 3px; color: #8a98ab; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.bulk-gems-rows small { display: block; margin-top: 4px; color: #9a7a58; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.bulk-gems-rows > li > span { flex-shrink: 0; max-width: 105px; color: #7e8fa6; font-size: 11px; line-height: 1.6; text-align: right; }
+.bulk-gems-review-help { margin: 14px 0 0; color: #947647; font-size: 12px; line-height: 1.8; }
+.bulk-gems-confirm { display: grid; gap: 13px; margin-top: 20px; padding: 16px; border: 1px solid #ded6c6; border-radius: 9px; background: #faf7f0; }
+.bulk-gems-confirm > label { display: flex; align-items: flex-start; gap: 9px; color: #6a5b41; font-size: 13px; line-height: 1.8; }
+.bulk-gems-confirm input { margin-top: 4px; flex: 0 0 16px; }
+.bulk-gems-confirm > small { color: #9b8b71; font-size: 11px; line-height: 1.8; }
+.admin-app .bulk-gems-remove { min-height: 44px; justify-self: start; border-color: #7f4738; background: #8d5140; color: #fff; }
+.admin-app .bulk-gems-remove:hover { border-color: #693b30; background: #794333; }
+.bulk-gems-results { margin-top: 23px; padding-top: 20px; border-top: 1px solid #e5eaf1; }
+.bulk-gems-results > header { display: flex; align-items: flex-start; gap: 11px; }
+.bulk-gems-results > header > span { display: grid; place-items: center; width: 35px; height: 35px; flex: 0 0 35px; border-radius: 8px; background: #edf5f0; color: #5e8974; }
+.bulk-gems-results > header p { margin: 6px 0 0; color: #7f8fa4; font-size: 12px; line-height: 1.8; }
+.bulk-gems-results > button { min-height: 44px; margin-top: 16px; }
+.bulk-gems-undo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 13px; margin-top: 20px; padding: 15px; border: 1px solid #cfdfd4; border-radius: 9px; background: #f2f8f4; }
+.bulk-gems-undo > div { flex: 1; min-width: 180px; }
+.bulk-gems-undo strong { color: #4c725e; font-size: 13px; font-weight: 600; }
+.bulk-gems-undo > button { min-height: 44px; flex-shrink: 0; }
+.bulk-gems-footer { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 23px; padding-top: 18px; border-top: 1px solid #e5eaf1; }
+.bulk-gems-footer > span { color: #8b98aa; font-size: 11px; line-height: 1.7; }
+.bulk-gems-footer > button { min-height: 44px; }
+@media (max-width: 599px) {
+  .bulk-gems-intro { padding: 13px; gap: 10px; }
+  .bulk-gems-intro > span { width: 31px; height: 31px; flex-basis: 31px; }
+  .bulk-gems-entry .bulk-gems-scope { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .bulk-gems-entry > label { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .admin-app .bulk-gems-entry textarea { font-size: 16px; min-height: 170px; }
+  .bulk-gems-entry > button, .bulk-gems-confirm > button { width: 100%; justify-content: center; }
+  .bulk-gems-entry-footer { gap: 9px; }
+  .bulk-gems-rows > li { align-items: flex-start; flex-wrap: wrap; }
+  .bulk-gems-rows > li > img, .bulk-gems-rows > li > .admin-image-placeholder { width: 42px; height: 42px; flex-basis: 42px; }
+  .bulk-gems-rows > li > span { flex-basis: 100%; max-width: none; margin-left: 53px; text-align: left; }
+  .bulk-gems-confirm { padding: 13px; }
+  .bulk-gems-confirm > label { font-size: 13px; }
+  .bulk-gems-undo > button { width: 100%; justify-content: center; }
+  .bulk-gems-footer { align-items: stretch; flex-direction: column; gap: 10px; }
+  .bulk-gems-footer > button { width: 100%; justify-content: center; }
+}

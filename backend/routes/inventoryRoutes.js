@@ -19,6 +19,12 @@ router.get('/categories/:categoryId/stones', async (req, res) => {
 router.get('/stones', async (req, res) => {
   try { res.json(await catalogPage(Stone, req.query)); } catch (error) { routeError(res, error); }
 });
+router.get('/admin/stones', requireAdmin, async (req, res) => {
+  try {
+    if (req.query.includeArchived != null && !['true', 'false'].includes(req.query.includeArchived)) return res.status(400).json({ message: 'includeArchived must be true or false.' });
+    res.json(await catalogPage(Stone, req.query, undefined, { includeArchived: req.query.includeArchived === 'true' }));
+  } catch (error) { routeError(res, error); }
+});
 router.post('/stones', requireAdmin, async (req, res) => {
   try {
     const payload = { ...stonePayload(req.body), ...normalizeGemMedia(req.body) };
@@ -30,13 +36,13 @@ router.post('/stones', requireAdmin, async (req, res) => {
   } catch (error) { routeError(res, error); }
 });
 router.get('/stones/:stoneId', async (req, res) => {
-  try { const stone = await Stone.findById(objectId(req.params.stoneId)); if (!stone) return res.status(404).json({ message: 'Stone not found' }); res.json(stone); } catch (error) { routeError(res, error); }
+  try { const stone = await Stone.findById(objectId(req.params.stoneId)); if (!stone || stone.archivedAt) return res.status(404).json({ message: 'Stone not found' }); res.json(stone); } catch (error) { routeError(res, error); }
 });
 router.put('/stones/:stoneId/feature', requireAdmin, async (req, res) => {
   try {
     const current = await Stone.findById(objectId(req.params.stoneId));
     if (!current) return res.status(404).json({ message: 'Stone not found' });
-    res.json(await Stone.findByIdAndUpdate(req.params.stoneId, { $set: { isFeatured: !current.isFeatured } }, { new: true, runValidators: true }));
+    res.json(await Stone.findByIdAndUpdate(req.params.stoneId, { $set: { isFeatured: !current.isFeatured }, $inc: { __v: 1 } }, { new: true, runValidators: true }));
   } catch (error) { routeError(res, error); }
 });
 router.put('/stones/:stoneId', requireAdmin, async (req, res) => {
@@ -45,7 +51,7 @@ router.put('/stones/:stoneId', requireAdmin, async (req, res) => {
     if (!current) return res.status(404).json({ message: 'Stone not found' });
     const payload = { ...stonePayload(req.body, { existing: current }), ...normalizeGemMedia(req.body, current) };
     if (payload.categoryId && !await GemCategory.findById(payload.categoryId)) return res.status(400).json({ message: 'Choose an existing gemstone category.' });
-    res.json(await Stone.findByIdAndUpdate(req.params.stoneId, { $set: payload }, { new: true, runValidators: true }));
+    res.json(await Stone.findByIdAndUpdate(req.params.stoneId, { $set: payload, $inc: { __v: 1 } }, { new: true, runValidators: true }));
   } catch (error) { routeError(res, error); }
 });
 router.delete('/stones/:stoneId', requireAdmin, async (req, res) => {
@@ -78,6 +84,6 @@ router.delete('/categories/:categoryId', requireAdmin, async (req, res) => {
   } catch (error) { routeError(res, error); }
 });
 router.get('/top-gems', async (_req, res) => {
-  try { res.json(await Stone.find({ isTopGem: true }).sort({ homePagePosition: 1, _id: 1 }).limit(10)); } catch (error) { routeError(res, error); }
+  try { res.json(await Stone.find({ isTopGem: true, archivedAt: null }).sort({ homePagePosition: 1, _id: 1 }).limit(10)); } catch (error) { routeError(res, error); }
 });
 module.exports = router;

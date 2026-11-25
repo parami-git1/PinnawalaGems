@@ -102,13 +102,14 @@ function numericWeightExpression() {
   return { $ifNull: ['$caratWeight', { $let: { vars: { parsed: { $regexFind: { input: { $convert: { input: '$weight', to: 'string', onError: '', onNull: '' } }, regex: /^\s*(\d+(?:\.\d+)?)/ } } }, in: { $convert: { input: { $arrayElemAt: ['$$parsed.captures', 0] }, to: 'double', onError: null, onNull: null } } } }] };
 }
 const SORTS = { featured: { isFeatured: -1, createdAt: -1, _id: -1 }, newest: { createdAt: -1, _id: -1 }, name: { title: 1, _id: 1 }, 'weight-low': { __caratMissing: 1, __caratWeight: 1, _id: 1 }, 'weight-high': { __caratMissing: 1, __caratWeight: -1, _id: 1 }, 'price-low': { price: 1, _id: 1 }, 'price-high': { price: -1, _id: 1 } };
-async function catalogPage(Model, query, categoryId) {
+async function catalogPage(Model, query, categoryId, { includeArchived = false } = {}) {
   const { page, limit } = pagination(query);
   const aliases = { 'weight-asc':'weight-low', 'weight-desc':'weight-high', 'price-asc':'price-low', 'price-desc':'price-high' };
   const sortKey = aliases[query.sort] || query.sort || 'featured';
   if (!SORTS[sortKey]) throw invalid('Choose a supported sort order.');
   const match = catalogMatch(query, categoryId);
   const result = await Model.aggregate([
+    ...(!includeArchived ? [{ $match: { archivedAt: null } }] : []),
     { $set: { __caratWeight: numericWeightExpression() } },
     { $set: { __caratMissing: { $cond: [{ $eq: ['$__caratWeight', null] }, 1, 0] } } },
     { $facet: {

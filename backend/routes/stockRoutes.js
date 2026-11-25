@@ -13,6 +13,8 @@ router.post('/categories', async (req, res) => { try { const category = new Stoc
 async function list(req, res) {
   try {
     const { page, limit } = pagination(req.query, 50); const match = catalogMatch(req.query, req.params.categoryId, { stock: true });
+    if (req.query.includeArchived != null && !['true', 'false'].includes(req.query.includeArchived)) return res.status(400).json({ message: 'includeArchived must be true or false.' });
+    if (req.query.includeArchived !== 'true') match.archivedAt = null;
     const stones = await StockStone.find(match).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).maxTimeMS(5000);
     const total = await StockStone.countDocuments(match).maxTimeMS(5000);
     res.json({ stones, total, totalPages: Math.ceil(total / limit), currentPage: page, limit });
@@ -32,7 +34,7 @@ router.put('/stones/:stoneId', async (req, res) => {
     const current = await StockStone.findById(objectId(req.params.stoneId)); if (!current) return res.status(404).json({ message: 'Stock stone not found' });
     const payload = stonePayload(req.body, { stock: true, existing: current });
     if (payload.categoryId && !await StockCategory.findById(payload.categoryId)) return res.status(400).json({ message: 'Choose an existing stock category.' });
-    res.json(await StockStone.findByIdAndUpdate(req.params.stoneId, { $set: payload }, { new: true, runValidators: true }));
+    res.json(await StockStone.findByIdAndUpdate(req.params.stoneId, { $set: payload, $inc: { __v: 1 } }, { new: true, runValidators: true }));
   } catch (error) { routeError(res, error); }
 });
 router.delete('/stones/:stoneId', async (req, res) => {

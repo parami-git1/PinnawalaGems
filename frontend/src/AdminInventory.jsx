@@ -4,6 +4,7 @@ import AdminOperations from './AdminOperations';
 import AdminPlanner from './AdminPlanner';
 import GemMediaEditor from './admin/GemMediaEditor';
 import AdminImageField from './admin/AdminImageField';
+import BulkSoldGems from './admin/BulkSoldGems';
 import { FeedbackPanel, WebsiteSettings, WorkshopPanel } from './admin/AdminContent';
 import { AdminEmptyState, AdminField, AdminIcon, AdminImage, AdminModal } from './admin/AdminUI';
 import { GEM_MEDIA_LIMITS, mediaUrls } from './mediaPolicy';
@@ -188,6 +189,7 @@ export default function AdminInventory() {
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState(null);
   const [modal, setModal] = useState(null);
+  const [bulkSoldOpen, setBulkSoldOpen] = useState(false);
   const [deleting, setDeleting] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebar = useRef(null);
@@ -207,7 +209,7 @@ export default function AdminInventory() {
     setRefreshing(true);
     const snapshot = { ...versions.current };
     const keys = ['analytics', 'inventory', 'categories', 'contact', 'home', 'feedback', 'workshop', 'stockStones', 'stockCategories'];
-    const paths = ['/api/analytics/dashboard-stats', '', '/api/inventory/categories', '/api/contact', '/api/home', '/api/feedback', '/api/workshop', '', '/api/stock/categories'];
+    const paths = ['/api/analytics/dashboard-stats', '', '/api/inventory/categories', '/api/contact', '/api/home', '/api/feedback', '/api/workshop/admin', '', '/api/stock/categories'];
     setPendingResources((previous) => ({ ...previous, ...Object.fromEntries(keys.map((key) => [key, true])) }));
     setFailures((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => !keys.includes(key))));
     const current = () => mounted.current && generation === loadVersion.current && !controller.signal.aborted;
@@ -284,7 +286,7 @@ export default function AdminInventory() {
     {mobileOpen && <button type="button" className="admin-mobile-backdrop" onClick={() => setMobileOpen(false)} aria-label="Close navigation" tabIndex={-1} />}
     <aside ref={sidebar} id="admin-sidebar" className={`admin-sidebar ${mobileOpen ? 'is-open' : ''}`} aria-label="Administration sidebar"><Link to={ADMIN_PORTAL_PATH} onClick={() => setMobileOpen(false)} className="admin-brand" aria-label="Pinnawala Gems admin overview"><span className="admin-brand-icon"><AdminIcon name="gem" size={25} /></span><span><strong>Pinnawala Gems</strong><small>ADMIN WORKSPACE</small></span></Link><nav aria-label="Admin navigation">{VIEWS.map((view) => <div key={view.id}>{view.group && <p className="admin-nav-section">{view.group}</p>}<button type="button" className="admin-nav-button" aria-label={view.label} aria-current={current.id === view.id ? 'page' : undefined} onClick={() => go(view.id)}><AdminIcon name={view.icon} /><span>{view.label}</span>{view.id === 'feedback' && pending > 0 && <span className="admin-nav-count" aria-label={`${pending} pending reviews`}>{pending}</span>}</button></div>)}</nav><div className="admin-sidebar-bottom"><Link to="/" target="_blank" rel="noreferrer" className="admin-sidebar-site"><AdminIcon name="external" size={17} />View website<AdminIcon name="arrow" /></Link><div className="admin-sidebar-account"><span className="admin-avatar">A</span><div><strong>Administrator</strong><small>Management access</small></div><button type="button" onClick={signOut} aria-label="Sign out" title="Sign out"><AdminIcon name="logout" size={17} /></button></div></div></aside>
     <main id={accessLocked ? undefined : "main-content"} tabIndex={-1} className="admin-main"><header className="admin-topbar"><div className="admin-topbar-leading"><button ref={mobileToggle} type="button" className="admin-icon-button admin-mobile-toggle" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} aria-controls="admin-sidebar" onClick={() => setMobileOpen((open) => !open)}><AdminIcon name="menu" /></button><div className="admin-breadcrumb"><span>Workspace</span><AdminIcon name="chevron-right" /><strong>{current.label}</strong></div></div><div className="admin-topbar-actions"><span className="admin-workspace-badge"><AdminIcon name="shield" />Private workspace</span><span className="admin-topbar-divider" /><button type="button" className="admin-button is-small" onClick={refresh} disabled={refreshing} aria-label="Refresh data"><AdminIcon name="refresh" className={refreshing ? 'admin-is-spinning' : ''} />Refresh<span className="admin-desktop-label"> data</span></button><span className="admin-avatar" aria-label="Administrator">A</span></div></header>
-      <div className="admin-content"><div className="admin-page-heading"><div><p className="admin-eyebrow">PINNAWALA GEMS / ADMINISTRATION</p><h1>{current.label}</h1><p>{current.description}</p></div>{current.id === 'inventory' && <div className="admin-heading-actions"><button type="button" className="admin-button" onClick={() => go('operations')}><AdminIcon name="image" />Category banners</button><button type="button" className="admin-button is-primary" onClick={() => setModal({ stone: null })} disabled={loading || Boolean(failures.categories || failures.inventory)}><AdminIcon name="plus" />Add gemstone</button></div>}</div>
+      <div className="admin-content"><div className="admin-page-heading"><div><p className="admin-eyebrow">PINNAWALA GEMS / ADMINISTRATION</p><h1>{current.label}</h1><p>{current.description}</p></div>{current.id === 'inventory' && <div className="admin-heading-actions"><button type="button" className="admin-button" onClick={() => setBulkSoldOpen(true)} disabled={loading || Boolean(failures.inventory)}><AdminIcon name="archive" />Remove sold gems</button><button type="button" className="admin-button" onClick={() => go('operations')}><AdminIcon name="image" />Category banners</button><button type="button" className="admin-button is-primary" onClick={() => setModal({ stone: null })} disabled={loading || Boolean(failures.categories || failures.inventory)}><AdminIcon name="plus" />Add gemstone</button></div>}</div>
         <Notice value={notice} onDismiss={() => setNotice(null)} />
         {refreshIssue && <Notice value={{ type: 'error', message: `Unable to refresh this section. Your current data and edits are still shown. ${failures[refreshIssue]}` }} />}
         {loading && !['operations', 'planner'].includes(current.id) ? <div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Loading your workspace...</div> : blocked ? <section className="admin-panel"><AdminEmptyState icon="refresh" title="This section could not be loaded" description={blocked} action={<button type="button" className="admin-button" disabled={refreshing} onClick={refresh}>Try again</button>} /></section> : <>
@@ -308,5 +310,6 @@ export default function AdminInventory() {
       </div>
     </main>
     {modal && <GemEditor stone={modal.stone} categories={categories} onClose={() => setModal(null)} onSaved={saved} />}
+    {bulkSoldOpen && <BulkSoldGems scope="catalog" onClose={() => setBulkSoldOpen(false)} onCompleted={loadAll} />}
   </div>;
 }

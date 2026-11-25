@@ -32,6 +32,7 @@ app.use('/api/stock', require('./routes/stockRoutes'));
 app.use('/api/event-ads', require('./routes/eventAdRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/admin', require('./routes/adminAuthRoutes'));
+app.use('/api/admin/bulk-gems', require('./routes/bulkGemRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/admin-notes', require('./routes/adminNoteRoutes'));
 app.use('/api/planner', require('./routes/plannerRoutes'));

@@ -1,5 +1,49 @@
 # Pinnawala Gems production release checklist
 
+## 25 November 2026: gemstone inquiries, sold batches and mobile feedback
+
+**Local PASS; deployment and real production checks PENDING.** This change does not authorize a commit, push, deployment, production write or credential change.
+
+### What changed and how to use it
+
+- Each gemstone's **Inquire via WhatsApp** link prepares the name, permanent Gem ID, weight, colour, shape, cut, origin, certificate availability and a full `/gem/<record-id>` URL. The recipient can open that URL directly or refresh it. The message is prepared in WhatsApp; it is not sent automatically. Existing business contact settings remain authoritative.
+- In **Gem inventory**, choose **Remove sold gems**. In **Operations → Stock inventory**, the same action starts with Private stock selected. Paste up to 100 exact Gem IDs or database record IDs, separated by newlines, spaces, commas or semicolons. Preview, check the matching records/photos/quantities, tick the confirmation and remove. Unknown or ambiguous IDs block removal; duplicate IDs count once. Website collection and private stock are independent lists: choose the intended list explicitly.
+- Removal archives each entire selected gem record. It removes the record from the public collection, detail lookup, homepage selection, active admin lists and active totals, while retaining its original quantity, IDs, media, certificates and placement flags. It does not subtract individual pieces or permanently delete photographs. Existing one-record Delete actions retain their previous behavior.
+- The result reports removed, already removed, changed and failed records separately. **Review remaining IDs** retries unresolved records. **Undo last removal** uses a 24-hour guarded token. After a lost response or closed window, preview the original IDs again and confirm **Restore removed gems**. A fresh preview is required after token expiry or a later edit. Changed records are left unchanged until reviewed again. Operations are atomic per record; a batch is not a database-wide transaction and may partially complete during a service failure. Never assume a timeout means nothing changed.
+- On screens below 900px, Feedback photographs have their own area above the journal caption. Full photos remain visible, navigation sits beside the photo, controls have 44px targets, and the form/reviews follow without overlap. Desktop composition and existing image assets are preserved. Home, Collection, Workshop, Contact and navigation were also checked at phone/tablet widths.
+
+### Coordinated release
+
+1. Include the new backend `routes/bulkGemRoutes.js`, `utils/bulkGems.js`, `test/bulk-gems.test.js`, the Stone/StockStone archive fields, archive-aware catalog/stock/analytics queries, version increments on ordinary edits and server route mount. Include frontend `admin/BulkSoldGems.jsx`, `BulkSoldGems.css`, `bulkGemIds.js`, `gemInquiry.js`, their tests, parent admin integrations, `api.js`, `GemDetails.jsx` and `Feedback.css`. Preserve the other pending workshop/planner/media changes in this release.
+2. After explicit authorization, deploy **Render first** with the existing database, Cloudinary account, JWT secret, administrator policy and allowed origin. No new environment variables, dependencies, migration, seed or asset uploads are required. Confirm health/revision and JSON 401 without authorization for `/api/admin/bulk-gems/preview`, `/remove`, `/restore`, and `/api/inventory/admin/stones` (POST for the three actions, GET for the listing). A request must not touch records before authentication succeeds.
+3. Verify the owner's authenticated, read-only active listing `/api/inventory/admin/stones?page=1&limit=1` is paginated and `no-store`; `includeArchived=true` is supported only on protected listings. Public `includeArchived` parameters must never expose removed records. The new admin frontend requires this protected listing and cannot be released against an older backend lacking it.
+4. Deploy the matching Vercel build with the existing API origin. Check direct item URL/refresh, decoded WhatsApp text/recipient, mobile Feedback photos and navigation using real APIs and assets. Do not send a message or remove/restore live gems as a deployment test without separate owner authorization. Functional production batch testing remains PENDING until an authorized genuine operation or approved test fixture is available.
+5. Public lists retain their existing short HTTP cache lifetime, so other visitors may briefly see a previously cached listing after removal. Successful catalog batches clear this browser's public resource cache; detail requests bypass browser HTTP cache. Confirm real CDN/API behavior before declaring immediate global visibility.
+
+**Rollback requirement:** once archives have been used, an older backend without archive filtering can republish sold records. Preserve the archive-aware backend during a frontend rollback, or prepare a reviewed compatible forward fix. Do not roll back to code that ignores `archivedAt`, clear archive fields en masse, restore the database, delete assets or rotate credentials to undo this release. A targeted restore must use the reviewed ID flow with owner authorization.
+
+### Verification at handoff
+
+| Gate | Status |
+| --- | --- |
+| Backend tests, including exact IDs, authorization, archive visibility, stock isolation, stale/concurrent edits, partial retries, token scope/purpose/expiry, legacy rows and Undo recovery | **PASS — 113/113** |
+| Frontend helper tests, including inquiry URLs/messages and bulk parsing/retry selection | **PASS — 31/31** |
+| Complete frontend lint and production build | **PASS**; existing large Three.js chunk warning remains |
+| WhatsApp item navigation and fresh-page/refresh at 390px and 1440px | **PASS — 6/6** local Chrome checks |
+| Five public routes at 320/390/768px, three mobile Collection navigation flows and desktop Feedback preservation | **PASS**; no observed overflow, clipped headings, failed images, JavaScript errors or unexpected writes with synthetic fixtures |
+| Batch admin browser flow: exact preview, confirmation, blockers/duplicates, remove/Undo, partial retries, interrupted-response recovery, stock isolation and 320/390/768px dialog layout | **PASS — 8/8** local Chrome scenarios |
+| Render/Vercel deployment, real Cloudinary/database behavior and production performance | **PENDING** |
+
+Browser evidence is in workspace `.tmp/gem-inquiry-qa-results.json`, `.tmp/bulk-sold-qa/report.json` and `.tmp/mobile-public-refinement/results.json`. These runs execute the local production build with synthetic APIs and external requests intercepted. They do not establish real-network image speed, live authentication or production readiness. No production records, Cloudinary assets or credentials were changed.
+
+> **25 November 2026 workshop scheduling:** Deploy the updated Render backend before the Vercel frontend. Include `backend/utils/workshopContent.js`, the updated WorkshopStep model, workshop routes and cache policy, plus `frontend/src/workshopContent.js` and their new tests. The admin now reads protected `/api/workshop/admin`; public `/api/workshop` returns legacy/published posts and scheduled posts whose `publishAt` is at or before server time. Drafts and future schedules never enter the public response. Workshop responses use `no-store`. Publication is evaluated when the server reads posts, so there is no cron service, environment variable, migration or background status-update job to configure. Existing posts remain published by default.
+
+In Workshop posts, choose **Publish now**, **Schedule publication**, or **Save as draft**. Scheduled publication date/time uses Sri Lanka (UTC+05:30); event date/time is separate and optional. Venue, address, map URL, call number and WhatsApp number are optional independent fields. Call buttons use `tel:` to open the phone app; WhatsApp buttons use `wa.me` and do not send a message automatically. Upload/drag-and-drop and image URL entry are both supported. Published cards and details retain the existing workshop visual style; hardcoded archive dates no longer overwrite real post metadata. An already open, visible workshop page rechecks the public list every 30 seconds, subject to network response time; hidden/offline tabs do not poll.
+
+After deployment, confirm authorized admin listing, saving/editing a scheduled post, future/draft exclusion from the anonymous API, visibility at the scheduled server instant, persistence after reload, event metadata and mobile map/call/WhatsApp links. Production writes and live deployment were not performed during this local implementation.
+
+Workshop verification: **PASS** — complete backend suite 101/101, frontend helper tests 23/23, workshop Chrome checks 21/21, frontend lint and production build. Browser checks cover publication/event timezone separation, future/draft visibility, unchanged due schedules, failed-save draft preservation, image upload locks, public auto-refresh, independent phone/map actions, optional address-only records, legacy posts and 320/390/768/1440px layouts. Backend tests use real registered routes and Mongoose validators with isolated synthetic stores; browser external requests are intercepted. **PENDING** — coordinated operator deployment and real production verification. No production data, assets or secrets were changed.
+
 > **25 November 2026 stock overview and image forms:** Deploy the backend model/payload changes before the matching frontend. Both gemstone models now accept optional `includedInStock` (legacy/default `true`); private stock additionally supports availability, treatment, cut, origin and certificate details. No migration, seeding, dependency or environment-variable change is required. This flag changes stock accounting only, never public visibility; private stock and website showcase remain independent record lists. Available quantities exclude reserved, sold and excluded private stock. Recorded carats/value use quantity × per-piece recorded weight/price; missing quantities/weights/prices are disclosed. The same physical gem entered in both lists is not deduplicated.
 
 Include the new `frontend/src/admin/AdminImageField.jsx`, `AdminImageField.css`, `AdminDashboard.css`, `inventoryInsights.js` and `frontend/test/inventoryInsights.test.js` in the approved Git release. Certificate, category/banner, private stock, advertisement, legacy variation, workshop and website photo forms now offer device upload/drag-and-drop alongside existing URL input. They reuse the authenticated image upload endpoint and existing Cloudinary account (JPEG/PNG/WebP, 8 MB maximum). Upload completion changes the form draft; saving the form applies it. Removing a form image does not itself delete a Cloudinary asset. Generated Gem IDs are display-only and omitted from editable payloads.
@@ -52,6 +96,7 @@ npm.cmd test
 Pop-Location
 Push-Location frontend
 npm.cmd ci
+node --test test/*.test.js
 npm.cmd run lint
 npm.cmd run build
 Pop-Location
