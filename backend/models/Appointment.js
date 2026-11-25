@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { validPlannerColor } = require('../utils/plannerFields');
 
 const appointmentSchema = new mongoose.Schema({
   customerName: { type: String, required: true, trim: true },
@@ -8,6 +9,7 @@ const appointmentSchema = new mongoose.Schema({
   time: { type: String, required: true, trim: true },
   durationMinutes: { type: Number, default: 60, min: 15 },
   type: { type: String, enum: ['Viewing', 'Consultation', 'Purchase', 'Workshop', 'Other'], default: 'Viewing' },
+  color: { type: String, default: '', validate: { validator: validPlannerColor, message: 'Choose a valid appointment color in #RRGGBB format.' } },
   status: { type: String, enum: ['Requested', 'Confirmed', 'Completed', 'Cancelled', 'No-show'], default: 'Requested' },
   purpose: { type: String, default: '' },
   stoneId: { type: mongoose.Schema.Types.ObjectId, ref: 'Stone', default: null },

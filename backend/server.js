@@ -1,17 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('node:path');
-if (require.main === module) require('dotenv').config();
+if (require.main === module) require('dotenv').config({ quiet: true });
 
 const cloudinary = require('cloudinary').v2;
 const requireAdmin = require('./middleware/adminAuth');
-const { configureProxy, configuredOrigins, secureHeaders, corsPolicy, apiCaching, apiLimiter, uploadLimiter, apiErrorHandler } = require('./middleware/security');
+const { configureProxy, secureHeaders, corsPolicy, apiCaching, apiLimiter, uploadLimiter, apiErrorHandler } = require('./middleware/security');
+const { startupConfig, databaseStartupError, startupFailure, listenForConnections } = require('./utils/startup');
 
 cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
 
 const app = express();
 app.disable('x-powered-by');
-configureProxy(app);
 app.use(secureHeaders);
 app.use('/api', apiCaching);
 app.use(corsPolicy);
@@ -46,19 +46,25 @@ app.get('/', (_req, res) => res.send('Pinnawala Gems API is running.'));
 app.use(apiErrorHandler);
 
 async function startServer() {
-  if (!process.env.MONGO_URI || !process.env.JWT_SECRET) throw new Error('MONGO_URI and JWT_SECRET must be configured before starting the backend.');
-  if (process.env.NODE_ENV === 'production' && configuredOrigins().size === 0) throw new Error('Set ALLOWED_ORIGINS to the production frontend origin before starting the backend.');
-  await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000, family: 4 });
-  const server = app.listen(process.env.PORT || 5000, () => console.log('Pinnawala Gems API is listening.'));
+  const config = startupConfig();
+  configureProxy(app);
+  console.info('Backend startup: configuration validated; connecting to MongoDB.');
+  try { await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 10000, family: 4 }); }
+  catch (error) { throw databaseStartupError(error); }
+  const server = await listenForConnections(app, config.port, config.host);
   server.requestTimeout = 150000;
   server.headersTimeout = 30000;
+  console.info(`Pinnawala Gems API is listening on ${config.host}:${config.port}.`);
   return server;
 }
 
 if (require.main === module) startServer().catch(async (error) => {
-  console.error(`Backend startup failed: ${error.name}. Check database, authentication and allowed frontend origin settings.`);
-  await mongoose.disconnect();
+  const failure = startupFailure(error);
+  console.error(`Backend startup failed [${failure.code}]: ${failure.message}`);
+  try { await mongoose.disconnect(); }
+  catch { console.error('Backend cleanup could not finish after startup failure.'); }
   process.exitCode = 1;
 });
 
 module.exports = app;
+module.exports.startServer = startServer;

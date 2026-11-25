@@ -6,6 +6,7 @@ const stoneSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 200 },
   image: { type: String, required: true },
   quantity: { type: Number, default: 1, min: 0, validate: Number.isInteger },
+  includedInStock: { type: Boolean, default: true },
   description: { type: String, maxlength: 10000 },
   weight: { type: String, default: '' },
   caratWeight: { type: Number, min: 0, default: null },

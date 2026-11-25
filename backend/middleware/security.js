@@ -3,8 +3,8 @@ const cors = require('cors');
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { createHash } = require('node:crypto');
 
-function configuredOrigins() {
-  return new Set((process.env.ALLOWED_ORIGINS || '').split(',').map((value) => value.trim()).filter(Boolean).map((value) => {
+function configuredOrigins(raw = process.env.ALLOWED_ORIGINS || '') {
+  return new Set(raw.split(',').map((value) => value.trim()).filter(Boolean).map((value) => {
     const url = new URL(value);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('ALLOWED_ORIGINS must contain comma-separated frontend origins, without paths.');
     return url.origin;

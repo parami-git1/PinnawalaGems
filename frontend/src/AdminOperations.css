@@ -149,3 +149,20 @@
 @media (max-width: 359px) { .admin-operations .ops-form-grid { grid-template-columns: minmax(0, 1fr); } .admin-operations .ops-image-tools { align-items: flex-start; } .admin-operations .ops-media.is-large { width: 58px; height: 58px; flex-basis: 58px; } .admin-operations .ops-upload { padding-inline: 8px; font-size: 10px; } }
 @media (max-width: 639px) { .admin-app .admin-operations .ops-panel .ops-field > :is(input, textarea, select):not([type='file']) { font-size: 16px; } }
 @media (prefers-reduced-motion: reduce) { .admin-operations *, .admin-operations *::before, .admin-operations *::after { transition: none !important; animation: none !important; } }
+
+.admin-operations .ops-stock-form-section { display: grid; gap: 16px; min-width: 0; padding-top: 19px; border-top: 1px solid #e6ebf2; }
+.admin-operations .ops-stock-section-heading { display: flex; align-items: center; gap: 9px; color: #6c809b; }
+.admin-operations .ops-stock-section-heading h4 { color: #29435e; font-size: 14px; font-weight: 650; }
+.admin-operations .ops-generated-reference { display: grid; gap: 5px; min-width: 0; padding: 14px 16px; border: 1px solid #dfe7f1; border-radius: 9px; background: #f5f8fc; }
+.admin-operations .ops-generated-reference > span { color: #6a7f99; font-size: 11px; font-weight: 600; }
+.admin-operations .ops-generated-reference > strong { color: #304c6c; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.admin-operations .ops-generated-reference > small { color: #74869c; font-size: 12px; line-height: 1.65; }
+.admin-operations .ops-stock-inclusion { align-items: flex-start; padding: 13px 14px; border: 1px solid #dde6f0; border-radius: 8px; background: #f5f8fc; }
+.admin-operations .ops-stock-inclusion input { margin-top: 3px; }
+.admin-operations .ops-variation-upload-list, .admin-operations .ops-variation-upload-row { display: grid; gap: 13px; min-width: 0; }
+.admin-operations .ops-variation-upload-row { padding: 13px; border: 1px solid #e1e8f1; border-radius: 9px; background: #fff; }
+.admin-operations .ops-variation-upload-list > button, .admin-operations .ops-variation-upload-row > button { justify-self: start; }
+.admin-operations .ops-image-field .admin-image-field__heading > strong { font-size: 13px; }
+.admin-operations .ops-image-field .admin-image-field__drop-copy > strong { font-size: 13px; }
+.admin-operations .ops-image-field .admin-image-field__drop-copy > p { margin-top: 4px; }
+@media (max-width: 639px) { .admin-operations .ops-variation-upload-row { padding: 10px; } .admin-operations .ops-stock-form-section { gap: 15px; } .admin-operations .ops-form-actions > button { min-height: 44px; } }

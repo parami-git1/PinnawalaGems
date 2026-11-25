@@ -21,11 +21,11 @@ router.get('/notifications', async (req, res) => {
 
     const [todayAppointments, dueNotes, upcomingNotes] = await Promise.all([
       Appointment.find({ date: { $gte: startOfDay, $lte: endOfDay }, status: { $nin: ['Cancelled', 'No-show'] } }).sort({ time: 1 }),
-      AdminNote.find({ isArchived: false, reminderAt: { $ne: null, $lte: endOfDay } }).sort({ reminderAt: 1 }),
-      AdminNote.find({ isArchived: false, reminderAt: { $gt: endOfDay, $lte: nextWeek } }).sort({ reminderAt: 1 })
+      AdminNote.find({ isArchived: false, reminderAt: { $ne: null, $lte: now } }).sort({ reminderAt: 1 }),
+      AdminNote.find({ isArchived: false, reminderAt: { $gt: now, $lte: nextWeek } }).sort({ reminderAt: 1 })
     ]);
 
-    res.json({ todayAppointments, dueNotes, upcomingNotes, counts: { todayAppointments: todayAppointments.length, dueNotes: dueNotes.length, upcomingNotes: upcomingNotes.length } });
+    res.json({ todayAppointments, dueNotes, upcomingNotes, counts: { todayAppointments: todayAppointments.length, dueNotes: dueNotes.length, upcomingNotes: upcomingNotes.length }, serverTime: now.toISOString(), timeZone: 'Asia/Colombo' });
   } catch (error) { res.status(500).json({ message: error.message }); }
 });
 

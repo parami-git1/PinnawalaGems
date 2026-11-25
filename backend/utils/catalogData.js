@@ -39,9 +39,12 @@ function generatedReference(category, id, stock = false) {
   const prefix = String(category.title).toLowerCase().replace(/[^a-z\d]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'gem';
   return `${prefix}${stock ? '-stock' : ''}-${String(id)}`;
 }
-const STONE_FIELDS = ['categoryId', 'title', 'image', 'description', 'weight', 'color', 'shape', 'cut', 'price', 'quantity', 'hasCertificate', 'certificateDetails', 'certificateImage', 'isFeatured', 'origin', 'additionalImages', 'videos', 'isTopGem', 'homePagePosition'];
+const STOCK_STATUSES = ['Available', 'Reserved', 'Sold'];
+const STOCK_TREATMENTS = ['Unspecified', 'Unheated', 'Heated', 'Other'];
+const STONE_FIELDS = ['categoryId', 'title', 'image', 'description', 'weight', 'color', 'shape', 'cut', 'price', 'quantity', 'includedInStock', 'hasCertificate', 'certificateDetails', 'certificateImage', 'isFeatured', 'origin', 'additionalImages', 'videos', 'isTopGem', 'homePagePosition'];
 function stonePayload(body, { stock = false, existing } = {}) {
-  const payload = pick(body, stock ? STONE_FIELDS.filter((key) => !['cut', 'origin', 'additionalImages', 'videos', 'isFeatured', 'isTopGem', 'homePagePosition'].includes(key)) : STONE_FIELDS);
+  const fields = stock ? [...STONE_FIELDS.filter((key) => !['additionalImages', 'videos', 'isFeatured', 'isTopGem', 'homePagePosition'].includes(key)), 'stockStatus', 'treatment'] : STONE_FIELDS;
+  const payload = pick(body, fields);
   if (Object.hasOwn(body, 'stoneId') && existing && body.stoneId !== existing.stoneId) throw invalid('Reference IDs are assigned at creation and cannot be changed.');
   if ('categoryId' in payload) payload.categoryId = objectId(payload.categoryId, 'Category');
   for (const key of ['title', 'description', 'color', 'shape', 'cut', 'origin', 'certificateDetails']) if (key in payload) payload[key] = string(payload[key], key, { required: key === 'title', max: key === 'description' || key === 'certificateDetails' ? 10000 : 200 });
@@ -51,7 +54,11 @@ function stonePayload(body, { stock = false, existing } = {}) {
   if ('price' in payload) payload.price = number(payload.price, 'Price', { optional: true });
   if ('homePagePosition' in payload) payload.homePagePosition = number(payload.homePagePosition, 'Homepage position', { integer: true });
   if ('weight' in payload) { const numeric = carats(payload.weight); payload.weight = stock ? numeric : numeric == null ? '' : String(payload.weight).trim(); if (!stock) payload.caratWeight = numeric; }
-  for (const key of ['hasCertificate', 'isFeatured', 'isTopGem']) if (key in payload) payload[key] = bool(payload[key], key);
+  for (const key of ['hasCertificate', 'isFeatured', 'isTopGem', 'includedInStock']) if (key in payload) payload[key] = bool(payload[key], key);
+  for (const [key, options] of [['stockStatus', STOCK_STATUSES], ['treatment', STOCK_TREATMENTS]]) if (key in payload) {
+    payload[key] = string(payload[key], key, { required: true, max: 30 });
+    if (!options.includes(payload[key])) throw invalid(`Choose a valid ${key === 'stockStatus' ? 'stock status' : 'treatment'}.`);
+  }
   return payload;
 }
 function categoryPayload(body) {
@@ -115,4 +122,4 @@ async function catalogPage(Model, query, categoryId) {
   const total = data.metadata?.[0]?.total || 0;
   return { stones: data.stones || [], total, totalPages: Math.ceil(total / limit), currentPage: page, limit, categoryCounts: (data.categoryCounts || []).map((row) => ({ categoryId: String(row._id), count: row.count })), filterOptions: Object.fromEntries(['shapes','cuts','origins','colors'].map((key) => [key, (data.filterOptions?.[0]?.[key] || []).filter((value) => typeof value === 'string' && value.trim()).sort((a,b) => a.localeCompare(b)).slice(0, 500)])) };
 }
-module.exports = { invalid, pick, string, number, url, objectId, bool, carats, generatedReference, stonePayload, categoryPayload, routeError, escapeRegex, pagination, catalogMatch, numericWeightExpression, catalogPage };
+module.exports = { invalid, pick, string, number, url, objectId, bool, carats, generatedReference, stonePayload, categoryPayload, routeError, escapeRegex, pagination, catalogMatch, numericWeightExpression, catalogPage, STOCK_STATUSES, STOCK_TREATMENTS };

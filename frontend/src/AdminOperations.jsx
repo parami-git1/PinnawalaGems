@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import './AdminOperations.css';
 import { apiRequest, fetchAllGemstones, fetchAllRecords } from './api';
-import { GEM_MEDIA_LIMITS, IMAGE_TYPES } from './mediaPolicy';
+import { GEM_MEDIA_LIMITS } from './mediaPolicy';
 import { getCategoryBanner, getDefaultCategoryBanner } from './categoryBannerAssets';
+import AdminImageField from './admin/AdminImageField';
 
 const emptyCategory = { title: '', description: '', mainImage: '', coverImage: '' };
-const emptyStockStone = { categoryId: '', title: '', image: '', quantity: 1, description: '', weight: '', color: '', shape: '', price: '', hasCertificate: false };
+const emptyStockStone = { categoryId: '', title: '', image: '', quantity: 1, description: '', weight: '', color: '', shape: '', cut: '', origin: '', price: '', includedInStock: true, stockStatus: 'Available', treatment: 'Unspecified', hasCertificate: false, certificateImage: '', certificateDetails: '' };
 const emptyAd = { title: '', image: '', layoutType: 'horizontal', description: '' };
 const emptyLegacyGem = { title: '', description: '', category: '', primaryColor: '', mainImage: '', variations: [] };
 const emptyVariation = { weight: '', designName: '', images: [] };
@@ -17,16 +18,7 @@ const tabs = [
 ];
 
 const api = apiRequest;
-
-async function uploadImage(file) {
-  if (!IMAGE_TYPES.includes(file.type)) throw new Error('Choose a JPEG, PNG or WebP image.');
-  if (!file.size || file.size > GEM_MEDIA_LIMITS.imageBytes) throw new Error('Each photo must be 8 MB or smaller and cannot be empty.');
-  const body = new FormData();
-  body.append('image', file);
-  const data = await apiRequest('/api/upload', { method: 'POST', body }, { timeout: 120000 });
-  if (!data.imageUrl) throw new Error('The upload did not return an image. Please try again.');
-  return data.imageUrl;
-}
+const OperationsUploads = createContext(null);
 
 function OpsIcon({ name = 'gem', ...props }) {
   const paths = {
@@ -57,13 +49,13 @@ function TextField({ label = 'Description', name = 'description', value, onChang
   return <div className="admin-field ops-field ops-span-full"><label htmlFor={fieldId}>{label}{required && <span className="ops-required" aria-hidden="true"> *</span>}</label><textarea id={fieldId} name={name} value={value ?? ''} onChange={onChange} rows={3} required={required} {...props} /></div>;
 }
 
-function VariationImageField({ images, onChange }) {
-  const id = useId();
-  const inputRef = useRef(null);
-  const canonical = (images || []).join(', ');
-  const [draft, setDraft] = useState(canonical);
-  useEffect(() => { if (document.activeElement !== inputRef.current) setDraft(canonical); }, [canonical]);
-  return <div className="admin-field ops-field"><label htmlFor={id}>Image URLs</label><input id={id} ref={inputRef} name="images" value={draft} onChange={(event) => { setDraft(event.target.value); onChange(event.target.value.split(',').map((image) => image.trim()).filter(Boolean)); }} aria-describedby={`${id}-help`} /><p className="ops-help" id={`${id}-help`}>Separate multiple image URLs with commas.</p></div>;
+function VariationImageField({ images, onChange, disabled }) {
+  const rows = Array.isArray(images) && images.length ? images : [''];
+  const [photoKeys, setPhotoKeys] = useState(() => rows.map(() => crypto.randomUUID()));
+  if (photoKeys.length !== rows.length) setPhotoKeys((current) => rows.map((_, index) => current[index] || crypto.randomUUID()));
+  const addPhoto = () => { setPhotoKeys((current) => [...current, crypto.randomUUID()]); onChange([...rows, '']); };
+  const removePhoto = (index) => { setPhotoKeys((current) => current.filter((_, row) => row !== index)); onChange(rows.filter((_, row) => row !== index)); };
+  return <div className="ops-variation-upload-list"><div className="ops-variation-heading"><h4>Variation photographs</h4><span className="ops-help">{rows.filter(Boolean).length} / {GEM_MEDIA_LIMITS.images}</span></div>{rows.map((image, index) => <div className="ops-variation-upload-row" key={photoKeys[index]}><ImageField label={`Variation photo ${index + 1}`} value={image} onChange={(event) => onChange(rows.map((current, row) => row === index ? event.target.value : current))} disabled={disabled} />{rows.length > 1 && <button type="button" className="admin-button is-danger" disabled={disabled} onClick={() => removePhoto(index)}><OpsIcon name="trash" />Remove photo {index + 1}</button>}</div>)}<button type="button" className="admin-button is-secondary" disabled={disabled || rows.length >= GEM_MEDIA_LIMITS.images} onClick={addPhoto}><OpsIcon name="plus" />Add another photo</button><p className="ops-help">Optional. Upload photographs or paste a URL for each image. Up to {GEM_MEDIA_LIMITS.images} photos per variation.</p></div>;
 }
 
 function MediaThumb({ src, title = '', large = false }) {
@@ -71,9 +63,10 @@ function MediaThumb({ src, title = '', large = false }) {
   return <span className={`ops-media${large ? ' is-large' : ''}`}>{src && !failed ? <img src={src} alt={large ? `${title || 'Image'} preview` : ''} loading="lazy" onError={() => setFailed(true)} /> : <OpsIcon name="image" />}</span>;
 }
 
-function ImageField({ label, name, value, onChange, onUpload, required = false, id }) {
-  const inputId = useId();
-  return <div className="ops-image-field ops-span-full"><Field label={label} name={name} value={value} onChange={onChange} required={required} id={id} inputMode="url" placeholder="Paste an image URL" /><div className="ops-image-tools"><MediaThumb key={value || 'empty'} src={value} title={label} large /><div><label className="admin-button is-secondary ops-upload" htmlFor={inputId}><OpsIcon name="upload" />Choose image<input id={inputId} type="file" accept="image/*" onChange={onUpload} /></label><p className="ops-help">Choose a file or paste an image URL above.</p>{value && <a href={value} target="_blank" rel="noopener noreferrer" className="ops-text-link">Open full image <OpsIcon name="arrow" /></a>}</div></div></div>;
+function ImageField({ label, name, value, onChange, required = false, disabled = false, hint }) {
+  const uploadKey = useId();
+  const uploads = useContext(OperationsUploads);
+  return <AdminImageField label={label.replace(/\s+URL$/i, '')} name={name} value={value} onChange={(url) => onChange({ target: { name, value: url, type: 'text' } })} required={required} disabled={disabled} hint={hint} onBusyChange={(active) => uploads?.track(uploadKey, active)} className="ops-image-field ops-span-full" />;
 }
 
 function CategoryBannerPreview({ category }) {
@@ -86,14 +79,12 @@ function CategoryBannerPreview({ category }) {
   </div>;
 }
 
-function CategoryBannerField({ category, onChange, onUpload, editing }) {
-  const uploadId = 'ops-category-banner-upload';
+function CategoryBannerField({ category, onChange, editing, busy }) {
   return <section className="ops-category-banner ops-span-full" aria-labelledby="ops-category-banner-heading">
     <div className="ops-banner-field-heading"><OpsIcon name="image" /><div><h4 id="ops-category-banner-heading">Category banner</h4><p>The wide image at the top of this collection's page.</p></div></div>
     <CategoryBannerPreview category={category} />
-    <div className="ops-banner-upload-tools"><label className="admin-button is-primary ops-upload" htmlFor={uploadId}><OpsIcon name="upload" />Upload banner<input id={uploadId} type="file" accept="image/jpeg,image/png,image/webp" aria-describedby={`${uploadId}-help`} onChange={onUpload} /></label><p id={`${uploadId}-help`} className="ops-help">JPEG, PNG or WebP · up to 8 MB. Use a wide landscape image, ideally 3:1 (1800 × 600 px). Keep the gemstone on the right so the collection title stays clear.</p></div>
-    <Field label="Banner image URL" name="coverImage" id="ops-category-banner-url" value={category.coverImage} onChange={onChange} inputMode="url" placeholder="Upload a banner or paste an image URL" />
-    <div className="ops-banner-save"><p className="ops-help">{category.coverImage ? 'Save the category to apply this banner to your website.' : 'A curated banner appears until you add your own image.'}</p>{editing && <button type="submit" className="admin-button is-secondary"><OpsIcon name="check" />Save category banner</button>}</div>
+    <div id="ops-category-banner-upload" tabIndex={-1}><ImageField label="Banner image" name="coverImage" value={category.coverImage} onChange={onChange} disabled={busy} hint="Use a wide landscape image, ideally 3:1 (1800 × 600 px). Keep the gemstone on the right so the collection title stays clear." /></div>
+    <div className="ops-banner-save"><p className="ops-help">{category.coverImage ? 'Save the category to apply this banner to your website.' : 'A curated banner appears until you add your own image.'}</p>{editing && <button type="submit" className="admin-button is-secondary" disabled={busy}><OpsIcon name="check" />Save category banner</button>}</div>
   </section>;
 }
 
@@ -102,7 +93,8 @@ function Panel({ title, description, count, children, className = '', id }) {
 }
 
 function FormPanel({ title, description, label, id, busy, editing, children, onSubmit }) {
-  return <Panel title={title} description={description} id={id} className="ops-form-panel"><form aria-label={label} onSubmit={onSubmit}><fieldset disabled={busy} className="admin-panel-body ops-form-body">{editing && <p className="ops-editing"><OpsIcon name="edit" />Editing an existing record</p>}{children}</fieldset></form></Panel>;
+  const uploads = useContext(OperationsUploads);
+  return <Panel title={title} description={description} id={id} className="ops-form-panel"><form aria-label={label} onSubmit={onSubmit}><fieldset disabled={busy && !uploads?.active} className="admin-panel-body ops-form-body">{editing && <p className="ops-editing"><OpsIcon name="edit" />Editing an existing record</p>}{children}</fieldset></form></Panel>;
 }
 
 function FormActions({ editing, onCancel, busy, label = 'Save changes' }) {
@@ -137,9 +129,10 @@ function RowActions({ onEdit, onDelete, busy, title }) {
 function focusEditor(id) { window.requestAnimationFrame(() => document.getElementById(id)?.focus()); }
 function changeSetter(setter) { return (event) => { const { name, value, type, checked } = event.target; setter((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value })); }; }
 function categoryId(stone) { return typeof stone.categoryId === 'object' ? stone.categoryId?._id : stone.categoryId; }
+function stockFormFor(stone) { return { ...emptyStockStone, ...Object.fromEntries(Object.keys(emptyStockStone).filter((key) => stone?.[key] != null).map((key) => [key, stone[key]])), categoryId: categoryId(stone || {}) || '', includedInStock: stone?.includedInStock !== false }; }
 
-function AdminOperations() {
-  const [section, setSection] = useState('catalog');
+function AdminOperations({ initialSection = 'catalog', initialStockStone, onStockStoneOpened, onDataChanged }) {
+  const [section, setSection] = useState(() => initialStockStone ? 'stock' : tabs.some(([id]) => id === initialSection) ? initialSection : 'catalog');
   const [categories, setCategories] = useState([]);
   const [stockCategories, setStockCategories] = useState([]);
   const [stockStones, setStockStones] = useState([]);
@@ -148,11 +141,11 @@ function AdminOperations() {
   const [legacyGems, setLegacyGems] = useState([]);
   const [categoryForm, setCategoryForm] = useState(emptyCategory);
   const [stockCategoryForm, setStockCategoryForm] = useState(emptyCategory);
-  const [stockStoneForm, setStockStoneForm] = useState(emptyStockStone);
+  const [stockStoneForm, setStockStoneForm] = useState(() => stockFormFor(initialStockStone));
   const [adForm, setAdForm] = useState(emptyAd);
   const [legacyForm, setLegacyForm] = useState(emptyLegacyGem);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [editingStockStone, setEditingStockStone] = useState(null);
+  const [editingStockStone, setEditingStockStone] = useState(initialStockStone || null);
   const [editingAd, setEditingAd] = useState(null);
   const [editingLegacyGem, setEditingLegacyGem] = useState(null);
   const [status, setStatus] = useState(null);
@@ -162,11 +155,27 @@ function AdminOperations() {
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editorSessions, setEditorSessions] = useState({ category: 0, stockCategory: 0, stockStone: 0, ad: 0, legacy: 0 });
   const busyRef = useRef(false);
   const uploadingRef = useRef(false);
+  const uploadKeys = useRef(new Set());
+  const initialStockConsumed = useRef(false);
   const mountedRef = useRef(true);
   const activeLoad = useRef(null);
   const loadVersion = useRef(0);
+  const resetEditorSession = (key) => setEditorSessions((current) => ({ ...current, [key]: current[key] + 1 }));
+  const selectEditor = (key, setter) => (record) => { setter(record); resetEditorSession(key); };
+  const trackUpload = useCallback((key, active) => {
+    if (active) uploadKeys.current.add(key); else uploadKeys.current.delete(key);
+    uploadingRef.current = uploadKeys.current.size > 0;
+    if (mountedRef.current) setUploading(uploadingRef.current);
+  }, []);
+  useEffect(() => {
+    if (!initialStockStone || initialStockConsumed.current) return;
+    initialStockConsumed.current = true;
+    focusEditor('ops-stock-stone-title');
+    onStockStoneOpened?.();
+  }, [initialStockStone, onStockStoneOpened]);
 
   const load = useCallback(async () => {
     activeLoad.current?.abort();
@@ -207,6 +216,7 @@ function AdminOperations() {
     try {
       await action();
       if (mountedRef.current) { setStatus({ type: 'success', message: successMessage }); load(); }
+      if (onDataChanged) Promise.resolve().then(onDataChanged).catch(() => {});
       return true;
     } catch (error) {
       if (mountedRef.current) setStatus({ type: 'error', message: error.message || 'Could not save changes. Please try again.' });
@@ -214,45 +224,34 @@ function AdminOperations() {
     } finally { busyRef.current = false; if (mountedRef.current) setBusy(false); }
   };
 
-  const withUpload = (setter, name) => async (event) => {
-    const input = event.target;
-    const file = input.files?.[0];
-    if (!file || busyRef.current || uploadingRef.current) return;
-    uploadingRef.current = true;
-    setUploading(true);
-    setStatus(null);
-    try {
-      const imageUrl = await uploadImage(file);
-      if (mountedRef.current) { setter((current) => ({ ...current, [name]: imageUrl })); setStatus({ type: 'success', message: 'Image uploaded. Save the form to apply it.' }); }
-    } catch (error) { if (mountedRef.current) setStatus({ type: 'error', message: error.message || 'Image upload failed. Your previous image has been kept.' }); }
-    finally { input.value = ''; uploadingRef.current = false; if (mountedRef.current) setUploading(false); }
-  };
   const confirmDelete = (message, action, successMessage) => { if (!busyRef.current && !uploadingRef.current && window.confirm(message)) save(action, successMessage); };
   const saveCategory = async (event) => {
     event.preventDefault();
     const saved = await save(() => api(editingCategory ? `/api/inventory/categories/${editingCategory._id}` : '/api/inventory/categories', { method: editingCategory ? 'PUT' : 'POST', body: JSON.stringify(categoryForm) }), 'Gem category saved.');
-    if (saved) { setCategoryForm(emptyCategory); setEditingCategory(null); }
+    if (saved) { setCategoryForm(emptyCategory); setEditingCategory(null); resetEditorSession('category'); }
   };
   const saveStockCategory = async (event) => {
     event.preventDefault();
-    if (await save(() => api('/api/stock/categories', { method: 'POST', body: JSON.stringify(stockCategoryForm) }), 'Stock category created.')) setStockCategoryForm(emptyCategory);
+    if (await save(() => api('/api/stock/categories', { method: 'POST', body: JSON.stringify(stockCategoryForm) }), 'Stock category created.')) { setStockCategoryForm(emptyCategory); resetEditorSession('stockCategory'); }
   };
   const saveStockStone = async (event) => {
     event.preventDefault();
     if (!Number.isInteger(Number(stockStoneForm.quantity)) || Number(stockStoneForm.quantity) < 0) { setStatus({ type: 'error', message: 'Quantity must be a whole number of zero or more.' }); return; }
     if (stockStoneForm.price !== '' && stockStoneForm.price != null && (!Number.isFinite(Number(stockStoneForm.price)) || Number(stockStoneForm.price) < 0)) { setStatus({ type: 'error', message: 'Price must be zero or more.' }); return; }
-    const optionalNumber = (value) => value === '' || value === null || value === undefined ? undefined : Number(value);
-    const payload = { ...stockStoneForm, quantity: Number(stockStoneForm.quantity), weight: optionalNumber(stockStoneForm.weight), price: optionalNumber(stockStoneForm.price) };
-    if (await save(() => api(editingStockStone ? `/api/stock/stones/${editingStockStone._id}` : '/api/stock/stones', { method: editingStockStone ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Stock stone saved.')) { setStockStoneForm(emptyStockStone); setEditingStockStone(null); }
+    if (stockStoneForm.weight !== '' && stockStoneForm.weight != null && (!Number.isFinite(Number(stockStoneForm.weight)) || Number(stockStoneForm.weight) < 0)) { setStatus({ type: 'error', message: 'Carat weight must be zero or more.' }); return; }
+    const optionalNumber = (value) => value === '' || value === null || value === undefined ? null : Number(value);
+    const payload = Object.fromEntries(Object.keys(emptyStockStone).map((key) => [key, stockStoneForm[key]]));
+    payload.quantity = Number(stockStoneForm.quantity); payload.weight = optionalNumber(stockStoneForm.weight); payload.price = optionalNumber(stockStoneForm.price);
+    if (await save(() => api(editingStockStone ? `/api/stock/stones/${editingStockStone._id}` : '/api/stock/stones', { method: editingStockStone ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Stock stone saved.')) { setStockStoneForm(emptyStockStone); setEditingStockStone(null); resetEditorSession('stockStone'); }
   };
   const saveAd = async (event) => {
     event.preventDefault();
-    if (await save(() => api(editingAd ? `/api/event-ads/${editingAd._id}` : '/api/event-ads', { method: editingAd ? 'PUT' : 'POST', body: JSON.stringify(adForm) }), 'Event advertisement saved.')) { setAdForm(emptyAd); setEditingAd(null); }
+    if (await save(() => api(editingAd ? `/api/event-ads/${editingAd._id}` : '/api/event-ads', { method: editingAd ? 'PUT' : 'POST', body: JSON.stringify(adForm) }), 'Event advertisement saved.')) { setAdForm(emptyAd); setEditingAd(null); resetEditorSession('ad'); }
   };
   const saveLegacyGem = async (event) => {
     event.preventDefault();
     const variations = legacyForm.variations.filter((variation) => String(variation.weight ?? '').trim()).map((variation) => ({ ...variation, images: (variation.images || []).filter(Boolean) }));
-    if (await save(() => api(editingLegacyGem ? `/api/gems/${editingLegacyGem._id}` : '/api/gems', { method: editingLegacyGem ? 'PUT' : 'POST', body: JSON.stringify({ ...legacyForm, variations }) }), 'Older catalog gem saved.')) { setLegacyForm(emptyLegacyGem); setEditingLegacyGem(null); }
+    if (await save(() => api(editingLegacyGem ? `/api/gems/${editingLegacyGem._id}` : '/api/gems', { method: editingLegacyGem ? 'PUT' : 'POST', body: JSON.stringify({ ...legacyForm, variations }) }), 'Older catalog gem saved.')) { setLegacyForm(emptyLegacyGem); setEditingLegacyGem(null); resetEditorSession('legacy'); }
   };
   const toggleStone = (stone, field) => save(() => api(`/api/inventory/stones/${stone._id}`, { method: 'PUT', body: JSON.stringify({ [field]: !stone[field] }) }), `${field === 'isTopGem' ? 'Homepage gem' : 'Featured status'} updated.`);
   const disabled = busy || uploading;
@@ -260,20 +259,20 @@ function AdminOperations() {
   const loading = sectionResources[section].some((key) => pending[key] && !loaded[key]);
   const activeTab = tabs.find(([id]) => id === section);
 
-  return <div className="admin-operations">
+  return <OperationsUploads.Provider value={{ track: trackUpload, active: uploading }}><div className="admin-operations">
     <div className="ops-page-header"><div><p className="ops-kicker">Catalog management</p><h2>{activeTab[1]}</h2><p>{activeTab[2]}</p></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={refreshing || disabled}><OpsIcon name="refresh" />{refreshing ? 'Refreshing…' : 'Refresh records'}</button></div>
-    <nav className="admin-subnav ops-subnav" aria-label="Operations sections">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setSection(id)} className={section === id ? 'is-active' : ''} aria-pressed={section === id}>{label}</button>)}</nav>
+    <nav className="admin-subnav ops-subnav" aria-label="Operations sections">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setSection(id)} disabled={disabled} className={section === id ? 'is-active' : ''} aria-pressed={section === id}>{label}</button>)}</nav>
     {status && <div className={`ops-notice is-${status.type}`} role={status.type === 'error' ? 'alert' : 'status'}><OpsIcon name={status.type === 'success' ? 'check' : 'close'} /><p>{status.message}</p><button type="button" onClick={() => setStatus(null)} aria-label="Dismiss message"><OpsIcon name="close" /></button></div>}
     {loadErrors.length > 0 && <div className="ops-notice is-error" role="alert"><div><strong>Some records could not be refreshed</strong><ul>{loadErrors.map((error) => <li key={error}>{error}</li>)}</ul></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={loading || disabled}>Try again</button></div>}
     {(busy || uploading) && <p className="ops-working" role="status"><span />{uploading ? 'Uploading image…' : 'Saving changes…'}</p>}
-    {section === 'catalog' && <CatalogOperations categories={categories} categoryForm={categoryForm} setCategoryForm={setCategoryForm} editingCategory={editingCategory} setEditingCategory={setEditingCategory} saveCategory={saveCategory} deleteCategory={(category) => confirmDelete(`Delete “${category.title}” and every related gem? This cannot be undone.`, () => api(`/api/inventory/categories/${category._id}`, { method: 'DELETE' }), 'Category deleted.')} stones={stones} toggleStone={toggleStone} upload={withUpload(setCategoryForm, 'mainImage')} coverUpload={withUpload(setCategoryForm, 'coverImage')} busy={disabled} loading={loading} />}
-    {section === 'stock' && <StockOperations categories={stockCategories} categoryForm={stockCategoryForm} setCategoryForm={setStockCategoryForm} saveCategory={saveStockCategory} deleteCategory={(category) => confirmDelete(`Delete “${category.title}” and all its stock stones? This cannot be undone.`, () => api(`/api/stock/categories/${category._id}`, { method: 'DELETE' }), 'Stock category deleted.')} stoneForm={stockStoneForm} setStoneForm={setStockStoneForm} editingStone={editingStockStone} setEditingStone={setEditingStockStone} saveStone={saveStockStone} stones={stockStones} deleteStone={(stone) => confirmDelete(`Delete “${stone.title}”? This cannot be undone.`, () => api(`/api/stock/stones/${stone._id}`, { method: 'DELETE' }), 'Stock stone deleted.')} upload={withUpload(setStockStoneForm, 'image')} categoryUpload={withUpload(setStockCategoryForm, 'mainImage')} busy={disabled} loading={loading} />}
-    {section === 'ads' && <AdsOperations ads={ads} form={adForm} setForm={setAdForm} editing={editingAd} setEditing={setEditingAd} save={saveAd} deleteAd={(ad) => confirmDelete(`Delete the “${ad.title}” advertisement? This cannot be undone.`, () => api(`/api/event-ads/${ad._id}`, { method: 'DELETE' }), 'Advertisement deleted.')} upload={withUpload(setAdForm, 'image')} busy={disabled} loading={loading} />}
-    {section === 'legacy' && <LegacyOperations gems={legacyGems} form={legacyForm} setForm={setLegacyForm} editing={editingLegacyGem} setEditing={setEditingLegacyGem} save={saveLegacyGem} deleteGem={(gem) => confirmDelete(`Delete “${gem.title}” from the older catalog? This cannot be undone.`, () => api(`/api/gems/${gem._id}`, { method: 'DELETE' }), 'Older catalog gem deleted.')} upload={withUpload(setLegacyForm, 'mainImage')} busy={disabled} loading={loading} />}
-  </div>;
+    {section === 'catalog' && <CatalogOperations editorSession={editorSessions.category} categories={categories} categoryForm={categoryForm} setCategoryForm={setCategoryForm} editingCategory={editingCategory} setEditingCategory={selectEditor('category', setEditingCategory)} saveCategory={saveCategory} deleteCategory={(category) => confirmDelete(`Delete “${category.title}” and every related gem? This cannot be undone.`, () => api(`/api/inventory/categories/${category._id}`, { method: 'DELETE' }), 'Category deleted.')} stones={stones} toggleStone={toggleStone} busy={disabled} loading={loading} />}
+    {section === 'stock' && <StockOperations editorSession={editorSessions.stockStone} categorySession={editorSessions.stockCategory} categories={stockCategories} categoryForm={stockCategoryForm} setCategoryForm={setStockCategoryForm} saveCategory={saveStockCategory} deleteCategory={(category) => confirmDelete(`Delete “${category.title}” and all its stock stones? This cannot be undone.`, () => api(`/api/stock/categories/${category._id}`, { method: 'DELETE' }), 'Stock category deleted.')} stoneForm={stockStoneForm} setStoneForm={setStockStoneForm} editingStone={editingStockStone} setEditingStone={selectEditor('stockStone', setEditingStockStone)} saveStone={saveStockStone} stones={stockStones} deleteStone={(stone) => confirmDelete(`Delete “${stone.title}”? This cannot be undone.`, () => api(`/api/stock/stones/${stone._id}`, { method: 'DELETE' }), 'Stock stone deleted.')} busy={disabled} loading={loading} />}
+    {section === 'ads' && <AdsOperations editorSession={editorSessions.ad} ads={ads} form={adForm} setForm={setAdForm} editing={editingAd} setEditing={selectEditor('ad', setEditingAd)} save={saveAd} deleteAd={(ad) => confirmDelete(`Delete the “${ad.title}” advertisement? This cannot be undone.`, () => api(`/api/event-ads/${ad._id}`, { method: 'DELETE' }), 'Advertisement deleted.')} busy={disabled} loading={loading} />}
+    {section === 'legacy' && <LegacyOperations editorSession={editorSessions.legacy} gems={legacyGems} form={legacyForm} setForm={setLegacyForm} editing={editingLegacyGem} setEditing={selectEditor('legacy', setEditingLegacyGem)} save={saveLegacyGem} deleteGem={(gem) => confirmDelete(`Delete “${gem.title}” from the older catalog? This cannot be undone.`, () => api(`/api/gems/${gem._id}`, { method: 'DELETE' }), 'Older catalog gem deleted.')} busy={disabled} loading={loading} />}
+  </div></OperationsUploads.Provider>;
 }
 
-function CatalogOperations({ categories, categoryForm, setCategoryForm, editingCategory, setEditingCategory, saveCategory, deleteCategory, stones, toggleStone, upload, coverUpload, busy, loading }) {
+function CatalogOperations({ editorSession, categories, categoryForm, setCategoryForm, editingCategory, setEditingCategory, saveCategory, deleteCategory, stones, toggleStone, busy, loading }) {
   const [placement, setPlacement] = useState('all');
   const change = changeSetter(setCategoryForm);
   const visibleStones = placement === 'homepage' ? stones.filter((stone) => stone.isTopGem) : placement === 'featured' ? stones.filter((stone) => stone.isFeatured) : stones;
@@ -285,11 +284,11 @@ function CatalogOperations({ categories, categoryForm, setCategoryForm, editingC
         <div className="ops-banner-card-footer"><div><h4>{category.title || 'Untitled category'}</h4><p>{editingCategory?._id === category._id ? 'Editing in the form below' : 'Collection page banner'}</p></div><button type="button" className="admin-button is-secondary" disabled={busy} onClick={() => editCategory(category, true)} aria-label={`Edit banner for ${category.title || 'untitled category'}`}><OpsIcon name="edit" />Edit banner</button></div>
       </article>)}</div> : <Empty title="Your collection banners will appear here" detail="Create a gem category below to give it a wide collection banner." />}
     </Panel>
-    <div className="ops-editor-layout"><FormPanel title={editingCategory ? 'Edit gem category' : 'New gem category'} description="Set the name and imagery used to browse your collection." id="ops-category-editor-heading" label="Gem category details" busy={busy} editing={editingCategory} onSubmit={saveCategory}>
+    <div className="ops-editor-layout"><FormPanel key={`${editingCategory?._id || 'new'}-${editorSession}`} title={editingCategory ? 'Edit gem category' : 'New gem category'} description="Set the name and imagery used to browse your collection." id="ops-category-editor-heading" label="Gem category details" busy={busy} editing={editingCategory} onSubmit={saveCategory}>
     <Field label="Category title" name="title" id="ops-gem-category-title" value={categoryForm.title} onChange={change} required autoComplete="off" />
-    <CategoryBannerField category={categoryForm} onChange={change} onUpload={coverUpload} editing={editingCategory} />
+    <CategoryBannerField category={categoryForm} onChange={change} editing={editingCategory} busy={busy} />
     <TextField value={categoryForm.description} onChange={change} />
-    <div className="ops-category-thumbnail ops-span-full"><div><h4>Category thumbnail</h4><p className="ops-help">The smaller image used on category cards.</p></div><ImageField label="Thumbnail image URL" name="mainImage" value={categoryForm.mainImage} onChange={change} onUpload={upload} required /></div>
+    <div className="ops-category-thumbnail ops-span-full"><div><h4>Category thumbnail</h4><p className="ops-help">The smaller image used on category cards.</p></div><ImageField label="Thumbnail image" name="mainImage" value={categoryForm.mainImage} onChange={change} disabled={busy} required /></div>
     <FormActions editing={editingCategory} busy={busy} label={editingCategory ? 'Save category' : 'Create category'} onCancel={() => { setEditingCategory(null); setCategoryForm(emptyCategory); }} />
   </FormPanel><div className="ops-stack">
     <Records title="Gem categories" description="Deleting a category also removes its related gemstones." rows={categories} columns={['Category', 'Actions']} searchLabel="Search categories" loading={loading} emptyTitle="No gem categories yet" emptyDetail="Create a category using the form to organise your gemstones." renderRow={(category) => <tr key={category._id}><td><RecordName record={category} image={category.mainImage || category.image} />{category.description && <p className="ops-cell-description">{category.description}</p>}</td><td><RowActions title={category.title} busy={busy} onEdit={() => editCategory(category)} onDelete={() => deleteCategory(category)} /></td></tr>} />
@@ -297,52 +296,62 @@ function CatalogOperations({ categories, categoryForm, setCategoryForm, editingC
   </div></div></div>;
 }
 
-function StockOperations({ categories, categoryForm, setCategoryForm, saveCategory, deleteCategory, stoneForm, setStoneForm, editingStone, setEditingStone, saveStone, stones, deleteStone, upload, categoryUpload, busy, loading }) {
+function StockOperations({ editorSession, categorySession, categories, categoryForm, setCategoryForm, saveCategory, deleteCategory, stoneForm, setStoneForm, editingStone, setEditingStone, saveStone, stones, deleteStone, busy, loading }) {
   const categoryChange = changeSetter(setCategoryForm);
   const stoneChange = changeSetter(setStoneForm);
   const categoryNames = new Map(categories.map((category) => [category._id, category.title]));
-  return <div className="ops-stack"><div className="ops-stock-layout"><div className="ops-stack"><FormPanel title="New stock category" description="Group stock stones by gemstone type or collection." id="ops-stock-category-heading" label="Stock category details" busy={busy} onSubmit={saveCategory}>
+  return <div className="ops-stack"><div className="ops-stock-layout"><div className="ops-stack"><FormPanel key={`stock-category-${categorySession}`} title="New stock category" description="Group stock stones by gemstone type or collection." id="ops-stock-category-heading" label="Stock category details" busy={busy} onSubmit={saveCategory}>
     <Field label="Category title" name="title" id="ops-stock-category-title" value={categoryForm.title} onChange={categoryChange} required />
     <TextField value={categoryForm.description} onChange={categoryChange} />
-    <ImageField label="Main image URL" name="mainImage" value={categoryForm.mainImage} onChange={categoryChange} onUpload={categoryUpload} required />
+    <ImageField label="Stock category image" name="mainImage" value={categoryForm.mainImage} onChange={categoryChange} disabled={busy} required />
     <FormActions busy={busy} label="Create stock category" />
   </FormPanel><Records title="Stock categories" description="Deleting a category also removes all of its stock stones." rows={categories} columns={['Category', 'Actions']} loading={loading} searchLabel="Search stock categories" emptyTitle="No stock categories yet" emptyDetail="Create a category before adding stock stones." renderRow={(category) => <tr key={category._id}><td><RecordName record={category} image={category.mainImage} /></td><td><RowActions title={category.title} busy={busy} onDelete={() => deleteCategory(category)} /></td></tr>} /></div>
-  <FormPanel title={editingStone ? 'Edit stock stone' : 'New stock stone'} description="Record the details and quantity available for this stock item." id="ops-stock-stone-heading" label="Stock stone details" editing={editingStone} busy={busy} onSubmit={saveStone}>
+  <FormPanel key={`${editingStone?._id || 'new'}-${editorSession}`} title={editingStone ? 'Edit stock stone' : 'New stock stone'} description="Keep identity, availability and gem specifications ready for customer enquiries." id="ops-stock-stone-heading" label="Stock stone details" editing={editingStone} busy={busy} onSubmit={saveStone}>
+    <div className="ops-generated-reference" aria-label="Generated Gem ID"><span>Gem ID</span><strong>{editingStone?.stoneId || 'Generated when you save'}</strong><small>The server creates this permanent reference automatically.</small></div>
+    <section className="ops-stock-form-section" aria-labelledby="ops-stock-identity"><div className="ops-stock-section-heading"><OpsIcon /><h4 id="ops-stock-identity">Gemstone identity</h4></div>
     <div className="admin-field ops-field"><label htmlFor="ops-stock-stone-category">Stock category<span className="ops-required" aria-hidden="true"> *</span></label><select id="ops-stock-stone-category" name="categoryId" value={stoneForm.categoryId} onChange={stoneChange} required><option value="">Select a stock category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.title}</option>)}</select>{!categories.length && <p className="ops-help">Create a stock category first using the form alongside.</p>}</div>
     <Field label="Stone title" name="title" id="ops-stock-stone-title" value={stoneForm.title} onChange={stoneChange} required />
-    <div className="admin-form-grid ops-form-grid">{[['quantity', 'Quantity'], ['weight', 'Weight'], ['color', 'Colour'], ['shape', 'Shape'], ['price', 'Price']].map(([name, label]) => <Field key={name} label={label} name={name} value={stoneForm[name]} onChange={stoneChange} type={['quantity', 'weight', 'price'].includes(name) ? 'number' : 'text'} step={['weight', 'price'].includes(name) ? 'any' : undefined} />)}</div>
+    <div className="admin-form-grid ops-form-grid">{[['weight', 'Weight per piece (ct)'], ['color', 'Colour'], ['shape', 'Shape'], ['cut', 'Cut'], ['origin', 'Origin']].map(([name, label]) => <Field key={name} label={label} name={name} value={stoneForm[name]} onChange={stoneChange} type={name === 'weight' ? 'number' : 'text'} step={name === 'weight' ? 'any' : undefined} />)}<div className="admin-field ops-field"><label htmlFor="ops-stock-treatment">Treatment</label><select id="ops-stock-treatment" name="treatment" value={stoneForm.treatment} onChange={stoneChange}>{['Unspecified', 'Unheated', 'Heated', 'Other'].map((treatment) => <option key={treatment}>{treatment}</option>)}</select></div></div>
     <TextField value={stoneForm.description} onChange={stoneChange} />
-    <ImageField label="Stone image URL" name="image" value={stoneForm.image} onChange={stoneChange} onUpload={upload} required />
+    </section>
+    <section className="ops-stock-form-section" aria-labelledby="ops-stock-availability"><div className="ops-stock-section-heading"><OpsIcon name="check" /><h4 id="ops-stock-availability">Stock & availability</h4></div><div className="admin-form-grid ops-form-grid"><Field label="Quantity" name="quantity" value={stoneForm.quantity} onChange={stoneChange} type="number" required /><Field label="Price per piece (Rs.)" name="price" value={stoneForm.price} onChange={stoneChange} type="number" step="any" /><div className="admin-field ops-field ops-span-full"><label htmlFor="ops-stock-status">Stock status</label><select id="ops-stock-status" name="stockStatus" value={stoneForm.stockStatus} onChange={stoneChange}>{['Available', 'Reserved', 'Sold'].map((value) => <option key={value}>{value}</option>)}</select><p className="ops-help">Reserved and sold stones stay recorded separately from pieces ready to offer.</p></div></div><label className="ops-checkbox ops-stock-inclusion"><input type="checkbox" name="includedInStock" checked={stoneForm.includedInStock !== false} onChange={stoneChange} /><span>Include in stock totals<small>Turn off for reference-only or consignment records you want to exclude from stock calculations. This private stock form does not publish a stone to the website.</small></span></label></section>
+    <section className="ops-stock-form-section" aria-labelledby="ops-stock-photographs"><div className="ops-stock-section-heading"><OpsIcon name="image" /><h4 id="ops-stock-photographs">Photograph</h4></div><ImageField label="Stock stone image" name="image" value={stoneForm.image} onChange={stoneChange} disabled={busy} required /></section>
+    <section className="ops-stock-form-section" aria-labelledby="ops-stock-certificate"><div className="ops-stock-section-heading"><OpsIcon name="check" /><h4 id="ops-stock-certificate">Certification</h4></div>
     <label className="ops-checkbox"><input type="checkbox" name="hasCertificate" checked={Boolean(stoneForm.hasCertificate)} onChange={stoneChange} /><span>Has a certificate<small>Mark this item when certificate information is available.</small></span></label>
+    <TextField label="Certificate details" name="certificateDetails" value={stoneForm.certificateDetails} onChange={stoneChange} placeholder="Laboratory, report number and relevant details" />
+    <ImageField label="Stock certificate image" name="certificateImage" value={stoneForm.certificateImage} onChange={stoneChange} disabled={busy} hint="Optional. Add the certificate photograph from your device or an existing image link." />
+    </section>
     <FormActions editing={editingStone} busy={busy} label={editingStone ? 'Save stock stone' : 'Create stock stone'} onCancel={() => { setEditingStone(null); setStoneForm(emptyStockStone); }} />
   </FormPanel></div>
-  <Records title="Stock stones" description="Review quantities, identify items and edit their details." rows={stones} columns={['Stock item', 'Category', 'Quantity', 'Weight', 'Price', 'Certificate', 'Actions']} searchLabel="Search stock by name, reference or category" searchValue={(stone) => [stone.title, stone.stoneId, stone.color, stone.shape, categoryNames.get(categoryId(stone))].filter(Boolean).join(' ')} loading={loading} emptyTitle="No stock stones yet" emptyDetail="Add your first stock item using the form above." renderRow={(stone) => <tr key={stone._id}><td><RecordName record={stone} image={stone.image} /></td><td>{categoryNames.get(categoryId(stone)) || 'Unassigned'}</td><td><span className="ops-number">{stone.quantity ?? 1}</span></td><td>{stone.weight ?? '—'}</td><td>{stone.price ?? '—'}</td><td><span className={`admin-badge ${stone.hasCertificate ? 'is-success' : ''}`}>{stone.hasCertificate ? 'Available' : 'Not marked'}</span></td><td><RowActions title={stone.title} busy={busy} onEdit={() => { setEditingStone(stone); setStoneForm({ ...emptyStockStone, ...stone, categoryId: categoryId(stone) || '' }); focusEditor('ops-stock-stone-title'); }} onDelete={() => deleteStone(stone)} /></td></tr>} />
+  <Records title="Stock stones" description="Review quantities, availability and the details customers ask about." rows={stones} columns={['Stock item', 'Category', 'Quantity', 'Carats', 'Unit price (LKR)', 'Availability', 'Certificate', 'Actions']} searchLabel="Search stock by name, reference or category" searchValue={(stone) => [stone.title, stone.stoneId, stone.color, stone.shape, stone.cut, stone.origin, stone.treatment, categoryNames.get(categoryId(stone))].filter(Boolean).join(' ')} loading={loading} emptyTitle="No stock stones yet" emptyDetail="Add your first stock item using the form above." renderRow={(stone) => <tr key={stone._id}><td><RecordName record={stone} image={stone.image} />{stone.includedInStock === false && <span className="admin-badge">Excluded from stock totals</span>}</td><td>{categoryNames.get(categoryId(stone)) || 'Unassigned'}</td><td><span className="ops-number">{stone.quantity ?? 1}</span></td><td>{stone.weight ?? '—'}</td><td>{stone.price ?? '—'}</td><td><span className={`admin-badge ${Number(stone.quantity) > 0 && (!stone.stockStatus || stone.stockStatus === 'Available') ? 'is-success' : ''}`}>{Number(stone.quantity) <= 0 ? 'Out of stock' : stone.stockStatus || 'Available'}</span></td><td><span className={`admin-badge ${stone.hasCertificate ? 'is-success' : ''}`}>{stone.hasCertificate ? 'Available' : 'Not marked'}</span></td><td><RowActions title={stone.title} busy={busy} onEdit={() => { setEditingStone(stone); setStoneForm(stockFormFor(stone)); focusEditor('ops-stock-stone-title'); }} onDelete={() => deleteStone(stone)} /></td></tr>} />
   </div>;
 }
 
-function AdsOperations({ ads, form, setForm, editing, setEditing, save, deleteAd, upload, busy, loading }) {
+function AdsOperations({ editorSession, ads, form, setForm, editing, setEditing, save, deleteAd, busy, loading }) {
   const change = changeSetter(setForm);
-  return <div className="ops-editor-layout"><FormPanel title={editing ? 'Edit event advertisement' : 'New event advertisement'} description="Choose an image and layout for your event promotion." id="ops-ad-editor-heading" label="Event advertisement details" busy={busy} editing={editing} onSubmit={save}>
+  return <div className="ops-editor-layout"><FormPanel key={`${editing?._id || 'new'}-${editorSession}`} title={editing ? 'Edit event advertisement' : 'New event advertisement'} description="Choose an image and layout for your event promotion." id="ops-ad-editor-heading" label="Event advertisement details" busy={busy} editing={editing} onSubmit={save}>
     <Field label="Advertisement title" name="title" id="ops-event-ad-title" value={form.title} onChange={change} required />
-    <ImageField label="Advertisement image URL" name="image" value={form.image} onChange={change} onUpload={upload} required />
+    <ImageField label="Advertisement image" name="image" value={form.image} onChange={change} disabled={busy} required />
     <div className="admin-field ops-field"><label htmlFor="ops-ad-layout">Display layout</label><select id="ops-ad-layout" name="layoutType" value={form.layoutType} onChange={change}><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option></select><p className="ops-help">Match the layout to the orientation of your artwork.</p></div>
     <TextField value={form.description} onChange={change} />
     <FormActions editing={editing} busy={busy} label={editing ? 'Save advertisement' : 'Create advertisement'} onCancel={() => { setEditing(null); setForm(emptyAd); }} />
   </FormPanel><Records title="Event advertisements" description="Keep promotional content and artwork up to date." rows={ads} columns={['Advertisement', 'Layout', 'Actions']} searchLabel="Search advertisements" loading={loading} emptyTitle="No event advertisements yet" emptyDetail="Create your first promotion using the form alongside." renderRow={(ad) => <tr key={ad._id}><td><RecordName record={ad} image={ad.image} />{ad.description && <p className="ops-cell-description">{ad.description}</p>}</td><td><span className="admin-badge">{ad.layoutType === 'vertical' ? 'Vertical' : 'Horizontal'}</span></td><td><RowActions title={ad.title} busy={busy} onEdit={() => { setEditing(ad); setForm({ ...emptyAd, ...ad }); focusEditor('ops-event-ad-title'); }} onDelete={() => deleteAd(ad)} /></td></tr>} /></div>;
 }
 
-function LegacyOperations({ gems, form, setForm, editing, setEditing, save, deleteGem, upload, busy, loading }) {
+function LegacyOperations({ editorSession, gems, form, setForm, editing, setEditing, save, deleteGem, busy, loading }) {
   const change = changeSetter(setForm);
+  const [variationKeys, setVariationKeys] = useState(() => form.variations.map(() => crypto.randomUUID()));
+  if (variationKeys.length !== form.variations.length) setVariationKeys((current) => form.variations.map((_, index) => current[index] || crypto.randomUUID()));
   const updateVariation = (index, field, value) => setForm((current) => ({ ...current, variations: current.variations.map((variation, variationIndex) => variationIndex === index ? { ...variation, [field]: value } : variation) }));
-  const addVariation = () => setForm((current) => ({ ...current, variations: [...current.variations, { ...emptyVariation, images: [] }] }));
-  const removeVariation = (index) => setForm((current) => ({ ...current, variations: current.variations.filter((_, variationIndex) => variationIndex !== index) }));
-  return <div className="ops-editor-layout"><FormPanel title={editing ? 'Edit older catalog gem' : 'Add older catalog gem'} description="For entries in the older catalog. Add new inventory in Gem Inventory." id="ops-legacy-editor-heading" label="Older catalog gem details" editing={editing} busy={busy} onSubmit={save}>
+  const addVariation = () => { setVariationKeys((current) => [...current, crypto.randomUUID()]); setForm((current) => ({ ...current, variations: [...current.variations, { ...emptyVariation, images: [] }] })); };
+  const removeVariation = (index) => { setVariationKeys((current) => current.filter((_, row) => row !== index)); setForm((current) => ({ ...current, variations: current.variations.filter((_, variationIndex) => variationIndex !== index) })); };
+  return <div className="ops-editor-layout"><FormPanel key={`${editing?._id || 'new'}-${editorSession}`} title={editing ? 'Edit older catalog gem' : 'Add older catalog gem'} description="For entries in the older catalog. Add new inventory in Gem Inventory." id="ops-legacy-editor-heading" label="Older catalog gem details" editing={editing} busy={busy} onSubmit={save}>
     <Field label="Gem title" name="title" id="ops-legacy-gem-title" value={form.title} onChange={change} required />
     <div className="admin-form-grid ops-form-grid"><Field label="Category" name="category" value={form.category} onChange={change} required /><Field label="Primary colour" name="primaryColor" value={form.primaryColor} onChange={change} required /></div>
     <TextField value={form.description} onChange={change} required />
-    <ImageField label="Main image URL" name="mainImage" value={form.mainImage} onChange={change} onUpload={upload} required />
-    <div className="ops-variations"><div className="ops-variation-heading"><div><h4>Available variations</h4><p className="ops-help">Add a weight and optional design. Images are optional.</p></div><button type="button" className="admin-button is-secondary" onClick={addVariation}><OpsIcon name="plus" />Add variation</button></div>
-      {form.variations.map((variation, index) => <fieldset key={variation._id || index} className="ops-variation"><legend>Variation {index + 1}</legend><div className="admin-form-grid ops-form-grid"><Field label="Weight" name="weight" value={variation.weight} onChange={(event) => updateVariation(index, 'weight', event.target.value)} required /><Field label="Design / cut name" name="designName" value={variation.designName} onChange={(event) => updateVariation(index, 'designName', event.target.value)} /></div><VariationImageField images={variation.images} onChange={(images) => updateVariation(index, 'images', images)} />{variation.images?.length > 0 && <div className="ops-variation-images">{variation.images.map((image, imageIndex) => <MediaThumb key={`${image}-${imageIndex}`} src={image} />)}</div>}<button type="button" className="admin-button is-danger" onClick={() => removeVariation(index)}><OpsIcon name="trash" />Remove variation</button></fieldset>)}
+    <ImageField label="Older catalog main image" name="mainImage" value={form.mainImage} onChange={change} disabled={busy} required />
+    <div className="ops-variations"><div className="ops-variation-heading"><div><h4>Available variations</h4><p className="ops-help">Add a weight and optional design. Images are optional.</p></div><button type="button" className="admin-button is-secondary" disabled={busy} onClick={addVariation}><OpsIcon name="plus" />Add variation</button></div>
+      {form.variations.map((variation, index) => <fieldset key={variationKeys[index]} className="ops-variation"><legend>Variation {index + 1}</legend><div className="admin-form-grid ops-form-grid"><Field label="Weight" name="weight" value={variation.weight} onChange={(event) => updateVariation(index, 'weight', event.target.value)} required /><Field label="Design / cut name" name="designName" value={variation.designName} onChange={(event) => updateVariation(index, 'designName', event.target.value)} /></div><VariationImageField images={variation.images} onChange={(images) => updateVariation(index, 'images', images)} disabled={busy} /><button type="button" className="admin-button is-danger" disabled={busy} onClick={() => removeVariation(index)}><OpsIcon name="trash" />Remove variation</button></fieldset>)}
       {form.variations.length === 0 && <p className="ops-variation-empty">No variations added. Add one when this gem has different weights or designs.</p>}
     </div><FormActions editing={editing} busy={busy} label={editing ? 'Save gem' : 'Create gem'} onCancel={() => { setEditing(null); setForm(emptyLegacyGem); }} />
   </FormPanel><Records title="Older catalog gems" description="Existing catalog entries and their available variations." rows={gems} columns={['Gemstone', 'Details', 'Actions']} searchLabel="Search older catalog" loading={loading} emptyTitle="No older catalog gems" emptyDetail="Entries from your older catalog will appear here." renderRow={(gem) => <tr key={gem._id}><td><RecordName record={gem} image={gem.mainImage} /></td><td><span>{[gem.category, gem.primaryColor].filter(Boolean).join(' · ') || '—'}</span><p className="ops-help">{gem.variations?.length || 0} variations</p></td><td><RowActions title={gem.title} busy={busy} onEdit={() => { setEditing(gem); setForm({ ...emptyLegacyGem, ...gem, variations: (gem.variations || []).map((variation) => ({ ...variation, weight: String(variation.weight ?? ''), images: Array.isArray(variation.images) ? variation.images : [] })) }); focusEditor('ops-legacy-gem-title'); }} onDelete={() => deleteGem(gem)} /></td></tr>} /></div>;

@@ -16,12 +16,13 @@ for (const name of ['MONGO_URI','CLOUDINARY_CLOUD_NAME','CLOUDINARY_API_KEY','CL
 const Stone = require('../models/Stone');
 const Category = require('../models/GemCategory');
 const StockStone = require('../models/StockStone');
+const StockCategory = require('../models/StockCategory');
 const HomeData = require('../models/HomeData');
 const ContactData = require('../models/ContactData');
 const { SINGLETON_ID } = require('../utils/singletonContent');
 const { escapeRegex, carats } = require('../utils/catalogData');
 const { cloudinaryAsset } = require('../utils/assetCleanup');
-let server, base, rows = [], pipelines = [], updates = [], singletonWrites = [], canonical = {}, aggregateResult;
+let server, base, rows = [], stockRows = [], pipelines = [], updates = [], singletonWrites = [], canonical = {}, aggregateResult;
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 async function api(route, { method = 'GET', body, anonymous = false } = {}) {
@@ -29,10 +30,21 @@ async function api(route, { method = 'GET', body, anonymous = false } = {}) {
   return { status: response.status, body: await response.json() };
 }
 const create = (body = {}) => api('/api/inventory/stones', { method: 'POST', body: { title: 'Synthetic sapphire', image: IMAGE, categoryId: CATEGORY, ...body } });
+const createStock = (body = {}) => api('/api/stock/stones', { method: 'POST', body: { title: 'Synthetic private sapphire', image: IMAGE, categoryId: CATEGORY, ...body } });
 
 before(async () => {
   mock.method(mongoose, 'connect', () => { throw new Error('Real database connections are forbidden.'); });
   mock.method(Category, 'findById', async () => ({ _id: CATEGORY, title: 'Blue Sapphire' }));
+  mock.method(StockCategory, 'findById', async () => ({ _id: CATEGORY, title: 'Private Sapphire' }));
+  mock.method(StockStone.prototype, 'save', async function save() { await this.validate(); stockRows.push(plain(this)); return this; });
+  mock.method(StockStone, 'findById', async (id) => plain(stockRows.find((row) => row._id === String(id)) || null));
+  mock.method(StockStone, 'findByIdAndUpdate', async (id, update, options) => {
+    assert.equal(options.runValidators, true);
+    const index = stockRows.findIndex((row) => row._id === String(id));
+    if (index < 0) return null;
+    const document = new StockStone({ ...stockRows[index], ...update.$set });
+    await document.validate(); stockRows[index] = plain(document); return plain(document);
+  });
   mock.method(Stone.prototype, 'save', async function save() { await this.validate(); const value = plain(this); rows.push(value); return this; });
   mock.method(Stone, 'findById', async (id) => plain(rows.find((row) => row._id === String(id)) || null));
   mock.method(Stone, 'findByIdAndUpdate', async (id, update, options) => {
@@ -57,7 +69,7 @@ before(async () => {
   }
   const app = require('../server'); server = app.listen(0, '127.0.0.1'); await once(server, 'listening'); base = `http://127.0.0.1:${server.address().port}`;
 });
-beforeEach(() => { rows = []; pipelines = []; updates = []; singletonWrites = []; canonical = {}; aggregateResult = [{ stones: [], metadata: [], categoryCounts: [], filterOptions: [] }]; });
+beforeEach(() => { rows = []; stockRows = []; pipelines = []; updates = []; singletonWrites = []; canonical = {}; aggregateResult = [{ stones: [], metadata: [], categoryCounts: [], filterOptions: [] }]; });
 after(async () => { server.closeAllConnections(); await new Promise((resolve) => server.close(resolve)); mock.restoreAll(); });
 
 test('stock categories, global stock and category stock reads reject anonymous callers', async () => {
@@ -68,6 +80,49 @@ test('quantity zero is preserved and numeric carats normalize display strings', 
   const result = await create({ quantity: 0, weight: '10.25 ct', price: 0 });
   assert.equal(result.status, 201, JSON.stringify(result));
   assert.equal(result.body.quantity, 0); assert.equal(result.body.caratWeight, 10.25); assert.equal(result.body.weight, '10.25 ct'); assert.equal(result.body.price, 0);
+});
+
+test('stock inclusion defaults preserve existing meaning and false remains explicit on catalog edits', async () => {
+  const created = await create({ stockStatus: 'Reserved', treatment: 'Heated' });
+  assert.equal(created.status, 201); assert.equal(created.body.includedInStock, true);
+  assert.equal(Object.hasOwn(created.body, 'stockStatus'), false, 'Private reservation data is not a public catalog field');
+  assert.equal(Object.hasOwn(created.body, 'treatment'), false);
+  const excluded = await api(`/api/inventory/stones/${created.body._id}`, { method: 'PUT', body: { includedInStock: false, quantity: 0, price: 0 } });
+  assert.equal(excluded.status, 200); assert.equal(excluded.body.includedInStock, false);
+  assert.equal(excluded.body.quantity, 0); assert.equal(excluded.body.price, 0);
+  const edited = await api(`/api/inventory/stones/${created.body._id}`, { method: 'PUT', body: { title: 'Still excluded from stock' } });
+  assert.equal(edited.body.includedInStock, false, 'Unrelated edits must not include an excluded record again');
+  const publicRead = await api(`/api/inventory/stones/${created.body._id}`, { anonymous: true });
+  assert.equal(publicRead.status, 200, 'Stock inclusion must never hide a website gemstone');
+  for (const includedInStock of ['true', 'false', 1, 0, null, {}]) {
+    assert.equal((await api(`/api/inventory/stones/${created.body._id}`, { method: 'PUT', body: { includedInStock } })).status, 400);
+  }
+  assert.equal(rows[0].includedInStock, false);
+});
+
+test('private stock accepts useful details without accepting customer-supplied generated IDs', async () => {
+  const created = await createStock({ stoneId: 'client-supplied-id', weight: '2.45 ct', quantity: 0, price: 0, includedInStock: false, stockStatus: ' Reserved ', treatment: ' Unheated ', cut: ' Mixed cut ', origin: ' Sri Lanka ', hasCertificate: true, certificateImage: IMAGE, certificateDetails: 'Synthetic certificate details' });
+  assert.equal(created.status, 201, JSON.stringify(created));
+  assert.equal(created.body.stoneId, `private-sapphire-stock-${created.body._id}`);
+  assert.equal(created.body.weight, 2.45); assert.equal(created.body.quantity, 0); assert.equal(created.body.price, 0);
+  assert.equal(created.body.includedInStock, false); assert.equal(created.body.stockStatus, 'Reserved'); assert.equal(created.body.treatment, 'Unheated');
+  assert.equal(created.body.cut, 'Mixed cut'); assert.equal(created.body.origin, 'Sri Lanka'); assert.equal(created.body.certificateDetails, 'Synthetic certificate details');
+  const updated = await api(`/api/stock/stones/${created.body._id}`, { method: 'PUT', body: { title: 'Updated private stone' } });
+  assert.equal(updated.status, 200); assert.equal(updated.body.stockStatus, 'Reserved'); assert.equal(updated.body.includedInStock, false);
+  assert.equal(updated.body.cut, 'Mixed cut'); assert.equal(updated.body.certificateImage, IMAGE); assert.equal(updated.body.stoneId, created.body.stoneId);
+  assert.equal((await api(`/api/stock/stones/${created.body._id}`, { method: 'PUT', body: { stoneId: 'a-new-id' } })).status, 400);
+});
+
+test('private stock details have backward-compatible defaults and strict validation before saving', async () => {
+  const created = await createStock();
+  assert.equal(created.status, 201); assert.equal(created.body.includedInStock, true); assert.equal(created.body.stockStatus, 'Available'); assert.equal(created.body.treatment, 'Unspecified');
+  assert.equal(created.body.cut, ''); assert.equal(created.body.origin, '');
+  const invalid = [{ includedInStock: 'false' }, { stockStatus: 'Unknown' }, { stockStatus: '' }, { treatment: 'Natural' }, { treatment: [] }, { cut: 'x'.repeat(201) }, { origin: 12 }, { certificateDetails: 'x'.repeat(10001) }, { certificateImage: 'javascript:alert(1)' }];
+  for (const body of invalid) assert.equal((await api(`/api/stock/stones/${created.body._id}`, { method: 'PUT', body })).status, 400, JSON.stringify(body));
+  for (const body of [{ stockStatus: 'Unknown' }, { includedInStock: 'false' }, { treatment: 'Natural' }]) assert.equal((await createStock(body)).status, 400);
+  assert.equal(stockRows.length, 1); assert.equal(stockRows[0].stockStatus, 'Available'); assert.equal(stockRows[0].includedInStock, true);
+  await assert.rejects(new StockStone({ categoryId: CATEGORY, title: 'Synthetic invalid model', image: IMAGE, stockStatus: 'Invalid' }).validate());
+  await assert.rejects(new StockStone({ categoryId: CATEGORY, title: 'Synthetic invalid treatment', image: IMAGE, treatment: 'Invalid' }).validate());
 });
 
 test('inventory creation and editing reject invalid title, quantity, price, weight and category input', async () => {

@@ -1,5 +1,9 @@
 # Deploy the audited Pinnawala Gems backend
 
+> **Startup/deploy failure — 25 November 2026:** If Render reports `Backend startup failed` or no open port, use [RENDER_STARTUP_FIX.md](RENDER_STARTUP_FIX.md). A successful build is not proof that the API started. `dotenv` reporting zero injected values does not establish that Render environment variables are missing. Check the specific startup diagnostic before changing credentials or database settings.
+
+The supplied Environment screenshot does not list `ALLOWED_ORIGINS`; verify/add `https://pinnawala-gems.vercel.app` on the correct service. Render's Node runtime defaults to production, so this startup requirement applies even without a manually listed `NODE_ENV`. Masked database/JWT values cannot establish that those settings are correct. The startup guide maps each new safe diagnostic code to its operator action.
+
 > **25 November 2026 — current login choice:** the owner now requests both email/password and Google login. Use `ADMIN_AUTH_MODE=mixed` with the existing `ADMIN_USERNAME`/`ADMIN_PASSWORD` settings and an allowed Google email/client ID. The prior Google-only instructions remain an optional stricter mode, not the current requested configuration. Never commit actual passwords or replace unrelated environment secrets.
 
 Deploy the current Git source after explicit approval using [the production release checklist](../RELEASE_CHECKLIST.md). ZIP files from the earlier handoff are historical snapshots and are not required. The source includes security, data-validation, catalogue-pagination, media-upload and API-cache fixes, along with appointments, notes and planner APIs. Updating the frontend alone cannot add these backend routes.

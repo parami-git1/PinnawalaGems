@@ -3,10 +3,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AdminOperations from './AdminOperations';
 import AdminPlanner from './AdminPlanner';
 import GemMediaEditor from './admin/GemMediaEditor';
+import AdminImageField from './admin/AdminImageField';
 import { FeedbackPanel, WebsiteSettings, WorkshopPanel } from './admin/AdminContent';
 import { AdminEmptyState, AdminField, AdminIcon, AdminImage, AdminModal } from './admin/AdminUI';
 import { GEM_MEDIA_LIMITS, mediaUrls } from './mediaPolicy';
-import { apiRequest, fetchAllGemstones } from './api';
+import { apiRequest, fetchAllGemstones, fetchAllRecords } from './api';
 import { editableSettings } from './admin/settingsPolicy';
 import { ADMIN_LOGIN_PATH, ADMIN_PORTAL_PATH } from './adminPaths';
 import { clearAdminSession } from './adminSession';
@@ -15,7 +16,7 @@ import { AdminAccessLockContext } from './adminAccessContext';
 
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
 
-const EMPTY_GEM = { title: '', categoryId: '', stoneId: '', image: '', weight: '', color: '', shape: '', cut: '', price: '', quantity: 1, description: '', hasCertificate: false, certificateDetails: '', certificateImage: '', isFeatured: false, origin: '', additionalImages: [], videos: [], isTopGem: false, homePagePosition: 0 };
+const EMPTY_GEM = { title: '', categoryId: '', image: '', weight: '', color: '', shape: '', cut: '', price: '', quantity: 1, includedInStock: true, description: '', hasCertificate: false, certificateDetails: '', certificateImage: '', isFeatured: false, origin: '', additionalImages: [], videos: [], isTopGem: false, homePagePosition: 0 };
 const EMPTY_FILTERS = { search: '', categoryId: '', color: '', shape: '', certificate: '', minWeight: '', maxWeight: '', minPrice: '', maxPrice: '' };
 const VIEWS = [
   { id: 'analytics', label: 'Overview', icon: 'grid', group: 'Workspace', description: 'A clear view of your gemstone collection and the work that needs your attention.' },
@@ -69,6 +70,12 @@ function GemEditor({ stone, categories, onClose, onSaved }) {
   const [error, setError] = useState('');
   const guard = useRef(false);
   const uploadGuard = useRef(false);
+  const activeUploads = useRef(new Set());
+  const uploadBusy = useCallback((key, value) => {
+    if (value) activeUploads.current.add(key); else activeUploads.current.delete(key);
+    uploadGuard.current = activeUploads.current.size > 0;
+    setUploading(uploadGuard.current);
+  }, []);
   const update = (event) => { const { name, type, value, checked } = event.target; setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value })); };
   const input = (name, label, props = {}) => <AdminField key={name} label={label} required={Boolean(props.required)} hint={props.hint} className={props.full ? 'admin-span-full' : ''}><input name={name} value={form[name] ?? ''} onChange={update} type={props.type || 'text'} step={props.step} min={props.min} required={props.required} placeholder={props.placeholder} readOnly={props.readOnly} /></AdminField>;
   const busy = saving || uploading;
@@ -85,7 +92,8 @@ function GemEditor({ stone, categories, onClose, onSaved }) {
       if (additionalImages.length + 1 > GEM_MEDIA_LIMITS.images) throw new Error('Each gemstone can have up to 10 photos, including the cover.');
       if (videos.length > GEM_MEDIA_LIMITS.videos) throw new Error('Each gemstone can have up to 2 videos.');
       if ([image, ...additionalImages, ...videos].some((url) => !/^https?:\/\/|^\/(?!\/)/i.test(url))) throw new Error('Use a valid http(s) media URL or upload your files above.');
-      const payload = { ...form, image, additionalImages, videos, quantity: Number(form.quantity), price: form.price === '' || form.price == null ? null : Number(form.price), homePagePosition: Number(form.homePagePosition || 0) };
+      const editable = Object.fromEntries(Object.keys(EMPTY_GEM).map((field) => [field, form[field]]));
+      const payload = { ...editable, image, additionalImages, videos, quantity: Number(form.quantity), price: form.price === '' || form.price == null ? null : Number(form.price), homePagePosition: Number(form.homePagePosition || 0) };
       await request(editing ? `/api/inventory/stones/${stone._id}` : '/api/inventory/stones', { method: editing ? 'PUT' : 'POST', body: JSON.stringify(payload) });
       onSaved(editing ? 'Gemstone changes saved.' : 'Gemstone added to the collection.');
     } catch (problem) { setError(problem.message); }
@@ -93,22 +101,23 @@ function GemEditor({ stone, categories, onClose, onSaved }) {
   };
   return <AdminModal title={editing ? 'Edit gemstone' : 'Add gemstone'} description="Keep each piece beautifully presented, with accurate details and clear availability." onClose={onClose} busy={busy}><form onSubmit={save} aria-label="Gemstone details">
     {error && <Notice value={{ type: 'error', message: error }} onDismiss={() => setError('')} />}
-    <fieldset disabled={busy} className="admin-plain-fieldset">
+    <fieldset disabled={saving} className="admin-plain-fieldset">
       <FormSection icon="gem" title="Gemstone details" description="Start with the essentials for your collection.">
         {input('title', 'Gem name', { required: true, placeholder: 'e.g. Ceylon blue sapphire' })}
         <AdminField label="Category" required><select name="categoryId" value={form.categoryId} onChange={update} required><option value="">Select a category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.title}</option>)}</select></AdminField>
-        {input('stoneId', 'Gem ID', { placeholder: 'Assigned when created', readOnly: true, hint: 'This reference is generated automatically and stays with the gemstone.' })}{input('origin', 'Origin', { placeholder: 'e.g. Sri Lanka' })}
+        <div className="admin-generated-reference"><span>Gem ID</span><strong>{stone?.stoneId || 'Assigned automatically when saved'}</strong><small>Permanent reference · managed by the system</small></div>{input('origin', 'Origin', { placeholder: 'e.g. Sri Lanka' })}
         <AdminField label="Description" className="admin-span-full"><textarea name="description" rows={3} value={form.description} onChange={update} placeholder="Describe the character and details of this gemstone." /></AdminField>
       </FormSection>
       <FormSection icon="layers" title="Specifications & availability">
-        {input('weight', 'Weight (ct)', { placeholder: 'e.g. 2.75' })}{input('color', 'Color')}{input('shape', 'Shape')}{input('cut', 'Cut')}{input('quantity', 'Quantity', { type: 'number', min: 0, step: '1', required: true })}{input('price', 'Price (Rs.)', { type: 'number', min: 0, step: 'any' })}
+        {input('weight', 'Weight per piece (ct)', { placeholder: 'e.g. 2.75' })}{input('color', 'Color')}{input('shape', 'Shape')}{input('cut', 'Cut')}{input('quantity', 'Quantity', { type: 'number', min: 0, step: '1', required: true })}{input('price', 'Price per piece (Rs.)', { type: 'number', min: 0, step: 'any' })}
+        <label className="admin-checkbox admin-span-full"><input name="includedInStock" type="checkbox" checked={form.includedInStock !== false} onChange={update} /><span><strong>Include in owned stock totals</strong><small>Clear for reference or consignment pieces. This does not change website visibility.</small></span></label>
       </FormSection>
       <FormSection icon="image" title="Photos & videos" description="Build a clear view of the stone. Choose a cover photo and add optional videos to show its movement in the light.">
-        <GemMediaEditor form={form} setForm={setForm} onBusyChange={(value) => { uploadGuard.current = value; setUploading(value); }} disabled={busy} />
+        <GemMediaEditor form={form} setForm={setForm} onBusyChange={(value) => uploadBusy('gallery', value)} disabled={busy} />
       </FormSection>
       <FormSection icon="shield" title="Certification">
         <label className="admin-checkbox admin-span-full"><input name="hasCertificate" type="checkbox" checked={Boolean(form.hasCertificate)} onChange={update} /><span><strong>Has certificate</strong><small>Display the certificate information with this gemstone.</small></span></label>
-        {input('certificateImage', 'Certificate image URL', { full: true })}
+        <AdminImageField label="Certificate image" name="certificateImage" value={form.certificateImage} onChange={(value) => setForm((current) => ({ ...current, certificateImage: value }))} onBusyChange={(value) => uploadBusy('certificate', value)} disabled={busy} className="admin-span-full" hint="Drop the certificate photograph here, choose a file or paste its image URL." />
         <AdminField label="Certificate details" className="admin-span-full"><textarea name="certificateDetails" rows={2} value={form.certificateDetails} onChange={update} /></AdminField>
       </FormSection>
       <FormSection icon="eye" title="Website presentation">
@@ -165,6 +174,10 @@ export default function AdminInventory() {
   const [analytics, setAnalytics] = useState(null);
   const [stones, setStones] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [stockStones, setStockStones] = useState([]);
+  const [stockCategories, setStockCategories] = useState([]);
+  const [inspectStockStone, setInspectStockStone] = useState(null);
+  const [operationsSection, setOperationsSection] = useState('catalog');
   const [feedback, setFeedback] = useState([]);
   const [workshop, setWorkshop] = useState([]);
   const [settings, setSettings] = useState({ home: {}, contact: {} });
@@ -193,17 +206,19 @@ export default function AdminInventory() {
     const generation = ++loadVersion.current;
     setRefreshing(true);
     const snapshot = { ...versions.current };
-    const keys = ['analytics', 'inventory', 'categories', 'contact', 'home', 'feedback', 'workshop'];
-    const paths = ['/api/analytics/dashboard-stats', '', '/api/inventory/categories', '/api/contact', '/api/home', '/api/feedback', '/api/workshop'];
+    const keys = ['analytics', 'inventory', 'categories', 'contact', 'home', 'feedback', 'workshop', 'stockStones', 'stockCategories'];
+    const paths = ['/api/analytics/dashboard-stats', '', '/api/inventory/categories', '/api/contact', '/api/home', '/api/feedback', '/api/workshop', '', '/api/stock/categories'];
     setPendingResources((previous) => ({ ...previous, ...Object.fromEntries(keys.map((key) => [key, true])) }));
     setFailures((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => !keys.includes(key))));
     const current = () => mounted.current && generation === loadVersion.current && !controller.signal.aborted;
     await Promise.allSettled(keys.map(async (key, index) => {
       try {
-        const data = key === 'inventory' ? await fetchAllGemstones({ signal: controller.signal }) : await request(paths[index], { signal: controller.signal });
+        const data = key === 'inventory' ? await fetchAllGemstones({ signal: controller.signal }) : key === 'stockStones' ? await fetchAllRecords('/stock/stones', { signal: controller.signal }) : await request(paths[index], { signal: controller.signal });
         if (!current() || snapshot[key] !== versions.current[key]) return;
         if (key === 'inventory') setStones(array(data));
         else if (key === 'categories') setCategories(array(data));
+        else if (key === 'stockStones') setStockStones(array(data));
+        else if (key === 'stockCategories') setStockCategories(array(data));
         else if (key === 'analytics') setAnalytics(data);
         else if (key === 'feedback') setFeedback(array(data));
         else if (key === 'workshop') setWorkshop(array(data));
@@ -259,8 +274,7 @@ export default function AdminInventory() {
   const saveWorkshop = async (post) => { const data = await request(post._id ? `/api/workshop/${post._id}` : '/api/workshop', { method: post._id ? 'PUT' : 'POST', body: JSON.stringify(post) }); invalidate('workshop'); const item = data.post || data; if (item._id) setWorkshop((items) => post._id ? items.map((old) => old._id === post._id ? item : old) : [item, ...items]); else loadAll(); };
   const deleteWorkshop = async (id) => { await request(`/api/workshop/${id}`, { method: 'DELETE' }); invalidate('workshop'); setWorkshop((items) => items.filter((item) => item._id !== id)); };
   const pending = feedback.filter((review) => !review.approved && !review.isApproved).length;
-  const hasAnalyticsFallback = !analytics && ready.inventory && ready.categories;
-  const resources = current.id === 'settings' ? [] : current.id === 'inventory' || (current.id === 'analytics' && hasAnalyticsFallback) ? ['inventory', 'categories'] : [current.id];
+  const resources = current.id === 'settings' ? [] : ['inventory', 'analytics'].includes(current.id) ? ['inventory', 'categories'] : [current.id];
   const loading = resources.some((key) => pendingResources[key] && !ready[key]);
   const blockedKey = resources.find((key) => failures[key] && !ready[key]);
   const blocked = blockedKey ? failures[blockedKey] : '';
@@ -274,9 +288,17 @@ export default function AdminInventory() {
         <Notice value={notice} onDismiss={() => setNotice(null)} />
         {refreshIssue && <Notice value={{ type: 'error', message: `Unable to refresh this section. Your current data and edits are still shown. ${failures[refreshIssue]}` }} />}
         {loading && !['operations', 'planner'].includes(current.id) ? <div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Loading your workspace...</div> : blocked ? <section className="admin-panel"><AdminEmptyState icon="refresh" title="This section could not be loaded" description={blocked} action={<button type="button" className="admin-button" disabled={refreshing} onClick={refresh}>Try again</button>} /></section> : <>
-          {current.id === 'analytics' && <Suspense fallback={<div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Loading your workspace...</div>}><AdminDashboard analytics={analytics || summarise(stones, categories)} pendingReviews={pending} categoriesCount={categories.length} onNavigate={go} /></Suspense>}
+          {current.id === 'analytics' && <Suspense fallback={<div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Loading your workspace...</div>}>
+            <AdminDashboard analytics={analytics || summarise(stones, categories)} stones={stones} categories={categories}
+              stockStones={stockStones} stockCategories={stockCategories}
+              stockLoading={Boolean(pendingResources.stockStones || pendingResources.stockCategories)}
+              stockError={failures.stockStones || failures.stockCategories || ''} onRetryStock={refresh}
+              onEditStone={(record, source) => { if (source === 'stock') { setInspectStockStone(record); go('operations'); } else setModal({ stone: record }); }}
+              pendingReviews={pending} categoriesCount={categories.length}
+              onNavigate={(view) => { if (view === 'operations') setOperationsSection('stock'); go(view); }} />
+          </Suspense>}
           {current.id === 'inventory' && <InventoryTable stones={stones} categories={categories} onEdit={(stone) => setModal({ stone })} onDelete={removeStone} deleting={deleting} />}
-          {current.id === 'operations' && <AdminOperations />}
+          {current.id === 'operations' && <AdminOperations initialSection={operationsSection} initialStockStone={inspectStockStone} onStockStoneOpened={() => setInspectStockStone(null)} onDataChanged={loadAll} />}
           {current.id === 'planner' && <AdminPlanner />}
           {current.id === 'settings' && <WebsiteSettings settings={settings} dirtyPages={dirtyPages} onChange={updateSettings} onSave={saveSettings} loadingPages={pendingResources} readyPages={ready} failedPages={failures} onRetry={refresh} />}
           {current.id === 'feedback' && <FeedbackPanel feedback={feedback} onApprove={approveReview} onDelete={deleteReview} />}

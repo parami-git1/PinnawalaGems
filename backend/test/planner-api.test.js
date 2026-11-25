@@ -143,6 +143,7 @@ test('appointment create, read, edit, status update and delete preserve fields a
   const created = await createAppointment({ customerName: '  Synthetic Amara  ', email: '  AMARA@EXAMPLE.TEST ', phone: '+94 77 000 0000', durationMinutes: 45, type: 'Viewing', purpose: 'Synthetic viewing request', internalNotes: 'Synthetic team note' });
   assert.equal(created.customerName, 'Synthetic Amara'); assert.equal(created.email, 'amara@example.test');
   assert.equal(created.status, 'Requested'); assert.equal(created.stoneId, null); assert.equal(created.durationMinutes, 45);
+  assert.equal(created.color, '', 'Existing callers without a color keep category-default presentation');
   assert.deepEqual((await request(`/api/appointments/${created._id}`)).body, created);
   const updated = await request(`/api/appointments/${created._id}`, { method: 'PUT', body: { status: 'Confirmed', time: '11:30', internalNotes: 'Updated synthetic note' } });
   assert.equal(updated.status, 200); assert.equal(updated.body.status, 'Confirmed'); assert.equal(updated.body.time, '11:30');
@@ -178,6 +179,7 @@ test('notes preserve appointment links, tags and reminders through edit, pin, ar
   const created = await createNote({ title: 'Synthetic follow up', category: 'Follow-up', tags: ['ceylon', 'customer'], color: 'amber', reminderAt: '2026-11-16T04:30:00.000Z', customerName: 'Synthetic Customer', appointmentId: appointment._id });
   assert.equal(created.appointmentId, appointment._id); assert.equal(created.reminderAt, '2026-11-16T04:30:00.000Z');
   assert.equal(created.isPinned, false); assert.equal(created.isArchived, false);
+  assert.equal(created.noteDate, '', 'Existing notes do not gain an invented calendar day');
   let result = await request(`/api/admin-notes/${created._id}`, { method: 'PUT', body: { content: 'Updated synthetic details', isPinned: true } });
   assert.equal(result.status, 200); assert.equal(result.body.isPinned, true); assert.equal(result.body.appointmentId, appointment._id); assert.deepEqual(result.body.tags, ['ceylon', 'customer']);
   result = await request('/api/admin-notes?search=ceylon&category=Follow-up&archived=false');
@@ -191,7 +193,49 @@ test('notes preserve appointment links, tags and reminders through edit, pin, ar
   assert.equal((await request(`/api/admin-notes/${created._id}`, { method: 'PUT', body: { isPinned: true } })).status, 404);
 });
 
-test('notifications use Sri Lanka day boundaries and keep due/upcoming reminder windows inclusive', async (t) => {
+test('custom appointment colors persist through edits and can return to category defaults', async () => {
+  const created = await createAppointment({ type: 'Workshop', color: '#A15bCe' });
+  assert.equal(created.color, '#A15bCe');
+  const updated = await request(`/api/appointments/${created._id}`, { method: 'PUT', body: { status: 'Confirmed', time: '13:30' } });
+  assert.equal(updated.status, 200); assert.equal(updated.body.color, '#A15bCe'); assert.equal(updated.body.type, 'Workshop');
+  assert.equal((await request(`/api/appointments/${created._id}`, { method: 'PUT', body: { color: '#1257af' } })).body.color, '#1257af');
+  assert.equal((await request(`/api/appointments/${created._id}`, { method: 'PUT', body: { color: '' } })).body.color, '');
+  for (const color of ['red', '#fff', '#12345678', 'url(https://example.test)', '#12345Z']) {
+    assert.equal((await request(`/api/appointments/${created._id}`, { method: 'PUT', body: { color } })).status, 400, color);
+  }
+  assert.equal((await request('/api/appointments', { method: 'POST', body: { customerName: 'Synthetic bad color', date: '2026-11-16', time: '10:00', color: 'var(--unsafe)' } })).status, 400);
+  assert.equal(appointments.rows.length, 1);
+  assert.equal((await request(`/api/appointments/${created._id}`)).body.color, '', 'Rejected updates never replace the saved accent');
+});
+
+test('note calendar days and full color picker values are optional and independent of reminders', async () => {
+  const appointment = await createAppointment();
+  const created = await createNote({ noteDate: '2028-02-29', color: '#0F92Be', appointmentId: appointment._id });
+  assert.equal(created.noteDate, '2028-02-29'); assert.equal(created.color, '#0F92Be'); assert.equal(created.reminderAt, null);
+  let updated = await request(`/api/admin-notes/${created._id}`, { method: 'PUT', body: { noteDate: '2026-11-27', reminderAt: '2026-11-26T23:30:00.000Z', category: 'Customer' } });
+  assert.equal(updated.status, 200); assert.equal(updated.body.noteDate, '2026-11-27'); assert.equal(updated.body.color, '#0F92Be');
+  assert.equal(updated.body.appointmentId, appointment._id, 'Removing the linked appointment input must not erase existing links');
+  updated = await request(`/api/admin-notes/${created._id}`, { method: 'PUT', body: { content: 'Synthetic modified note only' } });
+  assert.equal(updated.body.noteDate, '2026-11-27'); assert.equal(updated.body.reminderAt, '2026-11-26T23:30:00.000Z');
+  updated = await request(`/api/admin-notes/${created._id}`, { method: 'PUT', body: { color: 'rose', noteDate: '' } });
+  assert.equal(updated.body.color, 'rose', 'Legacy palette colors remain accepted'); assert.equal(updated.body.noteDate, '');
+  assert.equal(updated.body.reminderAt, '2026-11-26T23:30:00.000Z', 'Clearing calendar day must not clear the reminder');
+});
+
+test('note schema rejects impossible calendar dates and arbitrary CSS colors on create and update', async () => {
+  const created = await createNote({ noteDate: '2026-11-16', color: 'blue' });
+  for (const noteDate of ['2026-02-29', '2026-04-31', '2026-13-01', '2026-00-01', '2026-11-00', '2026-11-16T10:00:00Z', '16/11/2026']) {
+    assert.equal((await request(`/api/admin-notes/${created._id}`, { method: 'PUT', body: { noteDate } })).status, 400, noteDate);
+  }
+  for (const color of ['purple', '#12345g', 'rgb(0,0,0)', '#000000;background:red']) {
+    assert.equal((await request(`/api/admin-notes/${created._id}`, { method: 'PUT', body: { color } })).status, 400, color);
+  }
+  assert.equal((await request('/api/admin-notes', { method: 'POST', body: { title: 'Synthetic impossible day', content: 'Synthetic', noteDate: '2026-02-30' } })).status, 400);
+  assert.equal((await request('/api/admin-notes', { method: 'POST', body: { title: 'Synthetic invalid color', content: 'Synthetic', color: 'var(--unsafe)' } })).status, 400);
+  assert.equal(notes.rows.length, 1); assert.equal(notes.rows[0].noteDate, '2026-11-16'); assert.equal(notes.rows[0].color, 'blue');
+});
+
+test('notifications use Sri Lanka day boundaries and separate genuinely due reminders from later today', async (t) => {
   t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-15T19:00:00.000Z') });
   const first = await createAppointment({ customerName: 'Synthetic at Colombo day start', date: '2026-11-15T18:30:00.000Z', time: '08:00' });
   const today = await createAppointment({ customerName: 'Synthetic today', date: '2026-11-16T00:00:00.000Z', time: '10:00' });
@@ -202,6 +246,8 @@ test('notifications use Sri Lanka day boundaries and keep due/upcoming reminder 
   await createAppointment({ customerName: 'Synthetic no show', status: 'No-show' });
   const overdue = await createNote({ title: 'Synthetic overdue', reminderAt: '2026-11-14T00:00:00.000Z' });
   const dueStart = await createNote({ title: 'Synthetic reminder at day start', reminderAt: '2026-11-15T18:30:00.000Z' });
+  const dueNow = await createNote({ title: 'Synthetic reminder exactly now', reminderAt: '2026-11-15T19:00:00.000Z' });
+  const shortly = await createNote({ title: 'Synthetic reminder one millisecond later', reminderAt: '2026-11-15T19:00:00.001Z' });
   const dueEnd = await createNote({ title: 'Synthetic reminder at day end', reminderAt: '2026-11-16T18:29:59.999Z' });
   const next = await createNote({ title: 'Synthetic next day', reminderAt: '2026-11-16T18:30:00.000Z' });
   const horizon = await createNote({ title: 'Synthetic horizon', reminderAt: '2026-11-23T18:29:59.999Z' });
@@ -211,9 +257,11 @@ test('notifications use Sri Lanka day boundaries and keep due/upcoming reminder 
   const result = await request('/api/planner/notifications');
   assert.equal(result.status, 200);
   assert.deepEqual(ids(result.body.todayAppointments), [first._id, today._id, last._id]);
-  assert.deepEqual(ids(result.body.dueNotes), [overdue._id, dueStart._id, dueEnd._id]);
-  assert.deepEqual(ids(result.body.upcomingNotes), [next._id, horizon._id]);
-  assert.deepEqual(result.body.counts, { todayAppointments: 3, dueNotes: 3, upcomingNotes: 2 });
+  assert.deepEqual(ids(result.body.dueNotes), [overdue._id, dueStart._id, dueNow._id]);
+  assert.deepEqual(ids(result.body.upcomingNotes), [shortly._id, dueEnd._id, next._id, horizon._id]);
+  assert.deepEqual(result.body.counts, { todayAppointments: 3, dueNotes: 3, upcomingNotes: 4 });
+  assert.equal(result.body.serverTime, '2026-11-15T19:00:00.000Z');
+  assert.equal(result.body.timeZone, 'Asia/Colombo');
   const query = appointments.calls.filter((item) => item.method === 'find').at(-1).query;
   assert.equal(query.date.$gte.toISOString(), '2026-11-15T18:30:00.000Z');
   assert.equal(query.date.$lte.toISOString(), '2026-11-16T18:29:59.999Z');
