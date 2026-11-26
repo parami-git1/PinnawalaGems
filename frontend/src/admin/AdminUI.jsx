@@ -42,6 +42,7 @@ const ICONS = {
   chart: 'M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7',
   home: 'm2 10 10-8 10 8M5 8v13h14V8M9 21v-8h6v8',
   menu: 'M4 6h16M4 12h16M4 18h16',
+  book: 'M12 5C8 2 4 3 2 4v16c3-2 7-2 10 0 3-2 7-2 10 0V4c-2-1-6-2-10 1Zm0 0v15M5 7h4M5 11h4M15 7h4M15 11h4',
 };
 
 export function AdminIcon({ name = 'gem', size = 20, ...props }) {

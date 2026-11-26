@@ -19,8 +19,8 @@ function MediaList({ label, description, items, onChange, disabled, uploading, o
   return <div className="admin-content-media-list"><div className="admin-content-list-heading"><div><h4>{label}</h4><p>{description}</p></div><button type="button" className="admin-button is-small" disabled={disabled || uploading} onClick={add}><AdminIcon name="plus" />Add image</button></div>{items.length ? <div className="admin-media-stack">{items.map((item, index) => <div className="admin-content-media-upload-row" key={rowKeys[index]}><AdminImageField label={`${label}: image ${index + 1}`} value={typeof item === 'string' ? item : ''} onChange={(value) => onChange(items.map((current, row) => row === index ? value : current))} disabled={disabled || uploading} onBusyChange={(busy) => onBusyChange(`${label}-${rowKeys[index]}`, busy)} /><button type="button" className="admin-icon-button is-danger" aria-label={`Remove ${label.toLowerCase()} image ${index + 1}`} disabled={disabled || uploading} onClick={() => remove(index)}><AdminIcon name="trash" /></button></div>)}</div> : <p className="admin-content-inline-empty">No images added.</p>}</div>;
 }
 
-export default function WebsiteSettings({ settings, onChange, onSave, dirtyPages = {}, loadingPages = {}, readyPages = {}, failedPages = {}, onRetry }) {
-  const [page, setPage] = useState('home');
+export default function WebsiteSettings({ settings, onChange, onSave, initialPage = 'home', dirtyPages = {}, loadingPages = {}, readyPages = {}, failedPages = {}, onRetry }) {
+  const [page, setPage] = useState(() => initialPage === 'contact' ? 'contact' : 'home');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(null);
   const [uploading, setUploading] = useState(false);

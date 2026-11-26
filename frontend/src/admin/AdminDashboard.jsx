@@ -62,8 +62,8 @@ export default function AdminDashboard({ stones = [], categories = [], stockSton
     <p className="stock-insights-source-note">Stock and website showcase totals are shown separately. A gemstone recorded in both is counted within each list.</p>
     {stockError && <div className="stock-insights-warning" role="alert"><AdminIcon name="bell" /><div><strong>Private stock could not be refreshed</strong><p>{typeof stockError === 'string' ? stockError : 'Check the backend connection and try again.'}{stockRows.length ? ' The last loaded stock is still shown.' : ' Stock counts are unavailable until this list loads.'}</p></div>{onRetryStock && <button type="button" className="admin-button" onClick={onRetryStock}>Retry stock</button>}</div>}
 
-    <QuickGemLookup rows={rows} stockLoading={stockLoading} stockError={stockError} onRetryStock={onRetryStock} onEditStone={onEditStone} onDeleteStone={onDeleteStone} onCreateStone={onCreateStone} />
     <InventoryCharts rows={rows} stockLoading={stockLoading} stockError={stockError} onRetryStock={onRetryStock} onExplore={exploreChart} />
+    <QuickGemLookup rows={rows} stockLoading={stockLoading} stockError={stockError} onRetryStock={onRetryStock} onEditStone={onEditStone} onDeleteStone={onDeleteStone} onCreateStone={onCreateStone} />
 
     <section className="admin-panel stock-insights-finder" aria-labelledby="stock-finder-title">
       <header className="admin-panel-header"><div><h2 id="stock-finder-title">Find the right gemstone</h2><p>Check a customer’s requested colour, shape and carat range while you talk.</p></div><span className="stock-insights-finder-icon"><AdminIcon name="search" /></span></header>

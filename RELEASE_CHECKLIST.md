@@ -1,5 +1,15 @@
 # Pinnawala Gems production release checklist
 
+## 26 November 2026: illustrated admin guide follow-up
+
+**Local checks PASS; live deployment and verification PENDING.** The latest frontend adds How to use in the protected admin sidebar: 17 complete English topics, nine workflow illustrations, searchable articles and direct links to 13 actual workspace destinations. Operations, Planner and Settings links select the intended subpanel; ordinary sidebar navigation clears stale subpanel/topic query parameters. Unknown values fall back safely. The guide is loaded only on demand and remains subject to the existing server-verified session.
+
+Fresh local validation: guide **43/43** browser scenarios, Overview **20/20**, inventory/shell **11/11**, Planner **23/23**, frontend helpers **57/57**, backend **125/125**, full frontend lint/build **PASS**. All browser sessions/APIs were synthetic and intercepted. Guide navigation caused no writes/uploads. Evidence and topic details are in `frontend/ADMIN_UI_REFINEMENT.md`; exact pending files and reviewed base `27a77b8` are in `FINAL_GIT_RELEASE.md`.
+
+This guide delta is frontend-only and requires no new environment variable, dependency, backend endpoint, migration or external image service. No staging, commit, push, deployment, secrets change, production login or data/asset write was performed. After explicit authorization, use the existing Vercel project/root/build configuration and preserve the compatible Render backend. If the preceding admin backend has not yet been deployed, follow its Render-first checklist below before promoting this frontend. Do not roll back its archive/media safeguards.
+
+After authorized deployment, verify How to use in the real owner's session, all topics/search and representative exact Notes/Contact/Stock shortcuts, browser Back/direct refresh, physical phone topic selection and unauthenticated redirect. Use read-only checks; guide links do not perform business actions. Preserve existing records, credentials and Cloudinary assets. Current production API/CDN/performance and physical-device acceptance remain PENDING.
+
 ## 26 November 2026: complete admin functionality audit
 
 **Local gates PASS; production release/verification PENDING.** This latest section supersedes earlier frontend-only rollout notes. Both backend and frontend source changed. No staging, commit, push, deployment, secret change, real login, upload or production record/asset write was performed.

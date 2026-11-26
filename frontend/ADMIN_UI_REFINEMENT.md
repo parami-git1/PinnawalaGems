@@ -1,5 +1,19 @@
 # Admin panel final verification — 26 November 2026
 
+## Latest follow-up: illustrated How to use guide
+
+**PASS locally; live deployment/verification PENDING.** The protected sidebar now includes **How to use**: 17 English topics covering every current admin area, nine original SVG workflow illustrations, article-body search, related topics, previous/next navigation and 13 direct workspace shortcuts. Guide content is based on the actual forms and policies, including private stock versus website listings, per-piece totals, upload limits, permanent Delete versus archive/Undo, Sri Lanka times, in-app-only reminders, workshop scheduling and stored legacy settings. Illustrations explicitly use placeholders rather than real business figures.
+
+Shortcuts now support explicit initial subpanels: Operations `section=catalog|stock|ads|legacy`, Planner `section=calendar|appointments|notes`, and Settings `section=home|contact`, alongside their existing `view` parameter. Normal sidebar navigation clears stale topic/subpanel parameters. Guide topics have shareable protected query links, and browser Back restores their selection. Unknown topics/sections fall back safely. Shortcut navigation never saves, publishes or deletes a record.
+
+Desktop has a searchable topic sidebar; phones use a topic selector and compact welcome without redundant hero artwork/quick links. Every topic retains its instructional illustration and numbered steps. The guide loads as a separate chunk only when opened, and needs no additional image host, library, backend endpoint or environment variable. Existing server session verification protects it; a verified user can read troubleshooting guidance even when workspace data requests fail.
+
+Fresh checks for this follow-up: guide browser **41/41**, lazy-loading/anonymous-access **2/2**, existing Overview **20/20**, inventory/shell **11/11**, Planner **23/23**, frontend helpers **57/57**, backend **125/125**, full frontend lint/build **PASS**. Browser tests use the local production build, synthetic sessions and intercepted APIs. Guide browsing/shortcuts made no data writes or uploads. Local evidence is in workspace `.tmp/admin-guide-qa/{results,access-results}.json` and screenshots; the other regression reports retain their existing paths below. No live requests, commit, push, deployment, secrets or production changes were performed.
+
+Runtime files: `src/admin/AdminGuide.jsx`, `AdminGuide.css`, `AdminGuideIllustration.jsx`, `adminGuideContent.js`; integration in `AdminInventory.jsx`, `AdminPlanner.jsx`, `admin/AdminUI.jsx`, `admin/WebsiteSettings.jsx`. The pending `admin/AdminDashboard.jsx` chart-order refinement is preserved. See the latest whitelist in `../FINAL_GIT_RELEASE.md`.
+
+## Earlier full admin functionality audit
+
 **Local verification: PASS. Production verification: PENDING.** Reviewed base: `82465bdb4e3ff2c62983a14c6bb2ce39c7937492` plus the working-tree files in `../FINAL_GIT_RELEASE.md`. No staging, commit, push, deployment, environment change or production write was performed. These tests did not access or change real credentials, records or Cloudinary assets.
 
 ## Function-by-function results

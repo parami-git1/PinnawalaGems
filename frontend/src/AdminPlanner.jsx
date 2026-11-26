@@ -112,8 +112,8 @@ function LoadError({ errors, onRetry }) {
   </div>;
 }
 
-export default function AdminPlanner() {
-  const [view, setView] = useState('calendar');
+export default function AdminPlanner({ initialView = 'calendar' }) {
+  const [view, setView] = useState(() => ['calendar', 'appointments', 'notes'].includes(initialView) ? initialView : 'calendar');
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [appointments, setAppointments] = useState([]);
   const [notes, setNotes] = useState([]);

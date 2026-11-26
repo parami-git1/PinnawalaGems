@@ -1,6 +1,34 @@
 # Final Git release plan — Pinnawala Gems
 
-## Current release candidate — 26 November 2026
+## Current guide follow-up — 26 November 2026
+
+Reviewed base HEAD: `27a77b80421b91636f9ec0a7c1e5fc9b758a20b4`, with the following pending changes. The owner committed the preceding audited admin release; no assistant staging, commit, push, deployment, secret or production write was performed. The approved release SHA remains PENDING.
+
+This frontend delta adds the protected illustrated **How to use** guide, 17 English topics, article search, 13 real module/subpanel shortcuts, mobile topic selection and nine lightweight SVG illustrations. It also preserves the pending Overview chart-order refinement. Guide code/styles load on demand. This delta needs no backend change, dependency, environment variable, migration, credential or asset replacement; retain the already compatible backend and previous data/media safeguards.
+
+Exact pending source/test/documentation review list:
+
+```text
+FINAL_GIT_RELEASE.md
+RELEASE_CHECKLIST.md
+frontend/ADMIN_UI_REFINEMENT.md
+frontend/src/AdminInventory.jsx
+frontend/src/AdminPlanner.jsx
+frontend/src/admin/AdminDashboard.jsx
+frontend/src/admin/AdminUI.jsx
+frontend/src/admin/WebsiteSettings.jsx
+frontend/src/admin/AdminGuide.jsx
+frontend/src/admin/AdminGuide.css
+frontend/src/admin/AdminGuideIllustration.jsx
+frontend/src/admin/adminGuideContent.js
+frontend/test/adminGuideContent.test.js
+```
+
+Verification: frontend helpers **57/57**, backend **125/125**, full lint/build **PASS**; local Chrome guide **43/43** (41 content/navigation/responsive scenarios plus 2 lazy-load/access checks), Overview **20/20**, inventory/shell **11/11** and Planner **23/23**. All browser APIs/authentication were synthetic. Guide navigation made no record writes/uploads. Real production verification is PENDING; historical LCP measurements are not measurements of this candidate.
+
+Before any authorized Git/release action, inspect actual status/diff and the final tree, confirm platform branches and record compatible deployment IDs. Keep real `.env`, `.tmp`, uploads, dependencies and `dist` out of staging. Release this delta through the existing Vercel frontend configuration after explicit authorization; if the preceding backend release has not yet been deployed, complete its Render-first compatibility checks before frontend promotion. Follow the latest `RELEASE_CHECKLIST.md` addendum. A push may auto-deploy, and these instructions do not authorize it. No ZIP is needed.
+
+## Prior admin release candidate — 26 November 2026
 
 Reviewed checkout HEAD: `82465bdb4e3ff2c62983a14c6bb2ce39c7937492`, branch `main`, with the pending source changes below. This is a reviewed base, **not** an approved release SHA. No staging, commit, push, deployment, secrets change or production write was performed. The older staging lists and performance measurements later in this file describe historical work and must not substitute for reviewing the complete current tree.
 

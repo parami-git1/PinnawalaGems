@@ -16,6 +16,7 @@ import './admin/Admin.css';
 import { AdminAccessLockContext } from './adminAccessContext';
 
 const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
+const AdminGuide = lazy(() => import('./admin/AdminGuide'));
 
 const EMPTY_GEM = { title: '', categoryId: '', image: '', weight: '', color: '', shape: '', cut: '', price: '', quantity: 1, includedInStock: true, description: '', hasCertificate: false, certificateDetails: '', certificateImage: '', isFeatured: false, origin: '', additionalImages: [], videos: [], isTopGem: false, homePagePosition: 0 };
 const EMPTY_FILTERS = { search: '', categoryId: '', color: '', shape: '', certificate: '', minWeight: '', maxWeight: '', minPrice: '', maxPrice: '' };
@@ -27,6 +28,7 @@ const VIEWS = [
   { id: 'settings', label: 'Website settings', icon: 'settings', group: 'Website', description: 'Manage your homepage and contact information with a consistent, considered presentation.' },
   { id: 'feedback', label: 'Customer reviews', icon: 'star', description: 'Review customer experiences and choose the feedback to share on your website.' },
   { id: 'workshop', label: 'Workshop posts', icon: 'image', description: 'Share the craft behind your collection through workshop images and stories.' },
+  { id: 'guide', label: 'How to use', icon: 'book', group: 'Help & support', description: 'Practical guidance for every part of your workspace, with shortcuts to get things done.' },
 ];
 const array = (value) => Array.isArray(value) ? value : [];
 const categoryId = (stone) => typeof stone.categoryId === 'object' ? stone.categoryId?._id : stone.categoryId;
@@ -203,7 +205,7 @@ export default function AdminInventory() {
   const [stockStones, setStockStones] = useState([]);
   const [stockCategories, setStockCategories] = useState([]);
   const [stockModal, setStockModal] = useState(null);
-  const [operationsSection, setOperationsSection] = useState('catalog');
+  const operationsSection = ['catalog', 'stock', 'ads', 'legacy'].includes(params.get('section')) ? params.get('section') : 'catalog';
   const [feedback, setFeedback] = useState([]);
   const [workshop, setWorkshop] = useState([]);
   const [settings, setSettings] = useState({ home: {}, contact: {} });
@@ -274,7 +276,7 @@ export default function AdminInventory() {
     document.addEventListener('keydown', keydown); window.addEventListener('resize', resize);
     return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', keydown); window.removeEventListener('resize', resize); previous?.focus(); };
   }, [mobileOpen]);
-  const go = (view) => { setParams((previous) => { const next = new URLSearchParams(previous); next.set('view', view); return next; }); setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'instant' }); };
+  const go = (view, section) => { setParams((previous) => { const next = new URLSearchParams(previous); next.set('view', view); next.delete('topic'); next.delete('section'); if (typeof section === 'string') next.set('section', section); return next; }); setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'instant' }); };
   const refresh = () => { loadAll(); window.dispatchEvent(new Event('admin-refresh')); };
   const signOut = () => { clearAdminSession(); navigate(ADMIN_LOGIN_PATH, { replace: true }); };
   const success = (message) => setNotice({ type: 'success', message });
@@ -314,7 +316,7 @@ export default function AdminInventory() {
   const saveWorkshop = async (post) => { const data = await request(post._id ? `/api/workshop/${post._id}` : '/api/workshop', { method: post._id ? 'PUT' : 'POST', body: JSON.stringify(post) }); invalidate('workshop'); const item = data.post || data; if (item._id) setWorkshop((items) => post._id ? items.map((old) => old._id === post._id ? item : old) : [item, ...items]); else loadAll(); };
   const deleteWorkshop = async (id) => { await request(`/api/workshop/${id}`, { method: 'DELETE' }); invalidate('workshop'); setWorkshop((items) => items.filter((item) => item._id !== id)); };
   const pending = feedback.filter((review) => !review.approved && !review.isApproved).length;
-  const resources = current.id === 'settings' ? [] : ['inventory', 'analytics'].includes(current.id) ? ['inventory', 'categories'] : [current.id];
+  const resources = ['settings', 'guide'].includes(current.id) ? [] : ['inventory', 'analytics'].includes(current.id) ? ['inventory', 'categories'] : [current.id];
   const loading = resources.some((key) => pendingResources[key] && !ready[key]);
   const blockedKey = resources.find((key) => failures[key] && !ready[key]);
   const blocked = blockedKey ? failures[blockedKey] : '';
@@ -336,14 +338,15 @@ export default function AdminInventory() {
               onEditStone={(record, source) => { if (source === 'stock') setStockModal({ stone: record }); else setModal({ stone: record }); }}
               onDeleteStone={deleteFromOverview} onCreateStone={(source) => { if (source === 'stock') setStockModal({ stone: null }); else setModal({ stone: null }); }}
               pendingReviews={pending} categoriesCount={categories.length}
-              onNavigate={(view) => { if (view === 'operations') setOperationsSection('stock'); go(view); }} />
+              onNavigate={(view) => go(view, view === 'operations' ? 'stock' : undefined)} />
           </Suspense>}
           {current.id === 'inventory' && <InventoryTable stones={stones} categories={categories} onEdit={(stone) => setModal({ stone })} onDelete={removeStone} deleting={deleting} />}
           {current.id === 'operations' && <AdminOperations initialSection={operationsSection} onDataChanged={loadAll} />}
-          {current.id === 'planner' && <AdminPlanner />}
-          {current.id === 'settings' && <WebsiteSettings settings={settings} dirtyPages={dirtyPages} onChange={updateSettings} onSave={saveSettings} loadingPages={pendingResources} readyPages={ready} failedPages={failures} onRetry={refresh} />}
+          {current.id === 'planner' && <AdminPlanner initialView={params.get('section')} />}
+          {current.id === 'settings' && <WebsiteSettings initialPage={params.get('section')} settings={settings} dirtyPages={dirtyPages} onChange={updateSettings} onSave={saveSettings} loadingPages={pendingResources} readyPages={ready} failedPages={failures} onRetry={refresh} />}
           {current.id === 'feedback' && <FeedbackPanel feedback={feedback} onApprove={approveReview} onDelete={deleteReview} />}
           {current.id === 'workshop' && <WorkshopPanel workshop={workshop} onSave={saveWorkshop} onDelete={deleteWorkshop} />}
+          {current.id === 'guide' && <Suspense fallback={<div className="admin-panel admin-loading" role="status"><span className="admin-spinner" />Opening the workspace guide...</div>}><AdminGuide /></Suspense>}
         </>}
         <footer className="admin-workspace-footer"><span>Pinnawala Gems</span><span>Collection & website management</span></footer>
       </div>
