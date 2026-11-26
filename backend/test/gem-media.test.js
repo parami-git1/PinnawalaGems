@@ -272,7 +272,7 @@ test('gem update enforces gallery count/type limits without modifying stored rec
   assert.deepEqual(viewed.body.additionalImages, []);
 });
 
-test('deleting a gem removes its own versioned Cloudinary video with the correct resource type and preserves external assets', async () => {
+test('deleting a gem retains both owned and external videos for shared references and recovery', async () => {
   const previousCloudName = cloudinary.config().cloud_name;
   cloudinary.config({ cloud_name: 'synthetic-test' });
   try {
@@ -287,8 +287,8 @@ test('deleting a gem removes its own versioned Cloudinary video with the correct
       const deleted = await api(`/api/inventory/stones/${created.body._id}`, { method: 'DELETE' });
       assert.equal(deleted.status, 200, JSON.stringify(deleted.body));
       const cleanupCalls = cloudinary.uploader.destroy.mock.calls.slice(previousCalls);
-      assert.equal(cleanupCalls.length, 1, 'External URLs and videos in another cloud are never destroyed');
-      assert.deepEqual(cleanupCalls[0].arguments, ['pinnawala_gems/stone.preview', { resource_type: 'video', invalidate: true }]);
+      assert.equal(cleanupCalls.length, 0, 'Permanent record deletion retains every media URL, including this account’s uploads');
+      assert.equal(deleted.body.mediaRetained, true);
       assert.equal((await api(`/api/inventory/stones/${created.body._id}`, { token: false })).status, 404);
     }
   } finally { cloudinary.config({ cloud_name: previousCloudName }); }

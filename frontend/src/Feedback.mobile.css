@@ -136,6 +136,8 @@
   .pg-feedback .feedback-review-author time,
   .pg-feedback .feedback-review-author > div > span { margin-top: 1px; font-size: 12px; }
   .pg-feedback .feedback-reviews-empty { min-height: 100px; padding: 18px; font-size: 14px; }
+  .pg-feedback .feedback-reviews-empty > button { min-height: 44px; }
+  .pg-feedback .feedback-toast { bottom: max(16px, env(safe-area-inset-bottom)); }
   .pg-feedback .feedback-review-skeletons { grid-template-columns: minmax(0, 1fr); }
   .pg-feedback .feedback-review-skeletons > div { min-height: 180px; padding: 18px; }
 }

@@ -4,6 +4,7 @@ const Feedback = require('../models/Feedback');
 const requireAdmin = require('../middleware/adminAuth');
 const { feedbackLimiter } = require('../middleware/security');
 const mongoose = require('mongoose');
+const { routeError } = require('../utils/catalogData');
 
 // ඔක්කොම Feedbacks ගන්නවා (Frontend එකෙන් Admin ද නැද්ද කියලා බලලා ෆිල්ටර් කරනවා)
 router.get('/', (req, res, next) => req.headers.authorization ? requireAdmin(req, res, next) : next(), async (req, res) => {
@@ -27,7 +28,7 @@ router.post('/', feedbackLimiter, async (req, res) => {
     const savedFeedback = await newFeedback.save();
     res.status(201).json(savedFeedback);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    routeError(res, error);
   }
 });
 

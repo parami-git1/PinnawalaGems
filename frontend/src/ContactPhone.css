@@ -27,6 +27,8 @@
   .pg-contact .pg-contact-method:nth-child(4) a { font-size: 13px; white-space: nowrap; }
   .pg-contact .pg-contact-socials { margin-top: 12px; padding-top: 12px; }
   .pg-contact .pg-contact-socials .social-icon { width: 44px; height: 44px; }
+  .pg-contact .pg-contact-socials .social-icon:focus-visible { outline: 2px solid #d9b64a; outline-offset: 3px; color: #fff; }
+  .pg-contact .pg-contact-socials .social-icon:active { background: var(--hover-bg); color: var(--hover-text); border-color: var(--hover-border); }
   .pg-contact .pg-contact-panel > .pg-contact-message { padding: 24px 18px; }
   .pg-contact .pg-contact-message h2 { font-size: 27px; line-height: 1.2; }
   .pg-contact .contact-enquiry-form { margin-top: 20px; gap: 14px; grid-template-columns: minmax(0, 1fr); }

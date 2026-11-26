@@ -4,7 +4,6 @@ const StockCategory = require('../models/StockCategory');
 const StockStone = require('../models/StockStone');
 const requireAdmin = require('../middleware/adminAuth');
 const { stonePayload, categoryPayload, generatedReference, objectId, routeError, pagination, catalogMatch } = require('../utils/catalogData');
-const { deleteAssets, deleteStoneAssets } = require('../utils/assetCleanup');
 const router = express.Router();
 // Stock belongs to the administrative workspace, including read endpoints.
 router.use(requireAdmin);
@@ -40,15 +39,14 @@ router.put('/stones/:stoneId', async (req, res) => {
 router.delete('/stones/:stoneId', async (req, res) => {
   try {
     const stone = await StockStone.findById(objectId(req.params.stoneId)); if (!stone) return res.status(404).json({ message: 'Stock stone not found' });
-    await deleteStoneAssets(stone); await StockStone.findByIdAndDelete(req.params.stoneId); res.json({ message: 'Stock stone and its uploaded images deleted.' });
+    await StockStone.findByIdAndDelete(req.params.stoneId); res.json({ message: 'Stock stone deleted. Uploaded media retained.', mediaRetained: true });
   } catch (error) { routeError(res, error); }
 });
 router.delete('/categories/:categoryId', async (req, res) => {
   try {
     const categoryId = objectId(req.params.categoryId, 'Category'); const category = await StockCategory.findById(categoryId);
     if (!category) return res.status(404).json({ message: 'Stock category not found' });
-    await deleteAssets([category.mainImage]); for (const stone of await StockStone.find({ categoryId })) await deleteStoneAssets(stone);
-    await StockStone.deleteMany({ categoryId }); await StockCategory.findByIdAndDelete(categoryId); res.json({ message: 'Stock category and its stones deleted.' });
+    await StockStone.deleteMany({ categoryId }); await StockCategory.findByIdAndDelete(categoryId); res.json({ message: 'Stock category and its stones deleted. Uploaded media retained.', mediaRetained: true });
   } catch (error) { routeError(res, error); }
 });
 module.exports = router;

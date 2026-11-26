@@ -47,6 +47,8 @@ export default function CustomerGallery({ photos = [] }) {
   const [visible, setVisible] = useState(() => typeof window === 'undefined' || !('IntersectionObserver' in window));
   const [pageVisible, setPageVisible] = useState(() => typeof document === 'undefined' || !document.hidden);
   const [interacting, setInteracting] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [interactionVersion, setInteractionVersion] = useState(0);
   const trackId = useId();
 
@@ -92,15 +94,18 @@ export default function CustomerGallery({ photos = [] }) {
       window.clearTimeout(settleTimer);
       settleTimer = window.setTimeout(settle, 140);
     };
-    const resize = new ResizeObserver(() => jumpTo(activeRef.current + clones));
+    const align = () => jumpTo(activeRef.current + clones);
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(align) : null;
     activeRef.current = Math.min(activeRef.current, total - 1);
     setDisplayed(activeRef.current);
     jumpTo(activeRef.current + clones);
-    resize.observe(element);
+    resize?.observe(element);
+    window.addEventListener('resize', align);
     element.addEventListener('scroll', handleScroll, { passive: true });
     element.addEventListener('scrollend', settle);
     return () => {
-      resize.disconnect();
+      resize?.disconnect();
+      window.removeEventListener('resize', align);
       window.clearTimeout(settleTimer);
       element.removeEventListener('scroll', handleScroll);
       element.removeEventListener('scrollend', settle);
@@ -141,10 +146,10 @@ export default function CustomerGallery({ photos = [] }) {
   }, [total, reducedMotion]);
 
   useEffect(() => {
-    if (reducedMotion || !visible || !pageVisible || interacting || total < 2) return undefined;
+    if (reducedMotion || !visible || !pageVisible || interacting || focused || hovered || total < 2) return undefined;
     const interval = window.setInterval(() => advance(1), 4200);
     return () => window.clearInterval(interval);
-  }, [reducedMotion, visible, pageVisible, interacting, total, advance, interactionVersion]);
+  }, [reducedMotion, visible, pageVisible, interacting, focused, hovered, total, advance, interactionVersion]);
 
   useEffect(() => {
     if (!interacting) return undefined;
@@ -192,6 +197,10 @@ export default function CustomerGallery({ photos = [] }) {
           role="region"
           aria-roledescription="carousel"
           aria-label="Moments with the Pinnawala Gems community"
+          onFocusCapture={() => setFocused(true)}
+          onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
         >
           <div
             className={`pg-community__track${total === 1 ? ' pg-community__track--single' : ''}`}

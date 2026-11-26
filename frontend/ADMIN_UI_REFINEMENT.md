@@ -1,4 +1,64 @@
-# Admin workspace refinement
+# Admin panel final verification — 26 November 2026
+
+**Local verification: PASS. Production verification: PENDING.** Reviewed base: `82465bdb4e3ff2c62983a14c6bb2ce39c7937492` plus the working-tree files in `../FINAL_GIT_RELEASE.md`. No staging, commit, push, deployment, environment change or production write was performed. These tests did not access or change real credentials, records or Cloudinary assets.
+
+## Function-by-function results
+
+| Area | Local status | Verified behavior |
+| --- | --- | --- |
+| Login/access | PASS | Email/password and Google policies; mandatory server verification; forged/expired/wrong-role sessions blocked; connection retry, cross-tab logout, locked dialogs and retained drafts during revalidation. Google credentials/SDK were synthetic. |
+| Overview | PASS | Separate private/website category charts, accurate pieces/carats/value, unknown values disclosed, category drill-down, exact/ambiguous ID handling, source-correct create/edit/delete and refreshed totals. |
+| Gem inventory | PASS | Combined filters, sorting, pagination, later-page ID search, generated ID protection, zero/null values, create/edit/delete, failed-save drafts and duplicate-write/modal guards. |
+| Categories/banners | PASS | Required fields, safe URL validation, create/edit/banner selection, thumbnail preservation, failure/retry and stale-editor reset after confirmed deletion. |
+| Private stock | PASS | Categories, specifications/search, create/edit/delete, status/inclusion/certificate fields, zero quantity/price, nullable optional values and embedded Overview editing. |
+| Homepage placement | PASS | Search/filter and homepage/featured toggles target only the selected record; ordering retained. |
+| Adverts/older catalog | PASS | Create/edit/delete, layouts, variation/image add/remove, retained failure drafts and correct editor reset. |
+| Photos/videos/certificates | PASS | Upload and URL paths, type/size/count checks, 10 photos including cover, 2 videos, 8 MB/photo and 50 MB/video; authenticated requests, cover/remove, cancel/retry and parent locks. |
+| Calendar/appointments/notes | PASS | Monday-first calendar, Sri Lanka dates, category/custom colours, selected-day agenda, CRUD/status/search/pin/archive, independent note/reminder dates and pending-write guards. |
+| Workshop posts | PASS | Published/draft/scheduled states, Sri Lanka schedule, independent event/location/contacts, image drop/URL, required-field focus, failure drafts and public due-post behavior. |
+| Website settings | PASS | Separate page drafts, authoritative contacts read-only, failed-save/refresh preservation, stable image-array rows, upload locks and clear stored legacy content. |
+| Customer reviews | PASS | Status/search filters, failed-approval retry, pending-write locks, correct approval and confirmed delete/cancel/error/retry. |
+| Phone/keyboard UI | PASS | Inventory cards with visible Edit/Delete, expandable advanced filters, unchanged desktop table layout, readable inputs, usable touch targets and modal/sidebar focus handling at 320/390/768/1440px. |
+| Backend/data safeguards | PASS | Literal planner search, malformed query/date/time rejection, editable-field whitelists, Sri Lanka date boundaries, redacted errors and uploaded-media retention on record deletion. |
+
+## Fixes completed in this audit
+
+- Successful deletion now clears only its matching category/stock/ad/older-catalog editor. Failed or cancelled deletion retains the draft.
+- Gallery **Cancel uploads** aborts the active browser request, stops queued files, retains completed photos, enables per-file Retry and releases Save/Close locks. Invalid/missing media URLs and mismatched media types cannot enter the gallery. Phone media controls have larger touch targets.
+- Calendar/Notes/notification entry points cannot replace a pending planner save and subsequently lose the replacement draft.
+- Gem-save errors receive focus and scroll into view; workshop missing-field handling targets the relevant input.
+- Phone inventory shows concise cards with visible actions and optional advanced filters. Desktop retains its table. Both display recorded numeric zero weight correctly.
+- Unused legacy brand introduction/contact media remain editable in clearly labelled collapsed sections, preserving all saved values. Invalid hidden image URLs reveal their section and receive focus.
+- Planner search treats punctuation literally; invalid dates/times/query types fail before database access. Date filters use Sri Lanka boundaries. Operational errors, including public review storage errors, no longer expose raw database messages.
+- Permanent record/category/ad deletion retains uploaded media. Previously, Cloudinary deletion happened before database deletion, risking broken retained/shared URLs on database failure. Existing record/cascade scope and sold archive/Undo behavior remain.
+
+## Verification and evidence
+
+| Gate | Status |
+| --- | --- |
+| Complete backend suite | PASS — 125/125 |
+| Frontend helper suite | PASS — 53/53 |
+| Complete frontend lint and production build | PASS; existing large Three.js chunk warning remains |
+| Local Chrome admin scenarios | PASS — 173/173 |
+| Actual owner login, deployed APIs/CDN/uploads, physical phones and production performance | PENDING |
+
+The 173 browser scenarios comprise login policy 19, session/route protection 22, sold-batch/Undo 8, Overview 23, inventory/shell 11, pagination/zero display 2, settings/reviews 11, focused planner/workshop regression 2, Operations 20, media 11, calendar 23 and workshop scheduling/public contracts 21. These scenarios contain multiple assertions; they are not production transactions. All use the local Vite production build, synthetic records and intercepted APIs/Google SDK/uploads. External traffic was blocked or stubbed. Final targeted checks were repeated after phone inventory/zero formatting changes.
+
+Local evidence: workspace `.tmp/dual-login-frontend`, `gem-magnifier-admin-security`, `bulk-sold-qa`, `admin-overview-charts-qa`, `admin-final-shell-qa`, `admin-final-operations-qa`, `planner-calendar-qa` and `workshop-scheduling-qa`. JSON reports contain results/request records; screenshots show representative phone/tablet/desktop states. Do not stage `.tmp` or build output.
+
+## Operation and remaining production checks
+
+Reminders are **in-app activity** refreshed approximately every 30 seconds while visible and on returning to the tab. They do not send email, SMS, WhatsApp or background push notifications. Workshop schedules are evaluated on server reads; open public pages poll for due publications.
+
+Permanent Delete remains confirmed and irreversible for database records, including existing category cascades. Uploaded assets are intentionally retained because URLs may be reused elsewhere; storage reclamation is outside this release. Cancelling a browser upload cannot guarantee that an already accepted server upload is undone. Use **Remove sold gems** for reversible archive/Undo. Category cascades retain existing multi-write database semantics; cross-document transaction atomicity on the actual MongoDB deployment was not certified.
+
+After explicit authorization, deploy the matching **Render backend first, then Vercel frontend**. This delta requires no new dependency, environment variable, secret change, database migration or asset replacement. Preserve archive-aware rollback compatibility. Follow `../RELEASE_CHECKLIST.md` and `../FINAL_GIT_RELEASE.md`.
+
+After deployment, verify exact revisions, health/CORS/cache contracts, owner login, read-only real stock totals/IDs/settings/reviews/planner data and physical phone navigation. Production CRUD/uploads/deletes require separately authorized test data. Production LCP/CLS/INP and real CDN availability remain PENDING.
+
+## Historical initial refinement (superseded)
+
+The following describes the earlier implementation and its earlier test counts. Its `/admin` URL is historical; current entry paths come from `src/adminPaths.js` and server verification remains mandatory.
 
 The admin workspace at `/admin` now uses a shared navy, white and champagne design system. Existing admin authentication, resource routes and content fields are retained.
 

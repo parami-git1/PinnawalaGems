@@ -2,6 +2,7 @@ const express = require('express');
 const Appointment = require('../models/Appointment');
 const AdminNote = require('../models/AdminNote');
 const requireAdmin = require('../middleware/adminAuth');
+const { routeError } = require('../utils/catalogData');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -26,7 +27,7 @@ router.get('/notifications', async (req, res) => {
     ]);
 
     res.json({ todayAppointments, dueNotes, upcomingNotes, counts: { todayAppointments: todayAppointments.length, dueNotes: dueNotes.length, upcomingNotes: upcomingNotes.length }, serverTime: now.toISOString(), timeZone: 'Asia/Colombo' });
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 module.exports = router;

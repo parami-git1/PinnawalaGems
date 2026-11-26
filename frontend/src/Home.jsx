@@ -5,6 +5,7 @@ import HomeLoading from './HomeLoading';
 import GemShowcase from './GemShowcase';
 import CustomerGallery from './CustomerGallery';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
+import { websiteWhatsAppUrl } from './whatsappLinks';
 import { getDefaultCategoryBanner } from './categoryBannerAssets';
 import { HOME_HERO_PREVIEW, HOME_MOBILE_PREVIEW } from './homeHeroPreview';
 import './Home.css';
@@ -244,7 +245,7 @@ export default function Home() {
   const words = heroTitle.split(/\s+/);
   const lastWord = words.pop();
   const eventLink = safeWebUrl(homeData.eventLink);
-  const whatsapp = BUSINESS.whatsapp;
+  const whatsapp = websiteWhatsAppUrl({ intent: "visit", origin: window.location.origin });
   const customHeroImage = isDefaultHeroImage(homeData.heroImage) ? '' : homeData.heroImage.trim();
   const useDefaultHero = !customHeroImage || customHeroImage === failedHeroImage;
   const heroSource = useDefaultHero ? HERO_IMAGE : customHeroImage;
@@ -330,7 +331,7 @@ export default function Home() {
         <p>Find your colour. Ask a question. Begin a conversation.</p>
         <div className="pg-visit-actions">
           <Link className="pg-button pg-button--gold" to="/contact">Plan your visit<Arrow /></Link>
-          <a className="pg-text-link" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer">Speak with our team<Arrow diagonal /></a>
+          <a className="pg-text-link" href={whatsapp} target="_blank" rel="noopener noreferrer">Speak with our team<Arrow diagonal /></a>
         </div>
         <span className="pg-visit-location">{BUSINESS.address}</span>
       </div>

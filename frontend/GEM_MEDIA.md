@@ -36,22 +36,24 @@ pauses playback. Old gems without videos continue to show their photographs.
   counts. Missing video fields preserve existing media on partial edits. Legacy
   records and root-relative image paths remain supported; no database migration
   is required.
-- Removing a gemstone or its category also removes attached Cloudinary videos
-  using the video resource type. Removing a gallery entry detaches the URL from
-  the record; uploading alone does not save the gemstone.
+- Permanent gemstone/category deletion retains uploaded Cloudinary photos,
+  videos and certificates because their URLs may also be used by other records
+  or page content. Removing a gallery entry detaches its URL from the record;
+  uploading alone does not save the gemstone. Sold-batch removal remains a
+  reversible archive with Undo. No automatic asset purge is performed.
 
 ## Deployment
 
-Deploy **both** the frontend and backend for this feature. The updated backend
-package is `deliverables/pinnawala-gem-media-backend.zip` in the workspace. It
-contains a `backend/` directory including the earlier appointments/notes fixes,
-new upload route, media utility, schema and tests. It excludes `.env`, uploads,
-dependencies and Git metadata. Keep the current Render environment variables.
+After explicit authorization, deploy the approved Git source to **Render first,
+then Vercel**, using the matching backend/frontend revisions. No ZIP is needed.
+Follow [the release checklist](../RELEASE_CHECKLIST.md). Preserve current Render
+environment variables, database records and existing Cloudinary assets; exclude
+real `.env`, uploads, dependencies and build output from source staging.
 
 The public backend health response includes `gem-media` in `features` after this
 revision is deployed. Without credentials, `POST /api/media/upload` returns 401;
-404 indicates that the new route has not been deployed. Use existing authorised
-business records for a real upload after deployment.
+404 indicates that the new route has not been deployed. Real upload/write tests
+require separately authorized test records and actions after deployment.
 
 ## Verification
 
@@ -62,8 +64,10 @@ create/edit/read persistence and old records. Browser checks intercept every API
 request and use synthetic records; they do not upload to production Cloudinary,
 sign in to production, or write real inventory.
 
-Final verification passed: 24 backend integration tests, 9 admin upload browser
-checks and 43 customer-gallery browser checks at desktop, 390px and 320px widths.
+26 November admin audit: complete backend suite **125/125** and **11/11** focused
+admin media scenarios passed, including cancellation/retry and 320/390/768/1440px
+layouts. See [the complete admin report](ADMIN_UI_REFINEMENT.md). Real deployed
+Cloudinary/provider/network behavior remains PENDING.
 The production frontend build and targeted ESLint checks also passed. Browser
 reports and screenshots are in workspace `.tmp/admin-gem-media-qa/` and
 `.tmp/gem-media-gallery-qa/`.

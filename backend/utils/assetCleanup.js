@@ -1,4 +1,6 @@
 const cloudinary = require('cloudinary').v2;
+// Legacy opt-in utilities only. Registered record/category delete routes retain
+// media because URLs may be shared across records, banners and website content.
 
 function cloudinaryAsset(value, resourceType = 'image') {
   let parsed;

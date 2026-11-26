@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AdminOperations from './AdminOperations';
 import AdminPlanner from './AdminPlanner';
@@ -31,6 +31,7 @@ const VIEWS = [
 const array = (value) => Array.isArray(value) ? value : [];
 const categoryId = (stone) => typeof stone.categoryId === 'object' ? stone.categoryId?._id : stone.categoryId;
 const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const gemWeightLabel = (weight) => weight !== '' && weight != null ? `${weight}${/ct|carat/i.test(String(weight)) ? '' : ' ct'}` : '—';
 
 const request = apiRequest;
 
@@ -54,9 +55,9 @@ function summarise(stones, categories) {
   return { totalStones: stones.length, totalQuantity: stones.reduce((sum, stone) => sum + number(stone.quantity), 0), totalBlueSapphires: stones.filter((stone) => /blue/i.test(stone.title || '')).length, avgCaratWeight: mean(weights), minCaratWeight: weights.length ? Math.min(...weights) : 0, maxCaratWeight: weights.length ? Math.max(...weights) : 0, categoryOverview, colorDistribution: [...colours].map(([name, value]) => ({ name, value })) };
 }
 
-function Notice({ value, onDismiss }) {
+function Notice({ value, onDismiss, focusRef }) {
   if (!value) return null;
-  return <div className={`admin-status ${value.type === 'error' ? 'is-error' : ''}`} role={value.type === 'error' ? 'alert' : 'status'}><AdminIcon name={value.type === 'error' ? 'bell' : 'check'} /><p>{value.message}</p>{onDismiss && <button type="button" onClick={onDismiss} aria-label="Dismiss message"><AdminIcon name="close" /></button>}</div>;
+  return <div ref={focusRef} tabIndex={focusRef ? -1 : undefined} className={`admin-status ${value.type === 'error' ? 'is-error' : ''}`} role={value.type === 'error' ? 'alert' : 'status'}><AdminIcon name={value.type === 'error' ? 'bell' : 'check'} /><p>{value.message}</p>{onDismiss && <button type="button" onClick={onDismiss} aria-label="Dismiss message"><AdminIcon name="close" /></button>}</div>;
 }
 
 function FormSection({ icon, title, description, children }) {
@@ -69,6 +70,12 @@ function GemEditor({ stone, categories, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const errorNotice = useRef(null);
+  useEffect(() => {
+    if (!error) return;
+    errorNotice.current?.focus({ preventScroll: true });
+    errorNotice.current?.scrollIntoView({ block: 'nearest' });
+  }, [error]);
   const guard = useRef(false);
   const uploadGuard = useRef(false);
   const activeUploads = useRef(new Set());
@@ -101,7 +108,7 @@ function GemEditor({ stone, categories, onClose, onSaved }) {
     finally { guard.current = false; setSaving(false); }
   };
   return <AdminModal title={editing ? 'Edit gemstone' : 'Add gemstone'} description="Keep each piece beautifully presented, with accurate details and clear availability." onClose={onClose} busy={busy}><form onSubmit={save} aria-label="Gemstone details">
-    {error && <Notice value={{ type: 'error', message: error }} onDismiss={() => setError('')} />}
+    {error && <Notice value={{ type: 'error', message: error }} focusRef={errorNotice} onDismiss={() => setError('')} />}
     <fieldset disabled={saving} className="admin-plain-fieldset">
       <FormSection icon="gem" title="Gemstone details" description="Start with the essentials for your collection.">
         {input('title', 'Gem name', { required: true, placeholder: 'e.g. Ceylon blue sapphire' })}
@@ -131,10 +138,20 @@ function GemEditor({ stone, categories, onClose, onSaved }) {
   </form></AdminModal>;
 }
 
+function OverviewStockEditor({ stone, onClose, onSaved }) {
+  const [busy, setBusy] = useState(false);
+  return <AdminModal title={stone ? 'Edit private stock gemstone' : 'Add private stock gemstone'} description="Update private stock without leaving your overview. This does not publish a gemstone to the website." onClose={onClose} busy={busy}>
+    <div className="admin-overview-stock-editor"><AdminOperations editorOnly initialSection="stock" initialStockStone={stone} onEditorBusyChange={setBusy} onEditorCancel={onClose} onEditorSaved={() => onSaved(stone ? 'Private stock changes saved.' : 'Private stock gemstone created.')} /></div>
+  </AdminModal>;
+}
+
 function InventoryTable({ stones, categories, onEdit, onDelete, deleting }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [sort, setSort] = useState('default');
   const [page, setPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersId = useId();
+  const advancedCount = Object.entries(filters).filter(([key, value]) => !['search', 'categoryId'].includes(key) && value !== '').length;
   const names = useMemo(() => new Map(categories.map((category) => [category._id, category.title])), [categories]);
   const filtered = useMemo(() => {
     const result = stones.filter((stone) => {
@@ -153,15 +170,23 @@ function InventoryTable({ stones, categories, onEdit, onDelete, deleting }) {
   const visible = filtered.slice((currentPage - 1) * 20, currentPage * 20);
   return <>
     <div className="admin-toolbar"><div className="admin-search"><AdminIcon name="search" /><input aria-label="Search gemstones" placeholder="Search gem name or ID..." value={filters.search} onChange={(event) => update('search', event.target.value)} /></div><div className="admin-inventory-toolbar-end"><select aria-label="Filter by category" value={filters.categoryId} onChange={(event) => update('categoryId', event.target.value)}><option value="">All categories</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.title}</option>)}</select><select aria-label="Sort gemstones" value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }}><option value="default">Default order</option><option value="name">Gem name: A to Z</option><option value="weight">Weight: high to low</option><option value="quantity">Quantity: high to low</option></select></div></div>
-    <div className="admin-filter-grid">
+    <button type="button" className="admin-button admin-inventory-filter-toggle" aria-expanded={filtersOpen} aria-controls={filtersId} onClick={() => setFiltersOpen((open) => !open)}><AdminIcon name="filter" />{filtersOpen ? 'Hide filters' : 'More filters'}{advancedCount > 0 && <span className="admin-badge">{advancedCount} active</span>}</button>
+    <div id={filtersId} className={`admin-filter-grid admin-inventory-advanced${filtersOpen ? ' is-open' : ''}`}>
       <AdminField label="Color"><input value={filters.color} placeholder="Any color" onChange={(event) => update('color', event.target.value)} /></AdminField>
       <AdminField label="Shape"><input value={filters.shape} placeholder="Any shape" onChange={(event) => update('shape', event.target.value)} /></AdminField>
       <AdminField label="Certificate"><select value={filters.certificate} onChange={(event) => update('certificate', event.target.value)}><option value="">Any certificate status</option><option value="yes">With certificate</option><option value="no">Without certificate</option></select></AdminField>
       {[['minWeight', 'Minimum weight', 'Min weight'], ['maxWeight', 'Maximum weight', 'Max weight'], ['minPrice', 'Minimum price', 'Min price'], ['maxPrice', 'Maximum price', 'Max price']].map(([name, label, placeholder]) => <AdminField key={name} label={label}><input type="number" step="any" value={filters[name]} placeholder={placeholder} onChange={(event) => update(name, event.target.value)} /></AdminField>)}
     </div>
     <div className="admin-filter-actions"><p><strong>{filtered.length}</strong> {filtered.length === 1 ? 'gemstone' : 'gemstones'}{active ? ` matching your filters · ${stones.length} total` : ' in your collection'}</p><button type="button" className="admin-button is-small" onClick={() => { setFilters(EMPTY_FILTERS); setPage(1); }} disabled={!active}>Clear filters<AdminIcon name="close" size={13} /></button></div>
-    <section className="admin-panel">
-      {visible.length ? <div className="admin-table-wrap" tabIndex={0} role="region" aria-label="Gem inventory table"><table className="admin-table" style={{ minWidth: 850 }}><thead><tr><th scope="col">Gemstone</th><th scope="col">Gem ID</th><th scope="col">Weight</th><th scope="col">Quantity</th><th scope="col">Price</th><th scope="col">Presentation</th><th scope="col">Actions</th></tr></thead><tbody>{visible.map((stone) => <tr key={stone._id}><td><div className="admin-product-cell"><AdminImage src={stone.image} alt="" /><div><strong>{stone.title}</strong><small>{names.get(categoryId(stone)) || 'Uncategorized'}{stone.shape ? ` / ${stone.shape}` : ''}</small></div></div></td><td><span className="admin-table-id">{stone.stoneId || '—'}</span></td><td>{stone.weight ? `${stone.weight}${/ct|carat/i.test(String(stone.weight)) ? '' : ' ct'}` : '—'}</td><td><span className={`admin-badge ${number(stone.quantity) > 0 ? 'is-success' : ''}`}>{number(stone.quantity)} {number(stone.quantity) === 1 ? 'piece' : 'pieces'}</span></td><td>{stone.price !== '' && stone.price != null ? number(stone.price).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}</td><td><div className="admin-presentation-badges">{stone.hasCertificate && <span className="admin-badge"><AdminIcon name="shield" />Certified</span>}{stone.isFeatured && <span className="admin-badge is-warning">Featured</span>}{stone.isTopGem && <span className="admin-badge">Homepage</span>}{!stone.hasCertificate && !stone.isFeatured && !stone.isTopGem && <span className="admin-table-id">Standard</span>}</div></td><td><div className="admin-table-actions"><button type="button" className="admin-icon-button" onClick={() => onEdit(stone)} aria-label={`Edit ${stone.title}`} title="Edit gemstone"><AdminIcon name="edit" /></button><button type="button" className="admin-icon-button is-danger" onClick={() => onDelete(stone)} disabled={Boolean(deleting)} aria-label={`Delete ${stone.title}`} title="Delete gemstone">{deleting === stone._id ? <span className="admin-spinner" /> : <AdminIcon name="trash" />}</button></div></td></tr>)}</tbody></table></div> : <AdminEmptyState icon="gem" title={active ? 'No gemstones match these filters' : 'Your collection starts here'} description={active ? 'Try a different search or clear the filters to see your collection.' : 'Add your first gemstone with its details, images and availability.'} action={active ? <button type="button" className="admin-button" onClick={() => { setFilters(EMPTY_FILTERS); setPage(1); }}>Reset search</button> : undefined} />}
+    {visible.length > 0 && <div className="admin-inventory-cards" aria-label="Gem inventory cards">{visible.map((stone) => <article className="admin-inventory-card" key={stone._id}>
+      <div className="admin-product-cell"><AdminImage src={stone.image} alt="" /><div><h2>{stone.title}</h2><small>{names.get(categoryId(stone)) || 'Uncategorized'}</small></div></div>
+      <p className="admin-table-id">Gem ID: {stone.stoneId || 'Not recorded'}</p>
+      <dl><div><dt>Weight per piece</dt><dd>{gemWeightLabel(stone.weight)}</dd></div><div><dt>Quantity</dt><dd>{number(stone.quantity)} {number(stone.quantity) === 1 ? 'piece' : 'pieces'}</dd></div><div><dt>Price per piece (Rs.)</dt><dd>{stone.price !== '' && stone.price != null ? number(stone.price).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}</dd></div><div><dt>Shape</dt><dd>{stone.shape || '—'}</dd></div></dl>
+      <div className="admin-presentation-badges">{stone.hasCertificate && <span className="admin-badge">Certified</span>}{stone.isFeatured && <span className="admin-badge is-warning">Featured</span>}{stone.isTopGem && <span className="admin-badge">Homepage</span>}</div>
+      <div className="admin-inventory-card-actions"><button type="button" className="admin-button" onClick={() => onEdit(stone)} aria-label={`Edit ${stone.title}`}><AdminIcon name="edit" size={16} />Edit gemstone</button><button type="button" className="admin-button is-danger" onClick={() => onDelete(stone)} disabled={Boolean(deleting)} aria-label={`Delete ${stone.title}`}>{deleting === stone._id ? <span className="admin-spinner" /> : <AdminIcon name="trash" size={16} />}Delete</button></div>
+    </article>)}</div>}
+    <section className={`admin-panel admin-inventory-table-panel${visible.length ? ' has-records' : ''}`}>
+      {visible.length ? <div className="admin-table-wrap" tabIndex={0} role="region" aria-label="Gem inventory table"><table className="admin-table" style={{ minWidth: 850 }}><thead><tr><th scope="col">Gemstone</th><th scope="col">Gem ID</th><th scope="col">Weight</th><th scope="col">Quantity</th><th scope="col">Price</th><th scope="col">Presentation</th><th scope="col">Actions</th></tr></thead><tbody>{visible.map((stone) => <tr key={stone._id}><td><div className="admin-product-cell"><AdminImage src={stone.image} alt="" /><div><strong>{stone.title}</strong><small>{names.get(categoryId(stone)) || 'Uncategorized'}{stone.shape ? ` / ${stone.shape}` : ''}</small></div></div></td><td><span className="admin-table-id">{stone.stoneId || '—'}</span></td><td>{gemWeightLabel(stone.weight)}</td><td><span className={`admin-badge ${number(stone.quantity) > 0 ? 'is-success' : ''}`}>{number(stone.quantity)} {number(stone.quantity) === 1 ? 'piece' : 'pieces'}</span></td><td>{stone.price !== '' && stone.price != null ? number(stone.price).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}</td><td><div className="admin-presentation-badges">{stone.hasCertificate && <span className="admin-badge"><AdminIcon name="shield" />Certified</span>}{stone.isFeatured && <span className="admin-badge is-warning">Featured</span>}{stone.isTopGem && <span className="admin-badge">Homepage</span>}{!stone.hasCertificate && !stone.isFeatured && !stone.isTopGem && <span className="admin-table-id">Standard</span>}</div></td><td><div className="admin-table-actions"><button type="button" className="admin-icon-button" onClick={() => onEdit(stone)} aria-label={`Edit ${stone.title}`} title="Edit gemstone"><AdminIcon name="edit" /></button><button type="button" className="admin-icon-button is-danger" onClick={() => onDelete(stone)} disabled={Boolean(deleting)} aria-label={`Delete ${stone.title}`} title="Delete gemstone">{deleting === stone._id ? <span className="admin-spinner" /> : <AdminIcon name="trash" />}</button></div></td></tr>)}</tbody></table></div> : <AdminEmptyState icon="gem" title={active ? 'No gemstones match these filters' : 'Your collection starts here'} description={active ? 'Try a different search or clear the filters to see your collection.' : 'Add your first gemstone with its details, images and availability.'} action={active ? <button type="button" className="admin-button" onClick={() => { setFilters(EMPTY_FILTERS); setPage(1); }}>Reset search</button> : undefined} />}
       <footer className="admin-pagination"><span>{filtered.length ? `${(currentPage - 1) * 20 + 1}–${Math.min(currentPage * 20, filtered.length)} of ${filtered.length} gemstones` : '0 gemstones'}</span><div><button type="button" className="admin-icon-button" aria-label="Previous inventory page" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><AdminIcon name="chevron-left" /></button><span>Page {currentPage} of {pages}</span><button type="button" className="admin-icon-button" aria-label="Next inventory page" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)}><AdminIcon name="chevron-right" /></button></div></footer>
     </section>
   </>;
@@ -177,7 +202,7 @@ export default function AdminInventory() {
   const [categories, setCategories] = useState([]);
   const [stockStones, setStockStones] = useState([]);
   const [stockCategories, setStockCategories] = useState([]);
-  const [inspectStockStone, setInspectStockStone] = useState(null);
+  const [stockModal, setStockModal] = useState(null);
   const [operationsSection, setOperationsSection] = useState('catalog');
   const [feedback, setFeedback] = useState([]);
   const [workshop, setWorkshop] = useState([]);
@@ -255,6 +280,19 @@ export default function AdminInventory() {
   const success = (message) => setNotice({ type: 'success', message });
   const invalidate = (...keys) => { keys.forEach((key) => { versions.current[key] = (versions.current[key] || 0) + 1; }); };
   const saved = (message) => { invalidate('inventory', 'analytics'); setModal(null); success(message); loadAll(); };
+  const stockSaved = (message) => { invalidate('stockStones'); setStockModal(null); success(message); loadAll(); };
+  const deleteFromOverview = async (stone, source) => {
+    if (deleteGuard.current || !window.confirm(`Permanently delete ${stone.title} (${stone.stoneId || stone._id}) from ${source === 'stock' ? 'private stock' : 'the website collection'}? This cannot be undone. To remove a sold gem with Undo instead, use Remove sold gems.`)) return false;
+    deleteGuard.current = true;
+    try {
+      await request(`/api/${source === 'stock' ? 'stock' : 'inventory'}/stones/${encodeURIComponent(stone._id)}`, { method: 'DELETE' });
+      invalidate(source === 'stock' ? 'stockStones' : 'inventory', 'analytics');
+      if (source === 'stock') setStockStones((items) => items.filter((item) => item._id !== stone._id));
+      else setStones((items) => items.filter((item) => item._id !== stone._id));
+      success('Gemstone permanently deleted.'); loadAll();
+      return true;
+    } finally { deleteGuard.current = false; }
+  };
   const removeStone = async (stone) => {
     if (deleteGuard.current || !window.confirm(`Delete ${stone.title}? This cannot be undone.`)) return;
     deleteGuard.current = true; setDeleting(stone._id);
@@ -295,12 +333,13 @@ export default function AdminInventory() {
               stockStones={stockStones} stockCategories={stockCategories}
               stockLoading={Boolean(pendingResources.stockStones || pendingResources.stockCategories)}
               stockError={failures.stockStones || failures.stockCategories || ''} onRetryStock={refresh}
-              onEditStone={(record, source) => { if (source === 'stock') { setInspectStockStone(record); go('operations'); } else setModal({ stone: record }); }}
+              onEditStone={(record, source) => { if (source === 'stock') setStockModal({ stone: record }); else setModal({ stone: record }); }}
+              onDeleteStone={deleteFromOverview} onCreateStone={(source) => { if (source === 'stock') setStockModal({ stone: null }); else setModal({ stone: null }); }}
               pendingReviews={pending} categoriesCount={categories.length}
               onNavigate={(view) => { if (view === 'operations') setOperationsSection('stock'); go(view); }} />
           </Suspense>}
           {current.id === 'inventory' && <InventoryTable stones={stones} categories={categories} onEdit={(stone) => setModal({ stone })} onDelete={removeStone} deleting={deleting} />}
-          {current.id === 'operations' && <AdminOperations initialSection={operationsSection} initialStockStone={inspectStockStone} onStockStoneOpened={() => setInspectStockStone(null)} onDataChanged={loadAll} />}
+          {current.id === 'operations' && <AdminOperations initialSection={operationsSection} onDataChanged={loadAll} />}
           {current.id === 'planner' && <AdminPlanner />}
           {current.id === 'settings' && <WebsiteSettings settings={settings} dirtyPages={dirtyPages} onChange={updateSettings} onSave={saveSettings} loadingPages={pendingResources} readyPages={ready} failedPages={failures} onRetry={refresh} />}
           {current.id === 'feedback' && <FeedbackPanel feedback={feedback} onApprove={approveReview} onDelete={deleteReview} />}
@@ -310,6 +349,7 @@ export default function AdminInventory() {
       </div>
     </main>
     {modal && <GemEditor stone={modal.stone} categories={categories} onClose={() => setModal(null)} onSaved={saved} />}
+    {stockModal && <OverviewStockEditor stone={stockModal.stone} onClose={() => setStockModal(null)} onSaved={stockSaved} />}
     {bulkSoldOpen && <BulkSoldGems scope="catalog" onClose={() => setBulkSoldOpen(false)} onCompleted={loadAll} />}
   </div>;
 }

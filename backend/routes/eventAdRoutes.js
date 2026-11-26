@@ -2,7 +2,6 @@ const express = require('express');
 const EventAd = require('../models/EventAd');
 const requireAdmin = require('../middleware/adminAuth');
 const { pick, string, url, invalid, objectId, routeError } = require('../utils/catalogData');
-const { deleteAssets } = require('../utils/assetCleanup');
 const router = express.Router();
 function payload(body) {
   const result = pick(body, ['title','image','layoutType','description']);
@@ -18,6 +17,6 @@ router.put('/:id', requireAdmin, async (req, res) => {
   try { const ad = await EventAd.findByIdAndUpdate(objectId(req.params.id), { $set: payload(req.body) }, { new: true, runValidators: true }); if (!ad) return res.status(404).json({ message: 'Ad not found' }); res.json(ad); } catch (error) { routeError(res, error); }
 });
 router.delete('/:id', requireAdmin, async (req, res) => {
-  try { const ad = await EventAd.findById(objectId(req.params.id)); if (!ad) return res.status(404).json({ message: 'Ad not found' }); await deleteAssets([ad.image]); await EventAd.findByIdAndDelete(req.params.id); res.json({ message: 'Event/Ad deleted.' }); } catch (error) { routeError(res, error); }
+  try { const ad = await EventAd.findById(objectId(req.params.id)); if (!ad) return res.status(404).json({ message: 'Ad not found' }); await EventAd.findByIdAndDelete(req.params.id); res.json({ message: 'Event/Ad deleted. Uploaded media retained.', mediaRetained: true }); } catch (error) { routeError(res, error); }
 });
 module.exports = router;

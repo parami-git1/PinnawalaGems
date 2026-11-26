@@ -1,0 +1,125 @@
+.inventory-charts { margin-bottom: 22px; overflow: hidden; border: 1px solid #dce5f0; border-radius: 14px; background: #fff; }
+.inventory-charts-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 23px 24px 20px; background: linear-gradient(115deg, #f7f9fd, #fff 70%); border-bottom: 1px solid #e8edf5; }
+.inventory-charts-heading > div { min-width: 0; }
+.inventory-charts-eyebrow { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; color: #8a7650; font-size: 10px; font-weight: 600; letter-spacing: 1.3px; }
+.inventory-charts-heading h2 { color: #253f61; font-size: 21px; font-weight: 650; letter-spacing: -.5px; line-height: 1.3; }
+.admin-app .inventory-charts-heading p { margin-top: 7px; max-width: 590px; color: #7b8ca1; font-size: 12px; line-height: 1.7; }
+.inventory-charts-heading > a { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 7px; min-height: 44px; padding: 10px 13px; border: 1px solid #dae4f0; border-radius: 8px; color: #557197; background: #fff; font-size: 12px; text-decoration: none; }
+.inventory-charts-toolbar { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 17px; padding: 20px 24px 12px; }
+.inventory-chart-source { display: inline-flex; flex-wrap: wrap; gap: 5px; padding: 4px; border: 1px solid #e4eaf3; border-radius: 10px; background: #f3f6fa; }
+.inventory-chart-source > button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px 14px; border: 0; border-radius: 7px; background: transparent; color: #7c8ca1; font-size: 12px; font-weight: 500; }
+.inventory-chart-source > button.is-active { color: #fff; background: #29466f; box-shadow: 0 3px 8px rgb(31 61 101 / .12); }
+.inventory-chart-selects { display: flex; flex-wrap: wrap; gap: 12px; }
+.inventory-chart-selects > label { display: grid; gap: 5px; min-width: 145px; }
+.inventory-chart-selects > label > span { color: #7d8da2; font-size: 11px; }
+.admin-app .inventory-chart-selects select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #dce5f0; border-radius: 7px; background-color: #fff; color: #4a6486; font-size: 12px; }
+.admin-app .inventory-charts-scope { margin: 0; padding: 0 24px 18px; max-width: 900px; color: #8997aa; font-size: 11px; line-height: 1.8; }
+.inventory-chart-warning { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 24px 17px; padding: 12px 14px; border: 1px solid #ebd7b6; border-radius: 7px; background: #fff9ed; color: #967344; font-size: 12px; line-height: 1.6; }
+.inventory-chart-warning > span { flex: 1; min-width: min(100%, 180px); }
+.inventory-chart-warning > button { min-height: 44px; padding: 8px; border: 0; background: transparent; color: #775c31; text-decoration: underline; text-underline-offset: 3px; }
+.inventory-chart-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin: 0 24px; padding: 17px 19px; border: 1px solid #e5ebf3; border-radius: 9px; background: #f8fafd; }
+.inventory-chart-summary > div { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.inventory-chart-summary > div > span { color: #8190a5; font-size: 11px; }
+.inventory-chart-summary strong { color: #35547a; font-size: 21px; font-weight: 650; letter-spacing: -.4px; line-height: 1.4; overflow-wrap: anywhere; }
+.inventory-chart-summary strong > small { margin-left: 4px; color: #8999ae; font-size: 11px; font-weight: 400; letter-spacing: 0; }
+.inventory-chart-visuals { display: grid; grid-template-columns: minmax(260px, .95fr) minmax(0, 1.3fr); gap: 0; margin: 22px 24px 0; border: 1px solid #e3eaf3; border-radius: 10px; }
+.inventory-chart-share, .inventory-chart-ranking { min-width: 0; padding: 20px; }
+.inventory-chart-share { border-right: 1px solid #e8edf5; }
+.inventory-chart-share h3, .inventory-chart-ranking h3 { color: #4a6485; font-size: 13px; font-weight: 600; }
+.inventory-chart-donut { display: flex; align-items: center; flex-direction: column; margin: 0; }
+.inventory-chart-ring { position: relative; width: min(100%, 242px); aspect-ratio: 1; margin: 3px auto 0; }
+.inventory-chart-ring > svg { width: 100%; height: 100%; filter: drop-shadow(0 5px 5px rgb(31 61 101 / .035)); }
+.inventory-chart-ring-track { stroke: #edf1f7; }
+.inventory-chart-ring-total { position: absolute; inset: 28%; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+.inventory-chart-ring-total > span { color: #93a0b2; font-size: 10px; line-height: 1.5; }
+.inventory-chart-ring-total > strong { max-width: 100%; margin: 5px 0 2px; color: #28466c; font-size: clamp(24px, 2.3vw, 34px); font-weight: 650; letter-spacing: -.8px; line-height: 1.3; overflow-wrap: anywhere; }
+.inventory-chart-ring-total > small { color: #a0abba; font-size: 10px; }
+.inventory-chart-donut > figcaption { max-width: 275px; margin: -2px auto 14px; color: #94a1b3; font-size: 10px; line-height: 1.7; text-align: center; }
+.inventory-chart-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px 14px; max-height: 220px; overflow-y: auto; overscroll-behavior: contain; }
+.inventory-chart-legend > button { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: #74879f; font-size: 11px; text-align: left; }
+.inventory-chart-legend > button > i, .inventory-chart-bar-title > span > i, .inventory-chart-details th button > i { width: 8px; height: 8px; flex-shrink: 0; border-radius: 3px; }
+.inventory-chart-legend > button > span { flex: 1; overflow-wrap: anywhere; }
+.inventory-chart-legend > button > strong { color: #788ba3; font-size: 10px; font-weight: 500; }
+.inventory-chart-ranking > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+.inventory-chart-ranking > header p { margin-top: 5px; color: #9aa7b8; font-size: 10px; line-height: 1.5; }
+.inventory-chart-ranking > header > span { padding: 4px 6px; border-radius: 4px; color: #8497b0; background: #f0f5fb; font-size: 10px; white-space: nowrap; }
+.inventory-chart-bars { display: grid; align-content: start; gap: 10px; max-height: 400px; overflow-y: auto; padding: 0 3px 3px; overscroll-behavior: contain; }
+.inventory-chart-bars > button { display: flex; flex-direction: column; gap: 8px; width: 100%; min-height: 67px; padding: 8px 0; border: 0; background: transparent; text-align: left; }
+.inventory-chart-bar-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; width: 100%; }
+.inventory-chart-bar-title > span { display: flex; align-items: center; gap: 7px; min-width: 0; color: #617997; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.inventory-chart-bar-title > strong { color: #3f618a; font-size: 13px; font-weight: 600; line-height: 1.6; white-space: nowrap; }
+.inventory-chart-bar-title small { margin-left: 3px; font-size: 10px; font-weight: 400; color: #8fa0b6; }
+.inventory-chart-bar-track { display: block; width: 100%; height: 10px; overflow: hidden; border-radius: 4px; background: #f0f3f8; }
+.inventory-chart-bar-track > i { display: block; height: 100%; border-radius: 4px; }
+.inventory-chart-bars > button > small { color: #a0adbe; font-size: 10px; line-height: 1.4; }
+.inventory-chart-ranking-note { margin-top: 17px; padding-top: 13px; border-top: 1px solid #edf0f6; color: #91a1b5; font-size: 11px; line-height: 1.6; }
+.inventory-chart-details { margin: 20px 24px 0; border: 1px solid #e2e9f3; border-radius: 8px; scroll-margin-top: 95px; }
+.inventory-chart-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; padding: 13px 16px; color: #5e7899; font-size: 12px; font-weight: 500; list-style: none; cursor: pointer; }
+.inventory-chart-details > summary::-webkit-details-marker { display: none; }
+.inventory-chart-details > summary > span { display: flex; align-items: center; gap: 8px; color: #93a0b2; font-size: 10px; font-weight: 400; }
+.inventory-chart-details[open] > summary { border-bottom: 1px solid #e9edf5; }
+.inventory-chart-details[open] > summary svg { transform: rotate(90deg); }
+.inventory-chart-table-wrap { overflow-x: auto; border-radius: 0 0 8px 8px; }
+.inventory-chart-details table { width: 100%; min-width: 650px; border-collapse: collapse; font-size: 12px; text-align: left; }
+.inventory-chart-details caption { padding: 11px 16px; color: #92a0b3; text-align: left; font-size: 11px; }
+.inventory-chart-details :is(th, td) { padding: 11px 16px; border-bottom: 1px solid #edf1f6; color: #71869f; font-weight: 400; white-space: nowrap; }
+.inventory-chart-details thead th { color: #8d9cb0; background: #fafbfd; font-size: 10px; }
+.inventory-chart-details th button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border: 0; background: transparent; color: #526f93; font: inherit; text-align: left; }
+.inventory-chart-details tfoot :is(th, td) { border-bottom: 0; background: #f5f8fc; color: #4e6c90; font-weight: 600; }
+.admin-app .inventory-chart-data-note { margin: 14px 0 0; padding: 0 24px 20px; color: #94a1b3; font-size: 11px; line-height: 1.8; }
+.inventory-charts-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 220px; padding: 35px 25px; color: #91a4bd; text-align: center; }
+.inventory-charts-placeholder > h3 { color: #6b819f; font-size: 15px; }
+.inventory-charts-placeholder > p { max-width: 440px; color: #97a4b6; font-size: 12px; line-height: 1.8; }
+.inventory-charts :is(button, a, summary):focus-visible { outline: 2px solid #7a9fc8; outline-offset: 3px; }
+.inventory-chart-legend > button:hover:enabled > span, .inventory-chart-bars > button:hover:enabled .inventory-chart-bar-title > span, .inventory-chart-details th button:hover:enabled { color: #294d7b; }
+.inventory-charts button:disabled { cursor: default; }
+@media (max-width: 1199px) {
+  .inventory-chart-visuals { grid-template-columns: minmax(230px, .95fr) minmax(0, 1.2fr); }
+  .inventory-chart-share, .inventory-chart-ranking { padding: 17px; }
+  .inventory-chart-legend { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+@media (max-width: 899px) {
+  .inventory-charts-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .inventory-charts-heading > a { padding-inline: 0; border: 0; background: transparent; }
+  .inventory-charts-toolbar { align-items: stretch; flex-direction: column; }
+  .inventory-chart-selects > label { flex: 1; }
+  .inventory-chart-visuals { grid-template-columns: minmax(0, 1fr); }
+  .inventory-chart-share { border-right: 0; border-bottom: 1px solid #e8edf5; }
+  .inventory-chart-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+  .inventory-chart-ring { width: min(100%, 235px); }
+  .inventory-chart-ring-total > strong { font-size: 30px; }
+}
+@media (max-width: 599px) {
+  .inventory-charts-heading { padding: 19px 17px 15px; }
+  .inventory-charts-heading h2 { font-size: 19px; }
+  .inventory-charts-eyebrow { font-size: 9px; letter-spacing: .9px; }
+  .inventory-charts-toolbar { gap: 14px; padding: 17px 17px 11px; }
+  .inventory-chart-source { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .inventory-chart-source > button { gap: 5px; padding-inline: 7px; font-size: 11px; }
+  .inventory-chart-selects { gap: 11px; }
+  .inventory-chart-selects > label { min-width: 0; }
+  .admin-app .inventory-chart-selects select { min-width: 0; font-size: 16px; }
+  .admin-app .inventory-charts-scope { padding-inline: 17px; }
+  .inventory-chart-warning { margin-inline: 17px; }
+  .inventory-chart-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin-inline: 17px; padding: 15px; }
+  .inventory-chart-summary strong { font-size: 20px; }
+  .inventory-chart-visuals { margin: 17px 17px 0; }
+  .inventory-chart-share, .inventory-chart-ranking { padding: 16px; }
+  .inventory-chart-legend { grid-template-columns: minmax(0, 1fr); }
+  .inventory-chart-ring { width: min(100%, 225px); }
+  .inventory-chart-ring-total > strong { font-size: 28px; }
+  .inventory-chart-ring-total > span { font-size: 10px; }
+  .inventory-chart-bar-title > span { font-size: 11px; }
+  .inventory-chart-bar-title > strong { font-size: 12px; }
+  .inventory-chart-details { margin: 17px 17px 0; }
+  .inventory-chart-details > summary { padding-inline: 12px; }
+  .inventory-chart-details > summary > span { gap: 3px; font-size: 9px; }
+  .admin-app .inventory-chart-data-note { padding: 0 17px 19px; }
+}
+@media (max-width: 359px) {
+  .inventory-chart-selects { flex-direction: column; }
+  .inventory-chart-source > button > svg { display: none; }
+  .inventory-chart-summary strong { font-size: 19px; }
+  .inventory-chart-bar-title { gap: 8px; }
+  .inventory-chart-details > summary > span { font-size: 0; }
+}

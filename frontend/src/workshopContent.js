@@ -1,3 +1,6 @@
+import { BUSINESS } from './businessDetails.js';
+import { inquiryLine, publicPageUrl, whatsappChatUrl } from './whatsappLinks.js';
+
 const ZONE = 'Asia/Colombo';
 
 export function isDateKey(value) {
@@ -47,10 +50,17 @@ export function safeWorkshopLocationUrl(value) {
   } catch { return ''; }
 }
 
-export function workshopContactLinks(post) {
+export function workshopInquiryMessage(post, origin) {
+  const title = inquiryLine(post?.title) || 'Pinnawala Gems workshop';
+  const event = workshopEventLabel(post);
+  const location = [...new Set([post?.locationName, post?.locationAddress].map(inquiryLine).filter(Boolean))].join(', ');
+  return [`Hello ${BUSINESS.name},`, "I'm interested in this workshop:", '', `Workshop: ${title}`, ...(event ? [`Date / time: ${event}`] : []), ...(location ? [`Location: ${location}`] : []), '', 'Workshop page:', publicPageUrl('/workshop', origin), '', 'Could you confirm availability, fees and how to book a place?'].join('\n');
+}
+
+export function workshopContactLinks(post, origin) {
   const phone = normalizeWorkshopPhone(post?.phoneNumber);
   const whatsapp = normalizeWorkshopPhone(post?.whatsappNumber);
-  return { call: phone ? `tel:${phone}` : '', whatsapp: whatsapp ? `https://wa.me/${whatsapp.slice(1)}` : '' };
+  return { call: phone ? `tel:${phone}` : '', whatsapp: whatsapp ? whatsappChatUrl(whatsapp, workshopInquiryMessage(post, origin)) : '' };
 }
 
 export function workshopPublication(post, now = Date.now()) {

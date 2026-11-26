@@ -54,6 +54,7 @@ function Thumbnail({ item, selected, cover, title, onSelect }) {
 
 function PhotoDialog({ item, title, count, onClose, onStep }) {
   const dialog = useRef(null);
+  const touch = useRef(null);
   const labelId = useId();
   useEffect(() => {
     const element = dialog.current;
@@ -66,9 +67,20 @@ function PhotoDialog({ item, title, count, onClose, onStep }) {
   const keyboard = (event) => {
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); onStep(event.key === 'ArrowLeft' ? -1 : 1); }
   };
+  const startSwipe = (event) => {
+    touch.current = event.touches.length === 1 && !event.target.closest('button')
+      ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+  };
+  const endSwipe = (event) => {
+    const origin = touch.current; touch.current = null;
+    if (!origin || !event.changedTouches.length || count < 2) return;
+    const x = event.changedTouches[0].clientX - origin.x;
+    const y = event.changedTouches[0].clientY - origin.y;
+    if (Math.abs(x) > 45 && Math.abs(x) > Math.abs(y) * 1.3) onStep(x > 0 ? -1 : 1);
+  };
   return <dialog ref={dialog} className="pg-gem-media-dialog" aria-labelledby={labelId} onCancel={(event) => { event.preventDefault(); onClose(); }} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} onKeyDown={keyboard}>
     <header><div><p id={labelId}>{title}</p><span>Photograph {item.number} of {count}</span></div><button type="button" onClick={onClose} aria-label="Close enlarged photograph"><Icon name="close" /></button></header>
-    <div className="pg-gem-media-dialog__stage"><MediaFrame key={item.url} item={item} title={title} expanded />{count > 1 && <><button type="button" className="pg-gem-media-dialog__previous" aria-label="Previous enlarged photograph" onClick={() => onStep(-1)}><Icon name="left" /></button><button type="button" className="pg-gem-media-dialog__next" aria-label="Next enlarged photograph" onClick={() => onStep(1)}><Icon name="right" /></button></>}</div>
+    <div className="pg-gem-media-dialog__stage" onTouchStart={startSwipe} onTouchMove={(event) => { if (event.touches.length !== 1) touch.current = null; }} onTouchEnd={endSwipe} onTouchCancel={() => { touch.current = null; }}><MediaFrame key={item.url} item={item} title={title} expanded />{count > 1 && <><button type="button" className="pg-gem-media-dialog__previous" aria-label="Previous enlarged photograph" onClick={() => onStep(-1)}><Icon name="left" /></button><button type="button" className="pg-gem-media-dialog__next" aria-label="Next enlarged photograph" onClick={() => onStep(1)}><Icon name="right" /></button></>}</div>
   </dialog>;
 }
 
@@ -81,6 +93,7 @@ export default function GemMediaGallery({ gem }) {
   const [selected, setSelected] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const touch = useRef(null);
+  const ignoreTapUntil = useRef(0);
   const thumbnails = useRef(null);
   const photos = media.filter((item) => item.type === 'image');
   const videoCount = media.length - photos.length;
@@ -105,19 +118,23 @@ export default function GemMediaGallery({ gem }) {
     if (media.length < 2) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); step(event.key === 'ArrowLeft' ? -1 : 1); }
   };
-  const onTouchStart = (event) => { touch.current = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null; };
+  const onTouchStart = (event) => { touch.current = event.touches.length === 1 && item.type === 'image' && !event.target.closest('button') ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null; };
   const onTouchEnd = (event) => {
-    if (!touch.current || !event.changedTouches.length || item.type !== 'image') return;
-    const deltaX = event.changedTouches[0].clientX - touch.current.x;
-    const deltaY = event.changedTouches[0].clientY - touch.current.y;
+    const origin = touch.current;
     touch.current = null;
-    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) step(deltaX > 0 ? -1 : 1);
+    if (!origin || !event.changedTouches.length || item.type !== 'image') return;
+    const deltaX = event.changedTouches[0].clientX - origin.x;
+    const deltaY = event.changedTouches[0].clientY - origin.y;
+    // Touch browsers can emit a click after a swipe. That click must not open
+    // the next image's lightbox or turn a vertical page scroll into a tap.
+    if (Math.abs(deltaX) > 12 || Math.abs(deltaY) > 12) ignoreTapUntil.current = event.timeStamp + 450;
+    if (media.length > 1 && Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) step(deltaX > 0 ? -1 : 1);
   };
   return <section className="gem-detail-gallery pg-gem-media" aria-label={`${gem.title} photographs and videos`}>
     <header className="pg-gem-media__heading"><div><span>{photos.length} {photos.length === 1 ? 'photograph' : 'photographs'}{videoCount ? ` · ${videoCount} ${videoCount === 1 ? 'video' : 'videos'}` : ''}</span></div><span className="pg-gem-media__edition">PINNAWALA GEMS</span></header>
     {item ? <>
       {media.length > 1 && <div ref={thumbnails} className="pg-gem-media__thumbnails" role="group" aria-label="Choose a photograph or video">{media.map((entry, index) => <Thumbnail key={`${entry.type}-${entry.url}`} item={entry} selected={index === selected} cover={photos[0]?.url} title={gem.title} onSelect={() => choose(index)} />)}</div>}
-      <div className="pg-gem-media__stage" tabIndex={0} role="group" aria-label={`${gem.title} media viewer. Press Enter to enlarge the photograph, or use left and right arrow keys to browse.`} onClick={(event) => { if (item.type === 'image' && !event.target.closest('button') && event.target.closest('.pg-gem-media__asset[data-media-status="ready"]')) setExpanded(true); }} onKeyDown={onKey} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="pg-gem-media__stage" tabIndex={0} role="group" aria-label={`${gem.title} media viewer. Swipe to browse, tap to enlarge, or use Enter and the arrow keys.`} onClick={(event) => { if (event.timeStamp > ignoreTapUntil.current && item.type === 'image' && !event.target.closest('button') && event.target.closest('.pg-gem-media__asset[data-media-status="ready"]')) setExpanded(true); }} onKeyDown={onKey} onTouchStart={onTouchStart} onTouchMove={(event) => { if (event.touches.length !== 1) touch.current = null; }} onTouchEnd={onTouchEnd} onTouchCancel={() => { touch.current = null; }}>
         <MediaFrame key={`${item.type}-${item.url}`} item={item} title={gem.title} poster={photos[0]?.url} />
         {item.type === 'image' && <button type="button" className="pg-gem-media__expand" aria-label="Enlarge gemstone photograph" onClick={() => setExpanded(true)}><Icon name="expand" /></button>}
       </div>

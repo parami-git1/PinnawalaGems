@@ -276,12 +276,70 @@ test('today changes at Sri Lanka midnight even while the UTC calendar date is un
   assert.deepEqual(ids((await request('/api/planner/notifications')).body.todayAppointments), [newDay._id]);
 });
 
-test('controller failures return JSON errors rather than being mistaken for missing routes', async () => {
+test('controller failures return redacted JSON errors rather than disclosing database errors', async () => {
   appointments.failure = 'find';
   const appointmentResult = await request('/api/appointments');
-  assert.equal(appointmentResult.status, 500); assert.equal(appointmentResult.body.message, 'Synthetic database failure');
+  assert.equal(appointmentResult.status, 500); assert.equal(appointmentResult.body.message, 'Unable to complete this request. Please try again.');
   appointments.failure = null; notes.failure = 'find';
   assert.equal((await request('/api/admin-notes')).status, 500);
   const notifications = await request('/api/planner/notifications');
-  assert.equal(notifications.status, 500); assert.equal(notifications.body.message, 'Synthetic database failure');
+  assert.equal(notifications.status, 500); assert.equal(notifications.body.message, 'Unable to complete this request. Please try again.');
+});
+
+test('planner searches treat punctuation literally and reject malformed query types before database reads', async () => {
+  const literal = await createAppointment({ customerName: 'Synthetic (customer)' });
+  await createAppointment({ customerName: 'Synthetic customer' });
+  const note = await createNote({ title: 'Synthetic a+b note', tags: ['(literal)'] });
+  assert.deepEqual(ids((await request('/api/appointments?search=%28')).body), [literal._id]);
+  assert.deepEqual(ids((await request('/api/admin-notes?search=a%2Bb')).body), [note._id]);
+  assert.deepEqual(ids((await request('/api/admin-notes?search=%28literal%29')).body), [note._id]);
+  const before = appointments.calls.length + notes.calls.length;
+  for (const route of ['/api/appointments?search=a&search=b', '/api/appointments?search=' + 'x'.repeat(101), '/api/appointments?status=Unexpected', '/api/appointments?from=2026-02-30', '/api/appointments?from=2026-11-17&to=2026-11-16', '/api/admin-notes?category=Unexpected', '/api/admin-notes?archived=maybe']) assert.equal((await request(route)).status, 400, route);
+  assert.equal(appointments.calls.length + notes.calls.length, before);
+});
+
+test('appointment dates and times reject rollover/impossible values while legacy ISO instants and valid leap days remain supported', async () => {
+  for (const body of [{ date: '2026-02-30' }, { date: '2026-02-30T10:00:00.000Z' }, { date: 12345 }, { time: '25:99' }, { time: '8:00' }, { time: 'tomorrow' }, { time: 10 }, { durationMinutes: 15.5 }]) {
+    const result = await request('/api/appointments', { method: 'POST', body: { customerName: 'Synthetic invalid calendar entry', date: '2026-11-16', time: '10:00', ...body } });
+    assert.equal(result.status, 400, JSON.stringify(body));
+  }
+  assert.equal(appointments.rows.length, 0);
+  const leap = await createAppointment({ date: '2028-02-29', time: '23:59' });
+  const instant = await createAppointment({ date: '2026-11-15T18:30:00.000Z' });
+  assert.equal(instant.date, '2026-11-15T18:30:00.000Z');
+  for (const body of [{ date: '2026-02-30' }, { time: '12:60' }]) assert.equal((await request(`/api/appointments/${leap._id}`, { method: 'PUT', body })).status, 400);
+  const unchanged = await request(`/api/appointments/${leap._id}`);
+  assert.equal(unchanged.body.date, leap.date); assert.equal(unchanged.body.time, '23:59');
+});
+
+test('planner date filters use the same inclusive Sri Lanka calendar boundaries as notifications', async () => {
+  const start = await createAppointment({ date: '2026-11-15T18:30:00.000Z' });
+  const middle = await createAppointment({ date: '2026-11-16T00:00:00.000Z' });
+  const end = await createAppointment({ date: '2026-11-16T18:29:59.999Z' });
+  await createAppointment({ date: '2026-11-15T18:29:59.999Z' });
+  await createAppointment({ date: '2026-11-16T18:30:00.000Z' });
+  const previous = process.env.TZ; process.env.TZ = 'America/New_York';
+  try {
+    const result = await request('/api/appointments?from=2026-11-16&to=2026-11-16');
+    assert.deepEqual(new Set(ids(result.body)), new Set([start._id, middle._id, end._id]));
+    const query = appointments.calls.at(-1).query;
+    assert.equal(query.date.$gte.toISOString(), '2026-11-15T18:30:00.000Z');
+    assert.equal(query.date.$lte.toISOString(), '2026-11-16T18:29:59.999Z');
+  } finally { process.env.TZ = previous; }
+});
+
+test('planner writes whitelist editable fields and preserve existing links while malformed IDs and reminders never reach storage', async () => {
+  const attemptedId = '000000000000000000000099';
+  const appointment = await createAppointment({ _id: attemptedId, createdAt: '2000-01-01', updatedAt: '2000-01-01', stoneId: '000000000000000000000088' });
+  assert.notEqual(appointment._id, attemptedId);
+  assert.equal(Object.hasOwn(appointments.calls.find(call => call.method === 'create').query, 'createdAt'), false);
+  const note = await createNote({ appointmentId: appointment._id, tags: ['saved'], _id: attemptedId });
+  assert.notEqual(note._id, attemptedId);
+  const updated = await request(`/api/admin-notes/${note._id}`, { method: 'PUT', body: { content: 'Changed safely', _id: attemptedId, createdAt: '2000-01-01' } });
+  assert.equal(updated.status, 200); assert.equal(updated.body._id, note._id); assert.equal(updated.body.appointmentId, appointment._id); assert.deepEqual(updated.body.tags, ['saved']);
+  for (const body of [{ reminderAt: '2026-02-30T09:00:00Z' }, { reminderAt: '2026-11-16T09:00' }, { tags: ['saved', { $ne: null }] }, { isArchived: 'false' }]) assert.equal((await request(`/api/admin-notes/${note._id}`, { method: 'PUT', body })).status, 400);
+  assert.equal((await request(`/api/admin-notes/${note._id}`, { method: 'PUT', body: { reminderAt: null } })).status, 200);
+  const before = appointments.calls.length + notes.calls.length;
+  for (const route of ['/api/appointments/not-an-id', '/api/admin-notes/not-an-id']) assert.equal((await request(route, { method: 'DELETE' })).status, 400);
+  assert.equal(appointments.calls.length + notes.calls.length, before);
 });

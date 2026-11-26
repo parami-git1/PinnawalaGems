@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import { apiRequest } from './api';
+import { websiteWhatsAppUrl } from './whatsappLinks';
 import './ContactForm.css';
 import './ContactPhone.css';
 import ContactHeroImage from './ContactHeroImage';
@@ -85,6 +86,7 @@ function Contact() {
   };
 
   const phone = BUSINESS.phoneDisplay;
+  const whatsappUrl = websiteWhatsAppUrl({ pathname: "/contact", origin: window.location.origin });
   /* info cards data */
   const infoCards = [
     {
@@ -109,16 +111,15 @@ function Contact() {
       icon: <FaWhatsapp className="text-lg" />,
       label: 'WhatsApp / secondary',
       value: BUSINESS.secondaryPhone,
-      href: `https://wa.me/${BUSINESS.whatsapp}`,
+      href: whatsappUrl,
     },
   ];
 
   /* social links — each entry: [href, icon, label, hoverBg, hoverText, hoverBorder] */
-  const WHATSAPP_NUMBER = BUSINESS.whatsapp;
   const socials = [
     contactInfo.facebookLink  && [contactInfo.facebookLink,  <FaFacebookF />,  'Facebook',  '#1877F2', '#fff', '#1877F2'],
     contactInfo.instagramLink && [contactInfo.instagramLink, <FaInstagram />,  'Instagram', '#E1306C', '#fff', '#E1306C'],
-    [`https://wa.me/${WHATSAPP_NUMBER}`,                     <FaWhatsapp />,   'WhatsApp',  '#25D366', '#fff', '#25D366'],
+    [whatsappUrl,                     <FaWhatsapp />,   'WhatsApp',  '#25D366', '#fff', '#25D366'],
     contactInfo.tiktokLink    && [contactInfo.tiktokLink,    <FaTiktok />,     'TikTok',    '#000000', '#fff', '#000000'],
   ].filter(Boolean);
 
@@ -293,6 +294,8 @@ function Contact() {
                         {item.href ? (
                           <a
                             href={item.href}
+                            target={item.href.startsWith('https://wa.me/') ? '_blank' : undefined}
+                            rel={item.href.startsWith('https://wa.me/') ? 'noopener noreferrer' : undefined}
                             className="pg-contact-serif mt-1 block break-words text-lg text-white transition-colors hover:text-[#D9B64A]"
                           >
                             {item.value}
@@ -316,7 +319,7 @@ function Contact() {
                           key={label}
                           href={href}
                           target="_blank"
-                          rel="noreferrer"
+                          rel="noopener noreferrer"
                           aria-label={label}
                           className="social-icon group relative flex h-8 w-8 items-center justify-center rounded-full border border-white/20 text-[13px] text-slate-400 transition-all duration-300 hover:-translate-y-1"
                           style={{ '--hover-bg': hoverBg, '--hover-text': hoverText, '--hover-border': hoverBorder }}
@@ -510,7 +513,7 @@ function Contact() {
               <a
                 href={BUSINESS.mapsUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="hidden items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#B8901F] transition-colors hover:text-[#0B1330] sm:flex"
               >
                 Open in maps <FaArrowRight />

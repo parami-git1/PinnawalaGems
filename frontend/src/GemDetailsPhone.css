@@ -18,7 +18,7 @@
   .gem-detail-polish .gem-detail-title { padding-bottom: 16px; margin-bottom: 16px; }
   .gem-detail-polish .gem-detail-title h1 { margin-bottom: 10px; font-size: clamp(25px, 6.6vw, 30px); line-height: 1.2; }
   .gem-detail-polish .gem-detail-title p { font-size: 11px; letter-spacing: .02em; }
-  .gem-detail-polish .gem-detail-description { margin-bottom: 16px; font-size: 15px; line-height: 1.7; }
+  .gem-detail-polish .gem-detail-description { margin-bottom: 16px; font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
   .gem-detail-polish .gem-detail-specs { margin-bottom: 18px; padding-block: 16px; row-gap: 15px; column-gap: 14px; }
   .gem-detail-polish .gem-detail-specs > div > span:first-child { font-size: 11px; letter-spacing: .04em; }
   .gem-detail-polish .gem-detail-specs > div > span:last-child { font-size: 14px; line-height: 1.5; }

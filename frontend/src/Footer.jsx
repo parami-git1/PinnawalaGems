@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import './Footer.css';
 import './PublicPhoneNavigation.css';
 import { BUSINESS, withBusinessDetails } from './businessDetails';
 import ResponsiveImage from './ResponsiveImage';
+import { websiteWhatsAppUrl } from './whatsappLinks';
 
 function Arrow({ up = false }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
@@ -11,12 +12,13 @@ function Arrow({ up = false }) {
 }
 
 export default function Footer({ contactData = {} }) {
+  const { pathname } = useLocation();
   const contact = withBusinessDetails(contactData);
   const address = contact.address;
   const phone = contact.contactNumber;
   const telephone = BUSINESS.phone;
   const email = contact.inquiryEmail;
-  const whatsapp = contact.whatsappNumber;
+  const whatsapp = websiteWhatsAppUrl({ number: contact.whatsappNumber, pathname, origin: window.location.origin });
   const mapsLink = contact.googleMapsLink;
 
   const backToTop = () => window.scrollTo({
@@ -44,7 +46,7 @@ export default function Footer({ contactData = {} }) {
             <a href={`tel:${BUSINESS.secondaryPhone}`}>{BUSINESS.secondaryPhone}</a>
             <a className="pg-footer__email" href={`mailto:${email}`}>{email}</a>
           </address>
-          {whatsapp && <a className="pg-footer__whatsapp" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" aria-hidden="true"><path d="M20 11.6a8 8 0 0 1-11.8 7L4 20l1.3-4.1A8 8 0 1 1 20 11.6Z" /><path d="M8.4 7.7c-.9 1.9 2 5.7 4.5 6.7 1.2.5 2-.3 2.3-1.1l-2-1-.9.8c-1.2-.6-2-1.4-2.6-2.6l.7-.9-1-1.9Z" strokeLinejoin="round" /></svg><span>Chat on WhatsApp</span><Arrow /></a>}
+          {whatsapp && <a className="pg-footer__whatsapp" href={whatsapp} target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" aria-hidden="true"><path d="M20 11.6a8 8 0 0 1-11.8 7L4 20l1.3-4.1A8 8 0 1 1 20 11.6Z" /><path d="M8.4 7.7c-.9 1.9 2 5.7 4.5 6.7 1.2.5 2-.3 2.3-1.1l-2-1-.9.8c-1.2-.6-2-1.4-2.6-2.6l.7-.9-1-1.9Z" strokeLinejoin="round" /></svg><span>Chat on WhatsApp</span><Arrow /></a>}
         </div>
       </div>
 

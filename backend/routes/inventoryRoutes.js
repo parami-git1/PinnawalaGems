@@ -5,7 +5,6 @@ const Stone = require('../models/Stone');
 const requireAdmin = require('../middleware/adminAuth');
 const { normalizeGemMedia } = require('../utils/gemMedia');
 const { stonePayload, categoryPayload, generatedReference, objectId, routeError, catalogPage } = require('../utils/catalogData');
-const { deleteAssets, deleteStoneAssets } = require('../utils/assetCleanup');
 const router = express.Router();
 router.get('/categories', async (_req, res) => {
   try { res.json(await GemCategory.find().sort({ createdAt: -1, _id: -1 })); } catch (error) { routeError(res, error); }
@@ -57,7 +56,7 @@ router.put('/stones/:stoneId', requireAdmin, async (req, res) => {
 router.delete('/stones/:stoneId', requireAdmin, async (req, res) => {
   try {
     const stone = await Stone.findById(objectId(req.params.stoneId)); if (!stone) return res.status(404).json({ message: 'Stone not found' });
-    await deleteStoneAssets(stone); await Stone.findByIdAndDelete(req.params.stoneId); res.json({ message: 'Stone and its uploaded media deleted.' });
+    await Stone.findByIdAndDelete(req.params.stoneId); res.json({ message: 'Stone deleted. Uploaded media retained.', mediaRetained: true });
   } catch (error) { routeError(res, error); }
 });
 router.put('/categories/:categoryId', requireAdmin, async (req, res) => {
@@ -70,17 +69,16 @@ router.delete('/categories/:categoryId/stones', requireAdmin, async (req, res) =
   try {
     const categoryId = objectId(req.params.categoryId, 'Category');
     if (!await GemCategory.findById(categoryId)) return res.status(404).json({ message: 'Category not found' });
-    for (const stone of await Stone.find({ categoryId })) await deleteStoneAssets(stone);
-    await Stone.deleteMany({ categoryId }); res.json({ message: 'All stones in this category deleted.' });
+    await Stone.deleteMany({ categoryId }); res.json({ message: 'All stones in this category deleted. Uploaded media retained.', mediaRetained: true });
   } catch (error) { routeError(res, error); }
 });
 router.delete('/categories/:categoryId', requireAdmin, async (req, res) => {
   try {
     const categoryId = objectId(req.params.categoryId, 'Category'); const category = await GemCategory.findById(categoryId);
     if (!category) return res.status(404).json({ message: 'Category not found' });
-    await deleteAssets([category.mainImage, category.coverImage]);
-    for (const stone of await Stone.find({ categoryId })) await deleteStoneAssets(stone);
-    await Stone.deleteMany({ categoryId }); await GemCategory.findByIdAndDelete(categoryId); res.json({ message: 'Category and its stones deleted.' });
+    // Media URLs can be shared by other records and website content. Deleting
+    // records never purges Cloudinary files or risks breaking retained content.
+    await Stone.deleteMany({ categoryId }); await GemCategory.findByIdAndDelete(categoryId); res.json({ message: 'Category and its stones deleted. Uploaded media retained.', mediaRetained: true });
   } catch (error) { routeError(res, error); }
 });
 router.get('/top-gems', async (_req, res) => {

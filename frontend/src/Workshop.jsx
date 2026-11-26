@@ -17,7 +17,7 @@ function WorkshopIcon({ name }) {
 }
 
 function WorkshopContacts({ event, compact = false }) {
-  const links = workshopContactLinks(event);
+  const links = workshopContactLinks(event, window.location.origin);
   if (!links.call && !links.whatsapp) return null;
   return <div className={`pg-workshop-contacts${compact ? ' is-compact' : ''}`}>
     {links.call && <a href={links.call} aria-label={`Call ${event.phoneNumber}`}><WorkshopIcon name="phone" /><span>Call{!compact && <small>{event.phoneNumber}</small>}</span></a>}

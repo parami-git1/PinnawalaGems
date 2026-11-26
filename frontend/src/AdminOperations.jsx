@@ -133,8 +133,8 @@ function changeSetter(setter) { return (event) => { const { name, value, type, c
 function categoryId(stone) { return typeof stone.categoryId === 'object' ? stone.categoryId?._id : stone.categoryId; }
 function stockFormFor(stone) { return { ...emptyStockStone, ...Object.fromEntries(Object.keys(emptyStockStone).filter((key) => stone?.[key] != null).map((key) => [key, stone[key]])), categoryId: categoryId(stone || {}) || '', includedInStock: stone?.includedInStock !== false }; }
 
-function AdminOperations({ initialSection = 'catalog', initialStockStone, onStockStoneOpened, onDataChanged }) {
-  const [section, setSection] = useState(() => initialStockStone ? 'stock' : tabs.some(([id]) => id === initialSection) ? initialSection : 'catalog');
+function AdminOperations({ initialSection = 'catalog', initialStockStone, onStockStoneOpened, onDataChanged, editorOnly = false, onEditorBusyChange, onEditorSaved, onEditorCancel }) {
+  const [section, setSection] = useState(() => editorOnly || initialStockStone ? 'stock' : tabs.some(([id]) => id === initialSection) ? initialSection : 'catalog');
   const [categories, setCategories] = useState([]);
   const [stockCategories, setStockCategories] = useState([]);
   const [stockStones, setStockStones] = useState([]);
@@ -173,6 +173,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
     uploadingRef.current = uploadKeys.current.size > 0;
     if (mountedRef.current) setUploading(uploadingRef.current);
   }, []);
+  useEffect(() => { onEditorBusyChange?.(busy || uploading); }, [busy, uploading, onEditorBusyChange]);
   useEffect(() => {
     if (!initialStockStone || initialStockConsumed.current) return;
     initialStockConsumed.current = true;
@@ -192,7 +193,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
       ['stones', 'Homepage gemstones', setStones, () => fetchAllGemstones({ signal: controller.signal })],
       ['ads', 'Event advertisements', setAds, () => api('/api/event-ads', { signal: controller.signal })],
       ['legacy', 'Older catalog gems', setLegacyGems, () => api('/api/gems', { signal: controller.signal })],
-    ];
+    ].filter(([key]) => !editorOnly || key === 'stockCategories');
     setRefreshing(true); setLoadErrors([]);
     setPending(Object.fromEntries(definitions.map(([key]) => [key, true])));
     await Promise.allSettled(definitions.map(async ([key, name, setter, fetcher]) => {
@@ -201,7 +202,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
       finally { if (current()) setPending((previous) => ({ ...previous, [key]: false })); }
     }));
     if (current()) { setRefreshing(false); activeLoad.current = null; }
-  }, []);
+  }, [editorOnly]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -218,7 +219,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
     setStatus(null);
     try {
       await action();
-      if (mountedRef.current) { setStatus({ type: 'success', message: successMessage }); load(); }
+      if (mountedRef.current) { setStatus({ type: 'success', message: successMessage }); if (!editorOnly) load(); }
       if (onDataChanged) Promise.resolve().then(onDataChanged).catch(() => {});
       return true;
     } catch (error) {
@@ -227,7 +228,25 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
     } finally { busyRef.current = false; if (mountedRef.current) setBusy(false); }
   };
 
-  const confirmDelete = (message, action, successMessage) => { if (!busyRef.current && !uploadingRef.current && window.confirm(message)) save(action, successMessage); };
+  const confirmDelete = async (message, action, successMessage, onDeleted) => {
+    if (busyRef.current || uploadingRef.current || !window.confirm(message)) return;
+    if (await save(action, successMessage)) onDeleted?.();
+  };
+  const deleteCategory = (category) => confirmDelete(`Delete “${category.title}” and every related gem? This cannot be undone.`, () => api(`/api/inventory/categories/${category._id}`, { method: 'DELETE' }), 'Category deleted.', () => {
+    if (editingCategory?._id === category._id) { setEditingCategory(null); setCategoryForm(emptyCategory); resetEditorSession('category'); }
+  });
+  const deleteStockCategory = (category) => confirmDelete(`Delete “${category.title}” and all its stock stones? This cannot be undone.`, () => api(`/api/stock/categories/${category._id}`, { method: 'DELETE' }), 'Stock category deleted.', () => {
+    if (stockStoneForm.categoryId === category._id) { setEditingStockStone(null); setStockStoneForm(emptyStockStone); resetEditorSession('stockStone'); }
+  });
+  const deleteStockStone = (stone) => confirmDelete(`Delete “${stone.title}”? This cannot be undone.`, () => api(`/api/stock/stones/${stone._id}`, { method: 'DELETE' }), 'Stock stone deleted.', () => {
+    if (editingStockStone?._id === stone._id) { setEditingStockStone(null); setStockStoneForm(emptyStockStone); resetEditorSession('stockStone'); }
+  });
+  const deleteAd = (ad) => confirmDelete(`Delete the “${ad.title}” advertisement? This cannot be undone.`, () => api(`/api/event-ads/${ad._id}`, { method: 'DELETE' }), 'Advertisement deleted.', () => {
+    if (editingAd?._id === ad._id) { setEditingAd(null); setAdForm(emptyAd); resetEditorSession('ad'); }
+  });
+  const deleteLegacyGem = (gem) => confirmDelete(`Delete “${gem.title}” from the older catalog? This cannot be undone.`, () => api(`/api/gems/${gem._id}`, { method: 'DELETE' }), 'Older catalog gem deleted.', () => {
+    if (editingLegacyGem?._id === gem._id) { setEditingLegacyGem(null); setLegacyForm(emptyLegacyGem); resetEditorSession('legacy'); }
+  });
   const saveCategory = async (event) => {
     event.preventDefault();
     const saved = await save(() => api(editingCategory ? `/api/inventory/categories/${editingCategory._id}` : '/api/inventory/categories', { method: editingCategory ? 'PUT' : 'POST', body: JSON.stringify(categoryForm) }), 'Gem category saved.');
@@ -245,7 +264,7 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
     const optionalNumber = (value) => value === '' || value === null || value === undefined ? null : Number(value);
     const payload = Object.fromEntries(Object.keys(emptyStockStone).map((key) => [key, stockStoneForm[key]]));
     payload.quantity = Number(stockStoneForm.quantity); payload.weight = optionalNumber(stockStoneForm.weight); payload.price = optionalNumber(stockStoneForm.price);
-    if (await save(() => api(editingStockStone ? `/api/stock/stones/${editingStockStone._id}` : '/api/stock/stones', { method: editingStockStone ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Stock stone saved.')) { setStockStoneForm(emptyStockStone); setEditingStockStone(null); resetEditorSession('stockStone'); }
+    if (await save(() => api(editingStockStone ? `/api/stock/stones/${editingStockStone._id}` : '/api/stock/stones', { method: editingStockStone ? 'PUT' : 'POST', body: JSON.stringify(payload) }), 'Stock stone saved.')) { setStockStoneForm(emptyStockStone); setEditingStockStone(null); resetEditorSession('stockStone'); onEditorSaved?.(); }
   };
   const saveAd = async (event) => {
     event.preventDefault();
@@ -259,19 +278,19 @@ function AdminOperations({ initialSection = 'catalog', initialStockStone, onStoc
   const toggleStone = (stone, field) => save(() => api(`/api/inventory/stones/${stone._id}`, { method: 'PUT', body: JSON.stringify({ [field]: !stone[field] }) }), `${field === 'isTopGem' ? 'Homepage gem' : 'Featured status'} updated.`);
   const disabled = busy || uploading;
   const sectionResources = { catalog: ['categories', 'stones'], stock: ['stockCategories', 'stockStones'], ads: ['ads'], legacy: ['legacy'] };
-  const loading = sectionResources[section].some((key) => pending[key] && !loaded[key]);
+  const loading = (editorOnly ? ['stockCategories'] : sectionResources[section]).some((key) => pending[key] && !loaded[key]);
   const activeTab = tabs.find(([id]) => id === section);
 
   return <OperationsUploads.Provider value={{ track: trackUpload, active: uploading }}><div className="admin-operations">
-    <div className="ops-page-header"><div><p className="ops-kicker">Catalog management</p><h2>{activeTab[1]}</h2><p>{activeTab[2]}</p></div><div className="admin-heading-actions">{section === 'stock' && <button type="button" className="admin-button" disabled={disabled || loading} onClick={() => setBulkSoldOpen(true)}><OpsIcon name="archive" />Remove sold gems</button>}<button type="button" className="admin-button is-secondary" onClick={load} disabled={refreshing || disabled}><OpsIcon name="refresh" />{refreshing ? 'Refreshing…' : 'Refresh records'}</button></div></div>
-    <nav className="admin-subnav ops-subnav" aria-label="Operations sections">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setSection(id)} disabled={disabled} className={section === id ? 'is-active' : ''} aria-pressed={section === id}>{label}</button>)}</nav>
+    {!editorOnly && <><div className="ops-page-header"><div><p className="ops-kicker">Catalog management</p><h2>{activeTab[1]}</h2><p>{activeTab[2]}</p></div><div className="admin-heading-actions">{section === 'stock' && <button type="button" className="admin-button" disabled={disabled || loading} onClick={() => setBulkSoldOpen(true)}><OpsIcon name="archive" />Remove sold gems</button>}<button type="button" className="admin-button is-secondary" onClick={load} disabled={refreshing || disabled}><OpsIcon name="refresh" />{refreshing ? 'Refreshing…' : 'Refresh records'}</button></div></div>
+    <nav className="admin-subnav ops-subnav" aria-label="Operations sections">{tabs.map(([id, label]) => <button type="button" key={id} onClick={() => setSection(id)} disabled={disabled} className={section === id ? 'is-active' : ''} aria-pressed={section === id}>{label}</button>)}</nav></>}
     {status && <div className={`ops-notice is-${status.type}`} role={status.type === 'error' ? 'alert' : 'status'}><OpsIcon name={status.type === 'success' ? 'check' : 'close'} /><p>{status.message}</p><button type="button" onClick={() => setStatus(null)} aria-label="Dismiss message"><OpsIcon name="close" /></button></div>}
     {loadErrors.length > 0 && <div className="ops-notice is-error" role="alert"><div><strong>Some records could not be refreshed</strong><ul>{loadErrors.map((error) => <li key={error}>{error}</li>)}</ul></div><button type="button" className="admin-button is-secondary" onClick={load} disabled={loading || disabled}>Try again</button></div>}
     {(busy || uploading) && <p className="ops-working" role="status"><span />{uploading ? 'Uploading image…' : 'Saving changes…'}</p>}
-    {section === 'catalog' && <CatalogOperations editorSession={editorSessions.category} categories={categories} categoryForm={categoryForm} setCategoryForm={setCategoryForm} editingCategory={editingCategory} setEditingCategory={selectEditor('category', setEditingCategory)} saveCategory={saveCategory} deleteCategory={(category) => confirmDelete(`Delete “${category.title}” and every related gem? This cannot be undone.`, () => api(`/api/inventory/categories/${category._id}`, { method: 'DELETE' }), 'Category deleted.')} stones={stones} toggleStone={toggleStone} busy={disabled} loading={loading} />}
-    {section === 'stock' && <StockOperations editorSession={editorSessions.stockStone} categorySession={editorSessions.stockCategory} categories={stockCategories} categoryForm={stockCategoryForm} setCategoryForm={setStockCategoryForm} saveCategory={saveStockCategory} deleteCategory={(category) => confirmDelete(`Delete “${category.title}” and all its stock stones? This cannot be undone.`, () => api(`/api/stock/categories/${category._id}`, { method: 'DELETE' }), 'Stock category deleted.')} stoneForm={stockStoneForm} setStoneForm={setStockStoneForm} editingStone={editingStockStone} setEditingStone={selectEditor('stockStone', setEditingStockStone)} saveStone={saveStockStone} stones={stockStones} deleteStone={(stone) => confirmDelete(`Delete “${stone.title}”? This cannot be undone.`, () => api(`/api/stock/stones/${stone._id}`, { method: 'DELETE' }), 'Stock stone deleted.')} busy={disabled} loading={loading} />}
-    {section === 'ads' && <AdsOperations editorSession={editorSessions.ad} ads={ads} form={adForm} setForm={setAdForm} editing={editingAd} setEditing={selectEditor('ad', setEditingAd)} save={saveAd} deleteAd={(ad) => confirmDelete(`Delete the “${ad.title}” advertisement? This cannot be undone.`, () => api(`/api/event-ads/${ad._id}`, { method: 'DELETE' }), 'Advertisement deleted.')} busy={disabled} loading={loading} />}
-    {section === 'legacy' && <LegacyOperations editorSession={editorSessions.legacy} gems={legacyGems} form={legacyForm} setForm={setLegacyForm} editing={editingLegacyGem} setEditing={selectEditor('legacy', setEditingLegacyGem)} save={saveLegacyGem} deleteGem={(gem) => confirmDelete(`Delete “${gem.title}” from the older catalog? This cannot be undone.`, () => api(`/api/gems/${gem._id}`, { method: 'DELETE' }), 'Older catalog gem deleted.')} busy={disabled} loading={loading} />}
+    {section === 'catalog' && <CatalogOperations editorSession={editorSessions.category} categories={categories} categoryForm={categoryForm} setCategoryForm={setCategoryForm} editingCategory={editingCategory} setEditingCategory={selectEditor('category', setEditingCategory)} saveCategory={saveCategory} deleteCategory={deleteCategory} stones={stones} toggleStone={toggleStone} busy={disabled} loading={loading} />}
+    {section === 'stock' && <StockOperations editorOnly={editorOnly} onCancel={onEditorCancel} editorSession={editorSessions.stockStone} categorySession={editorSessions.stockCategory} categories={stockCategories} categoryForm={stockCategoryForm} setCategoryForm={setStockCategoryForm} saveCategory={saveStockCategory} deleteCategory={deleteStockCategory} stoneForm={stockStoneForm} setStoneForm={setStockStoneForm} editingStone={editingStockStone} setEditingStone={selectEditor('stockStone', setEditingStockStone)} saveStone={saveStockStone} stones={stockStones} deleteStone={deleteStockStone} busy={disabled} loading={loading} />}
+    {section === 'ads' && <AdsOperations editorSession={editorSessions.ad} ads={ads} form={adForm} setForm={setAdForm} editing={editingAd} setEditing={selectEditor('ad', setEditingAd)} save={saveAd} deleteAd={deleteAd} busy={disabled} loading={loading} />}
+    {section === 'legacy' && <LegacyOperations editorSession={editorSessions.legacy} gems={legacyGems} form={legacyForm} setForm={setLegacyForm} editing={editingLegacyGem} setEditing={selectEditor('legacy', setEditingLegacyGem)} save={saveLegacyGem} deleteGem={deleteLegacyGem} busy={disabled} loading={loading} />}
     {bulkSoldOpen && <BulkSoldGems scope="stock" onClose={() => setBulkSoldOpen(false)} onCompleted={() => { if (editingStockStone) { setEditingStockStone(null); setStockStoneForm(emptyStockStone); resetEditorSession('stockStone'); } load(); return onDataChanged?.(); }} />}
   </div></OperationsUploads.Provider>;
 }
@@ -300,20 +319,20 @@ function CatalogOperations({ editorSession, categories, categoryForm, setCategor
   </div></div></div>;
 }
 
-function StockOperations({ editorSession, categorySession, categories, categoryForm, setCategoryForm, saveCategory, deleteCategory, stoneForm, setStoneForm, editingStone, setEditingStone, saveStone, stones, deleteStone, busy, loading }) {
+function StockOperations({ editorOnly = false, onCancel, editorSession, categorySession, categories, categoryForm, setCategoryForm, saveCategory, deleteCategory, stoneForm, setStoneForm, editingStone, setEditingStone, saveStone, stones, deleteStone, busy, loading }) {
   const categoryChange = changeSetter(setCategoryForm);
   const stoneChange = changeSetter(setStoneForm);
   const categoryNames = new Map(categories.map((category) => [category._id, category.title]));
-  return <div className="ops-stack"><div className="ops-stock-layout"><div className="ops-stack"><FormPanel key={`stock-category-${categorySession}`} title="New stock category" description="Group stock stones by gemstone type or collection." id="ops-stock-category-heading" label="Stock category details" busy={busy} onSubmit={saveCategory}>
+  return <div className="ops-stack"><div className={editorOnly ? "ops-stock-editor-layout" : "ops-stock-layout"}>{!editorOnly && <div className="ops-stack"><FormPanel key={`stock-category-${categorySession}`} title="New stock category" description="Group stock stones by gemstone type or collection." id="ops-stock-category-heading" label="Stock category details" busy={busy} onSubmit={saveCategory}>
     <Field label="Category title" name="title" id="ops-stock-category-title" value={categoryForm.title} onChange={categoryChange} required />
     <TextField value={categoryForm.description} onChange={categoryChange} />
     <ImageField label="Stock category image" name="mainImage" value={categoryForm.mainImage} onChange={categoryChange} disabled={busy} required />
     <FormActions busy={busy} label="Create stock category" />
-  </FormPanel><Records title="Stock categories" description="Deleting a category also removes all of its stock stones." rows={categories} columns={['Category', 'Actions']} loading={loading} searchLabel="Search stock categories" emptyTitle="No stock categories yet" emptyDetail="Create a category before adding stock stones." renderRow={(category) => <tr key={category._id}><td><RecordName record={category} image={category.mainImage} /></td><td><RowActions title={category.title} busy={busy} onDelete={() => deleteCategory(category)} /></td></tr>} /></div>
+  </FormPanel><Records title="Stock categories" description="Deleting a category also removes all of its stock stones." rows={categories} columns={['Category', 'Actions']} loading={loading} searchLabel="Search stock categories" emptyTitle="No stock categories yet" emptyDetail="Create a category before adding stock stones." renderRow={(category) => <tr key={category._id}><td><RecordName record={category} image={category.mainImage} /></td><td><RowActions title={category.title} busy={busy} onDelete={() => deleteCategory(category)} /></td></tr>} /></div>}
   <FormPanel key={`${editingStone?._id || 'new'}-${editorSession}`} title={editingStone ? 'Edit stock stone' : 'New stock stone'} description="Keep identity, availability and gem specifications ready for customer enquiries." id="ops-stock-stone-heading" label="Stock stone details" editing={editingStone} busy={busy} onSubmit={saveStone}>
     <div className="ops-generated-reference" aria-label="Generated Gem ID"><span>Gem ID</span><strong>{editingStone?.stoneId || 'Generated when you save'}</strong><small>The server creates this permanent reference automatically.</small></div>
     <section className="ops-stock-form-section" aria-labelledby="ops-stock-identity"><div className="ops-stock-section-heading"><OpsIcon /><h4 id="ops-stock-identity">Gemstone identity</h4></div>
-    <div className="admin-field ops-field"><label htmlFor="ops-stock-stone-category">Stock category<span className="ops-required" aria-hidden="true"> *</span></label><select id="ops-stock-stone-category" name="categoryId" value={stoneForm.categoryId} onChange={stoneChange} required><option value="">Select a stock category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.title}</option>)}</select>{!categories.length && <p className="ops-help">Create a stock category first using the form alongside.</p>}</div>
+    <div className="admin-field ops-field"><label htmlFor="ops-stock-stone-category">Stock category<span className="ops-required" aria-hidden="true"> *</span></label><select id="ops-stock-stone-category" name="categoryId" value={stoneForm.categoryId} onChange={stoneChange} required><option value="">Select a stock category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.title}</option>)}</select>{!categories.length && <p className="ops-help">{loading ? 'Loading stock categories...' : editorOnly ? 'Create a stock category in Operations > Stock inventory, then return here.' : 'Create a stock category first using the form alongside.'}</p>}</div>
     <Field label="Stone title" name="title" id="ops-stock-stone-title" value={stoneForm.title} onChange={stoneChange} required />
     <div className="admin-form-grid ops-form-grid">{[['weight', 'Weight per piece (ct)'], ['color', 'Colour'], ['shape', 'Shape'], ['cut', 'Cut'], ['origin', 'Origin']].map(([name, label]) => <Field key={name} label={label} name={name} value={stoneForm[name]} onChange={stoneChange} type={name === 'weight' ? 'number' : 'text'} step={name === 'weight' ? 'any' : undefined} />)}<div className="admin-field ops-field"><label htmlFor="ops-stock-treatment">Treatment</label><select id="ops-stock-treatment" name="treatment" value={stoneForm.treatment} onChange={stoneChange}>{['Unspecified', 'Unheated', 'Heated', 'Other'].map((treatment) => <option key={treatment}>{treatment}</option>)}</select></div></div>
     <TextField value={stoneForm.description} onChange={stoneChange} />
@@ -325,9 +344,9 @@ function StockOperations({ editorSession, categorySession, categories, categoryF
     <TextField label="Certificate details" name="certificateDetails" value={stoneForm.certificateDetails} onChange={stoneChange} placeholder="Laboratory, report number and relevant details" />
     <ImageField label="Stock certificate image" name="certificateImage" value={stoneForm.certificateImage} onChange={stoneChange} disabled={busy} hint="Optional. Add the certificate photograph from your device or an existing image link." />
     </section>
-    <FormActions editing={editingStone} busy={busy} label={editingStone ? 'Save stock stone' : 'Create stock stone'} onCancel={() => { setEditingStone(null); setStoneForm(emptyStockStone); }} />
+    <FormActions editing={Boolean(editingStone || editorOnly)} busy={busy} label={editingStone ? 'Save stock stone' : 'Create stock stone'} onCancel={() => { if (onCancel) { onCancel(); return; } setEditingStone(null); setStoneForm(emptyStockStone); }} />
   </FormPanel></div>
-  <Records title="Stock stones" description="Review quantities, availability and the details customers ask about." rows={stones} columns={['Stock item', 'Category', 'Quantity', 'Carats', 'Unit price (LKR)', 'Availability', 'Certificate', 'Actions']} searchLabel="Search stock by name, reference or category" searchValue={(stone) => [stone.title, stone.stoneId, stone.color, stone.shape, stone.cut, stone.origin, stone.treatment, categoryNames.get(categoryId(stone))].filter(Boolean).join(' ')} loading={loading} emptyTitle="No stock stones yet" emptyDetail="Add your first stock item using the form above." renderRow={(stone) => <tr key={stone._id}><td><RecordName record={stone} image={stone.image} />{stone.includedInStock === false && <span className="admin-badge">Excluded from stock totals</span>}</td><td>{categoryNames.get(categoryId(stone)) || 'Unassigned'}</td><td><span className="ops-number">{stone.quantity ?? 1}</span></td><td>{stone.weight ?? '—'}</td><td>{stone.price ?? '—'}</td><td><span className={`admin-badge ${Number(stone.quantity) > 0 && (!stone.stockStatus || stone.stockStatus === 'Available') ? 'is-success' : ''}`}>{Number(stone.quantity) <= 0 ? 'Out of stock' : stone.stockStatus || 'Available'}</span></td><td><span className={`admin-badge ${stone.hasCertificate ? 'is-success' : ''}`}>{stone.hasCertificate ? 'Available' : 'Not marked'}</span></td><td><RowActions title={stone.title} busy={busy} onEdit={() => { setEditingStone(stone); setStoneForm(stockFormFor(stone)); focusEditor('ops-stock-stone-title'); }} onDelete={() => deleteStone(stone)} /></td></tr>} />
+  {!editorOnly && <Records title="Stock stones" description="Review quantities, availability and the details customers ask about." rows={stones} columns={['Stock item', 'Category', 'Quantity', 'Carats', 'Unit price (LKR)', 'Availability', 'Certificate', 'Actions']} searchLabel="Search stock by name, reference or category" searchValue={(stone) => [stone.title, stone.stoneId, stone.color, stone.shape, stone.cut, stone.origin, stone.treatment, categoryNames.get(categoryId(stone))].filter(Boolean).join(' ')} loading={loading} emptyTitle="No stock stones yet" emptyDetail="Add your first stock item using the form above." renderRow={(stone) => <tr key={stone._id}><td><RecordName record={stone} image={stone.image} />{stone.includedInStock === false && <span className="admin-badge">Excluded from stock totals</span>}</td><td>{categoryNames.get(categoryId(stone)) || 'Unassigned'}</td><td><span className="ops-number">{stone.quantity ?? 1}</span></td><td>{stone.weight ?? '—'}</td><td>{stone.price ?? '—'}</td><td><span className={`admin-badge ${Number(stone.quantity) > 0 && (!stone.stockStatus || stone.stockStatus === 'Available') ? 'is-success' : ''}`}>{Number(stone.quantity) <= 0 ? 'Out of stock' : stone.stockStatus || 'Available'}</span></td><td><span className={`admin-badge ${stone.hasCertificate ? 'is-success' : ''}`}>{stone.hasCertificate ? 'Available' : 'Not marked'}</span></td><td><RowActions title={stone.title} busy={busy} onEdit={() => { setEditingStone(stone); setStoneForm(stockFormFor(stone)); focusEditor('ops-stock-stone-title'); }} onDelete={() => deleteStone(stone)} /></td></tr>} />}
   </div>;
 }
 

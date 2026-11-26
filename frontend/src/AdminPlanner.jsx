@@ -258,12 +258,14 @@ export default function AdminPlanner() {
   const remove = (path, message, key) => { if (window.confirm(message)) runAction(key, () => api(path, { method: 'DELETE' }), 'Deleted successfully.'); };
   const updateAppointmentStatus = (appointment, nextStatus) => runAction(`appointment-${appointment._id}`, () => api(`/api/appointments/${appointment._id}`, { method: 'PUT', body: JSON.stringify({ status: nextStatus }) }), `Appointment marked ${nextStatus.toLowerCase()}.`);
   const editAppointment = (appointment) => {
+    if (actionRef.current) return;
     setEditingAppointment(appointment);
     setAppointmentForm({ ...appointmentDefaults, ...appointment, date: dayKey(appointment.date) });
     setView('appointments');
     window.requestAnimationFrame(() => { appointmentFormRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' }); appointmentFormRef.current?.querySelector('input')?.focus({ preventScroll: true }); });
   };
   const editNote = (note) => {
+    if (actionRef.current) return;
     setEditingNote(note);
     setNoteForm({ ...noteDefaults, ...note, tags: array(note.tags).join(', '), reminderAt: reminderInput(note.reminderAt) });
     setView('notes');
@@ -278,6 +280,7 @@ export default function AdminPlanner() {
     : activeLoadError ? [{ label: resourceLabels[view], error: activeLoadError }] : [];
   const showAppointments = () => { setAppointmentSearch(''); setAppointmentStatus(''); setView('appointments'); setShowNotifications(false); };
   const addOnDate = (type, date) => {
+    if (actionRef.current) return;
     setSelectedDate(date);
     if (type === 'appointment') { setAppointmentForm({ ...appointmentDefaults, date }); setEditingAppointment(null); setAppointmentSearch(''); setAppointmentStatus(''); setView('appointments'); }
     else { setNoteForm({ ...noteDefaults, noteDate: date }); setEditingNote(null); setNoteSearch(''); setShowArchived(false); setView('notes'); }
@@ -291,6 +294,7 @@ export default function AdminPlanner() {
   return <div className="admin-planner">
     <div className="planner-workspace-bar">
       <div className="admin-subnav planner-tabs" role="tablist" aria-label="Planner views" onKeyDown={(event) => {
+        if (actionRef.current) return;
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
         event.preventDefault();
         const tabs = [...event.currentTarget.querySelectorAll('[role="tab"]')];
@@ -298,12 +302,12 @@ export default function AdminPlanner() {
         const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
         tabs[next]?.focus(); tabs[next]?.click();
       }}>
-        <button id="planner-tab-calendar" aria-controls="planner-calendar-panel" tabIndex={view === 'calendar' ? 0 : -1} type="button" role="tab" aria-selected={view === 'calendar'} className={view === 'calendar' ? 'is-active' : ''} onClick={() => setView('calendar')}><PlannerIcon /><span>Calendar</span></button>
-        <button id="planner-tab-appointments" aria-controls="planner-appointments-panel" tabIndex={view === 'appointments' ? 0 : -1} type="button" role="tab" aria-selected={view === 'appointments'} className={view === 'appointments' ? 'is-active' : ''} onClick={() => setView('appointments')}><PlannerIcon name="clock" /><span>Appointments</span><small>{appointments.length}</small></button>
-        <button id="planner-tab-notes" aria-controls="planner-notes-panel" tabIndex={view === 'notes' ? 0 : -1} type="button" role="tab" aria-selected={view === 'notes'} className={view === 'notes' ? 'is-active' : ''} onClick={() => setView('notes')}><PlannerIcon name="note" /><span>Notes</span><small>{calendarNotes.length}</small></button>
+        <button id="planner-tab-calendar" aria-controls="planner-calendar-panel" tabIndex={view === 'calendar' ? 0 : -1} disabled={Boolean(busy)} type="button" role="tab" aria-selected={view === 'calendar'} className={view === 'calendar' ? 'is-active' : ''} onClick={() => setView('calendar')}><PlannerIcon /><span>Calendar</span></button>
+        <button id="planner-tab-appointments" aria-controls="planner-appointments-panel" tabIndex={view === 'appointments' ? 0 : -1} disabled={Boolean(busy)} type="button" role="tab" aria-selected={view === 'appointments'} className={view === 'appointments' ? 'is-active' : ''} onClick={() => setView('appointments')}><PlannerIcon name="clock" /><span>Appointments</span><small>{appointments.length}</small></button>
+        <button id="planner-tab-notes" aria-controls="planner-notes-panel" tabIndex={view === 'notes' ? 0 : -1} disabled={Boolean(busy)} type="button" role="tab" aria-selected={view === 'notes'} className={view === 'notes' ? 'is-active' : ''} onClick={() => setView('notes')}><PlannerIcon name="note" /><span>Notes</span><small>{calendarNotes.length}</small></button>
       </div>
       <div className="planner-notifications" ref={notificationRef}>
-        <button ref={notificationButton} type="button" className="admin-button is-secondary planner-notification-trigger" onClick={() => setShowNotifications((open) => !open)} aria-expanded={showNotifications} aria-controls="planner-notifications"><PlannerIcon name="bell" />Notifications{notificationCount > 0 && <span>{notificationCount}</span>}</button>
+        <button ref={notificationButton} type="button" className="admin-button is-secondary planner-notification-trigger" disabled={Boolean(busy)} onClick={() => setShowNotifications((open) => !open)} aria-expanded={showNotifications} aria-controls="planner-notifications"><PlannerIcon name="bell" />Notifications{notificationCount > 0 && <span>{notificationCount}</span>}</button>
         {showNotifications && <div id="planner-notifications" className="planner-notification-panel">
           <div className="planner-notification-heading"><div><h3>Today’s activity</h3><p>Appointments and reminders at a glance</p></div><button type="button" aria-label="Close notifications" onClick={() => setShowNotifications(false)}><PlannerIcon name="close" /></button></div>
           {notificationsError && <div className="planner-notification-error" role="alert"><p>Activity could not be refreshed. Displayed details may be out of date.</p><small>{API_HOST} · {notificationsError.status ? `HTTP ${notificationsError.status}` : 'Connection failed'} · {endpoint(notificationsError)}</small>{notificationsError.status === 404 && <p>Deploy the current backend to enable activity summaries.</p>}<button type="button" onClick={load}>Try again</button></div>}

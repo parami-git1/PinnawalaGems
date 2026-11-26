@@ -70,3 +70,9 @@
   .pg-gem-media__expand, .pg-gem-media__toolbar button, .pg-gem-media-dialog button { width: 44px; height: 44px; }
   .pg-gem-media__unavailable button { min-height: 44px; font-size: 13px; }
 }
+@media (max-width: 767px) {
+  .pg-gem-media__stage,
+  .pg-gem-media-dialog__stage { touch-action: pan-y pinch-zoom; }
+  .pg-gem-media__thumbnails { touch-action: pan-x pan-y pinch-zoom; scroll-padding-inline: 2px; }
+  .pg-gem-media-dialog > header { position: sticky; top: 0; z-index: 4; background: #fbfaf7; }
+}

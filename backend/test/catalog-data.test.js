@@ -195,7 +195,7 @@ test('real numeric schemas reject invalid inventory and stock availability and a
   assert.equal(carats('2.5 ct'), 2.5); assert.equal(carats('10'), 10); assert.throws(() => carats('2-10 ct'));
 });
 
-test('legacy image cleanup preserves dotted IDs and ignores foreign clouds and local files', async () => {
+test('asset identification preserves dotted IDs while record deletion retains all shared media', async () => {
   const previous = cloudinary.config().cloud_name; cloudinary.config({ cloud_name: 'synthetic-test' });
   try {
     const image = 'https://res.cloudinary.com/synthetic-test/image/upload/v173123/pinnawala_gems/stone.preview.jpg';
@@ -204,7 +204,7 @@ test('legacy image cleanup preserves dotted IDs and ignores foreign clouds and l
     const created = await create({ image });
     const oldCalls = cloudinary.uploader.destroy.mock.calls.length;
     assert.equal((await api(`/api/inventory/stones/${created.body._id}`, { method: 'DELETE' })).status, 200);
-    assert.deepEqual(cloudinary.uploader.destroy.mock.calls[oldCalls].arguments, ['pinnawala_gems/stone.preview', { resource_type: 'image', invalidate: true }]);
+    assert.equal(cloudinary.uploader.destroy.mock.calls.length, oldCalls, 'Record deletion must never purge reusable Cloudinary media');
   } finally { cloudinary.config({ cloud_name: previous }); }
 });
 

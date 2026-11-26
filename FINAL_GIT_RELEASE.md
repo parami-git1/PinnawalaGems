@@ -1,5 +1,79 @@
 # Final Git release plan — Pinnawala Gems
 
+## Current release candidate — 26 November 2026
+
+Reviewed checkout HEAD: `82465bdb4e3ff2c62983a14c6bb2ce39c7937492`, branch `main`, with the pending source changes below. This is a reviewed base, **not** an approved release SHA. No staging, commit, push, deployment, secrets change or production write was performed. The older staging lists and performance measurements later in this file describe historical work and must not substitute for reviewing the complete current tree.
+
+The current candidate adds Overview category charts/ID management, final phone/gallery interactions, contextual WhatsApp enquiry drafts and the completed admin audit fixes. It retains existing business details, authentication, original images, Cloudinary assets and 3D design. **This candidate includes backend changes:** planner validation/search/date boundaries, sanitized errors and media retention during permanent deletion. Deploy the matching Render backend before Vercel after authorization. No migration, new dependency, environment variable or secret change is required. See `frontend/ADMIN_UI_REFINEMENT.md` for the function-by-function audit.
+
+Include all these pending application/test files in the authorized source review, along with this document and `RELEASE_CHECKLIST.md`:
+
+```text
+backend/DEPLOYMENT.md
+backend/routes/adminNoteRoutes.js
+backend/routes/appointmentRoutes.js
+backend/routes/eventAdRoutes.js
+backend/routes/feedbackRoutes.js
+backend/routes/inventoryRoutes.js
+backend/routes/plannerRoutes.js
+backend/routes/stockRoutes.js
+backend/utils/assetCleanup.js
+backend/utils/plannerFields.js
+backend/test/catalog-data.test.js
+backend/test/feedback-errors.test.js
+backend/test/gem-media.test.js
+backend/test/media-retention.test.js
+backend/test/planner-api.test.js
+frontend/ADMIN_UI_REFINEMENT.md
+frontend/GEM_MEDIA.md
+frontend/src/AdminInventory.jsx
+frontend/src/AdminOperations.css
+frontend/src/AdminOperations.jsx
+frontend/src/AdminPlanner.jsx
+frontend/src/admin/Admin.css
+frontend/src/admin/AdminContent.css
+frontend/src/admin/AdminContent.jsx
+frontend/src/admin/AdminDashboard.jsx
+frontend/src/admin/GemMediaEditor.css
+frontend/src/admin/GemMediaEditor.jsx
+frontend/src/admin/WebsiteSettings.jsx
+frontend/src/admin/InventoryCharts.css
+frontend/src/admin/InventoryCharts.jsx
+frontend/src/admin/QuickGemLookup.css
+frontend/src/admin/QuickGemLookup.jsx
+frontend/src/admin/gemLookup.js
+frontend/src/admin/inventoryChartData.js
+frontend/src/Contact.jsx
+frontend/src/ContactPhone.css
+frontend/src/CustomerGallery.css
+frontend/src/CustomerGallery.jsx
+frontend/src/Feedback.mobile.css
+frontend/src/FeedbackGallery.jsx
+frontend/src/Footer.jsx
+frontend/src/GemDetailsPhone.css
+frontend/src/GemMediaGallery.css
+frontend/src/GemMediaGallery.jsx
+frontend/src/Home.jsx
+frontend/src/PublicPhoneNavigation.css
+frontend/src/WhatsAppWidget.jsx
+frontend/src/Workshop.jsx
+frontend/src/gemInquiry.js
+frontend/src/workshopContent.js
+frontend/src/whatsappLinks.js
+frontend/test/gemLookup.test.js
+frontend/test/inventoryChartData.test.js
+frontend/test/whatsappLinks.test.js
+frontend/test/workshopContent.test.js
+```
+
+Verify this list against actual `git status --short`, the complete diff and the final approved commit tree; concurrent owner changes can extend the release. Keep real `.env`, uploads, `.tmp` evidence, credentials, dependencies and `dist` out of source staging. New imported modules must be included. No ZIP is needed.
+
+Latest local verification: frontend helpers **53/53**, backend **125/125**, full frontend lint/build and **173/173 admin browser scenarios** passed. The preceding public/mobile/message/recovery task separately passed 52 checks; those are historical evidence, not fresh live measurements. Browser APIs/data were synthetic, all external requests intercepted, and only synthetic test records mutated. Real deployed API/CDN behavior, physical phone/WhatsApp operation and production performance are **PENDING**. Historical LCP results are not acceptance measurements for the current candidate; do not claim the live 2.5-second target is met.
+
+Before any production-connected Git action, obtain explicit authorization, confirm actual platform branches/root directories, preserve current successful deployment IDs and secrets, and record the exact approved SHA. A push may auto-deploy. Follow `RELEASE_CHECKLIST.md` for backend-first order, real read-only checks and archive-aware rollback. The latest admin audit supersedes earlier frontend-only deployment notes. Retain the new backend media-preservation behavior when choosing rollback artifacts; older deletion routes could purge shared media. Do not roll back to a backend that ignores archived sold gems. No approval or deployment is implied by this prepared plan.
+
+## Historical performance release — 17 November 2026
+
 17 November 2026. **Prepared only: no staging, commit, push, deployment, secrets change or production write has been executed.**
 
 Reviewed base: `e3409366e52cd9b6323b1880522cedd9a5c81978`. Local branch: `main`. Final release SHA: **PENDING** until an explicitly authorized commit. Files below include the earlier uncommitted readiness fixes and the final LCP/retry changes.

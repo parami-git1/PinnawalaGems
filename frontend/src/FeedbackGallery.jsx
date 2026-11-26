@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { imageDelivery } from './imageDelivery';
 import { FEEDBACK_PREVIEW, FEEDBACK_STARTER, FEEDBACK_SRCSET, FEEDBACK_SIZES } from './pageHeroAssets';
 
@@ -71,7 +71,11 @@ function preparePhoto(source, priority = 'auto') {
 
 const starterPhoto = () => ({ source: FEEDBACK_STARTER, url: FEEDBACK_STARTER, srcSet: FEEDBACK_SRCSET, initial: true, ready: false });
 
-export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
+export default function FeedbackGallery({ photos: providedPhotos = [], reducedMotion, Icon }) {
+  const photos = useMemo(() => {
+    const values = Array.isArray(providedPhotos) ? [...new Set(providedPhotos.filter(source => typeof source === 'string' && source.trim()).map(source => source.trim()))] : [];
+    return values.length ? values : [FEEDBACK_STARTER];
+  }, [providedPhotos]);
   const [selection, setSelection] = useState({ list: '', index: 0 });
   const [current, setCurrent] = useState(starterPhoto);
   const [incoming, setIncoming] = useState(null);
@@ -81,6 +85,8 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
   const [error, setError] = useState(null);
   const [retry, setRetry] = useState(0);
   const failed = useRef(new Set());
+  const touch = useRef(null);
+  const [touching, setTouching] = useState(false);
   const photoList = JSON.stringify(photos);
   const requestedIndex = selection.list === photoList ? selection.index % photos.length : 0;
   const target = photos[requestedIndex];
@@ -131,9 +137,21 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
     setFading(false);
   };
   const selectPhoto = (index) => setSelection({ list: photoList, index: (index + photos.length) % photos.length });
+  const startSwipe = (event) => {
+    const eligible = event.touches.length === 1 && !event.target.closest('button,a,.feedback-gallery-caption,.feedback-gallery-error');
+    touch.current = eligible ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+    setTouching(eligible);
+  };
+  const endSwipe = (event) => {
+    const origin = touch.current; touch.current = null; setTouching(false);
+    if (!origin || !event.changedTouches.length || photos.length < 2) return;
+    const x = event.changedTouches[0].clientX - origin.x;
+    const y = event.changedTouches[0].clientY - origin.y;
+    if (Math.abs(x) > 45 && Math.abs(x) > Math.abs(y) * 1.3) selectPhoto(requestedIndex + (x > 0 ? -1 : 1));
+  };
 
   useEffect(() => {
-    if (photos.length <= 1 || incoming || !current.ready || photoHovered || photoFocused || reducedMotion || (target !== current.source && error?.source !== target)) return undefined;
+    if (photos.length <= 1 || incoming || !current.ready || photoHovered || photoFocused || touching || reducedMotion || (target !== current.source && error?.source !== target)) return undefined;
     const timer = window.setTimeout(() => {
       for (let offset = 1; offset <= photos.length; offset += 1) {
         const index = (requestedIndex + offset) % photos.length;
@@ -144,7 +162,7 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
       }
     }, 5000);
     return () => window.clearTimeout(timer);
-  }, [photos, photoList, requestedIndex, target, current.source, current.ready, incoming, photoHovered, photoFocused, reducedMotion, error]);
+  }, [photos, photoList, requestedIndex, target, current.source, current.ready, incoming, photoHovered, photoFocused, touching, reducedMotion, error]);
 
   // Prepare just the next photograph at low priority, never the whole slideshow.
   useEffect(() => {
@@ -182,7 +200,7 @@ export default function FeedbackGallery({ photos, reducedMotion, Icon }) {
     } else setCurrent((displayed) => ({ ...displayed, ready: false, displayFailed: true }));
   };
 
-  return <div className="feedback-gallery" aria-label="Pinnawala Gems photo gallery" aria-roledescription="carousel" aria-busy={galleryState === 'loading'} data-gallery-state={galleryState} data-active-photo={current.source} onMouseEnter={() => setPhotoHovered(true)} onMouseLeave={() => setPhotoHovered(false)} onFocusCapture={() => setPhotoFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPhotoFocused(false); }}>
+  return <div className="feedback-gallery" style={{ touchAction: 'pan-y pinch-zoom' }} aria-label="Pinnawala Gems photo gallery" aria-roledescription="carousel" aria-busy={galleryState === 'loading'} data-gallery-state={galleryState} data-active-photo={current.source} onTouchStart={startSwipe} onTouchMove={(event) => { if (event.touches.length !== 1) { touch.current = null; setTouching(false); } }} onTouchEnd={endSwipe} onTouchCancel={() => { touch.current = null; setTouching(false); }} onMouseEnter={() => setPhotoHovered(true)} onMouseLeave={() => setPhotoHovered(false)} onFocusCapture={() => setPhotoFocused(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPhotoFocused(false); }}>
     <div className="feedback-gallery-preview" style={{ backgroundImage: `url("${FEEDBACK_PREVIEW}")` }} aria-hidden="true" />
     {[current, incoming].filter(Boolean).map((photo) => <img key={`${photo.source}:${photo.revision || 0}`} src={photo.url} srcSet={photo.srcSet} sizes={photo.srcSet ? FEEDBACK_SIZES : undefined} alt={photo === current ? photo.source === FEEDBACK_STARTER ? 'Gemstone craftsmanship' : 'At Pinnawala Gems' : ''} aria-hidden={photo !== current} width="1000" height="1250" loading="eager" fetchPriority={photo.source === FEEDBACK_STARTER ? 'high' : 'auto'} decoding="async" data-image-state={photo.displayFailed ? 'error' : photo.ready ? 'ready' : 'loading'} data-photo-source={photo.source} className={`feedback-gallery-photo${photo.initial ? ' is-starter' : ''}${photo === current ? ' is-active is-current' : ` is-entering${fading ? ' is-active' : ''}`}`} onLoad={photo === incoming ? (event) => incomingLoaded(event, photo) : !photo.ready ? currentLoaded : undefined} onTransitionEnd={photo === incoming ? finishFade : undefined} onError={() => displayFailed(photo)} />)}
     <div className="feedback-gallery-shade" />

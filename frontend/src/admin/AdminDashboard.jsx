@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AdminEmptyState, AdminIcon, AdminImage } from './AdminUI';
+import InventoryCharts from './InventoryCharts';
+import QuickGemLookup from './QuickGemLookup';
 import { DEFAULT_INSIGHT_FILTERS, facetValues, filterInventory, inventorySummary, normalizeInventory, rangeError } from './inventoryInsights';
 import './AdminDashboard.css';
 
@@ -20,7 +22,7 @@ function Composition({ title, icon, values, selected, onSelect, empty }) {
   return <section className="stock-insights-composition"><header><AdminIcon name={icon} /><h3>{title}</h3></header>{values.length ? <div>{values.slice().sort((a, b) => b.pieces - a.pieces).slice(0, 8).map(value => <button type="button" key={value.value} className={selected === value.value ? 'is-selected' : ''} onClick={() => onSelect(value.value)}><span title={value.label}>{value.label}</span><strong>{integer(value.pieces)}<small>pieces</small></strong><i style={{ width: `${Math.max(4, value.pieces / Math.max(1, ...values.map(item => item.pieces)) * 100)}%` }} /></button>)}</div> : <p>{empty || 'No matching details recorded.'}</p>}</section>;
 }
 
-export default function AdminDashboard({ stones = [], categories = [], stockStones = [], stockCategories = [], stockLoading = false, stockError = '', onRetryStock, onEditStone, pendingReviews = 0, onNavigate = () => {} }) {
+export default function AdminDashboard({ stones = [], categories = [], stockStones = [], stockCategories = [], stockLoading = false, stockError = '', onRetryStock, onEditStone, onDeleteStone, onCreateStone, pendingReviews = 0, onNavigate = () => {} }) {
   const [filters, setFilters] = useState({ ...DEFAULT_INSIGHT_FILTERS });
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState('quantity');
@@ -38,6 +40,10 @@ export default function AdminDashboard({ stones = [], categories = [], stockSton
   const update = (name, value) => { setFilters(current => ({ ...current, [name]: value, ...(name === 'source' ? { category: '', placement: '', inclusion: value === 'showcase' ? '' : 'included' } : {}) })); setPage(1); };
   const reset = () => { setFilters({ ...DEFAULT_INSIGHT_FILTERS }); setPage(1); };
   const changeSource = source => { setFilters({ ...DEFAULT_INSIGHT_FILTERS, source, inclusion: source === 'showcase' ? '' : 'included' }); setPage(1); };
+  const exploreChart = ({ source, category, availability = '', inclusion = '' }) => {
+    setFilters({ ...DEFAULT_INSIGHT_FILTERS, source, category, availability, inclusion }); setPage(1);
+    window.requestAnimationFrame(() => document.getElementById('stock-finder-title')?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }));
+  };
   const active = Object.keys(filters).filter(key => filters[key] !== DEFAULT_INSIGHT_FILTERS[key] && filters[key] !== '');
   const issue = rangeError(filters);
   const stockUnavailable = filters.source === 'stock' && stockRows.length === 0 && (stockLoading || stockError);
@@ -55,6 +61,9 @@ export default function AdminDashboard({ stones = [], categories = [], stockSton
     </div>
     <p className="stock-insights-source-note">Stock and website showcase totals are shown separately. A gemstone recorded in both is counted within each list.</p>
     {stockError && <div className="stock-insights-warning" role="alert"><AdminIcon name="bell" /><div><strong>Private stock could not be refreshed</strong><p>{typeof stockError === 'string' ? stockError : 'Check the backend connection and try again.'}{stockRows.length ? ' The last loaded stock is still shown.' : ' Stock counts are unavailable until this list loads.'}</p></div>{onRetryStock && <button type="button" className="admin-button" onClick={onRetryStock}>Retry stock</button>}</div>}
+
+    <QuickGemLookup rows={rows} stockLoading={stockLoading} stockError={stockError} onRetryStock={onRetryStock} onEditStone={onEditStone} onDeleteStone={onDeleteStone} onCreateStone={onCreateStone} />
+    <InventoryCharts rows={rows} stockLoading={stockLoading} stockError={stockError} onRetryStock={onRetryStock} onExplore={exploreChart} />
 
     <section className="admin-panel stock-insights-finder" aria-labelledby="stock-finder-title">
       <header className="admin-panel-header"><div><h2 id="stock-finder-title">Find the right gemstone</h2><p>Check a customer’s requested colour, shape and carat range while you talk.</p></div><span className="stock-insights-finder-icon"><AdminIcon name="search" /></span></header>

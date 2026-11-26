@@ -1,6 +1,8 @@
 const express = require('express');
 const Appointment = require('../models/Appointment');
 const requireAdmin = require('../middleware/adminAuth');
+const { plannerPayload, plannerQuery } = require('../utils/plannerFields');
+const { objectId, routeError } = require('../utils/catalogData');
 
 const router = express.Router();
 
@@ -8,54 +10,41 @@ router.use(requireAdmin);
 
 router.get('/', async (req, res) => {
   try {
-    const { search = '', status, from, to } = req.query;
-    const query = {};
-    if (search) query.$or = [
-      { customerName: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } },
-      { phone: { $regex: search, $options: 'i' } },
-      { purpose: { $regex: search, $options: 'i' } }
-    ];
-    if (status) query.status = status;
-    if (from || to) {
-      query.date = {};
-      if (from) query.date.$gte = new Date(`${from}T00:00:00`);
-      if (to) query.date.$lte = new Date(`${to}T23:59:59`);
-    }
+    const query = plannerQuery(req.query, 'appointment');
     const appointments = await Appointment.find(query).sort({ date: 1, time: 1 });
     res.json(appointments);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 router.get('/:id', async (req, res) => {
   try {
-    const appointment = await Appointment.findById(req.params.id);
+    const appointment = await Appointment.findById(objectId(req.params.id));
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
     res.json(appointment);
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 router.post('/', async (req, res) => {
   try {
-    const appointment = await Appointment.create(req.body);
+    const appointment = await Appointment.create(plannerPayload(req.body, 'appointment'));
     res.status(201).json(appointment);
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 router.put('/:id', async (req, res) => {
   try {
-    const appointment = await Appointment.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true, runValidators: true });
+    const appointment = await Appointment.findByIdAndUpdate(objectId(req.params.id), { $set: plannerPayload(req.body, 'appointment') }, { new: true, runValidators: true });
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
     res.json(appointment);
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 router.delete('/:id', async (req, res) => {
   try {
-    const appointment = await Appointment.findByIdAndDelete(req.params.id);
+    const appointment = await Appointment.findByIdAndDelete(objectId(req.params.id));
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
     res.json({ message: 'Appointment deleted successfully' });
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 module.exports = router;

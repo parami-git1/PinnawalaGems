@@ -1,6 +1,8 @@
 const express = require('express');
 const AdminNote = require('../models/AdminNote');
 const requireAdmin = require('../middleware/adminAuth');
+const { plannerPayload, plannerQuery } = require('../utils/plannerFields');
+const { objectId, routeError } = require('../utils/catalogData');
 
 const router = express.Router();
 
@@ -8,42 +10,33 @@ router.use(requireAdmin);
 
 router.get('/', async (req, res) => {
   try {
-    const { search = '', category, archived } = req.query;
-    const query = {};
-    if (search) query.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { content: { $regex: search, $options: 'i' } },
-      { tags: { $regex: search, $options: 'i' } },
-      { customerName: { $regex: search, $options: 'i' } }
-    ];
-    if (category) query.category = category;
-    if (archived !== undefined) query.isArchived = archived === 'true';
+    const query = plannerQuery(req.query, 'note');
     const notes = await AdminNote.find(query).sort({ isPinned: -1, updatedAt: -1 });
     res.json(notes);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 router.post('/', async (req, res) => {
   try {
-    const note = await AdminNote.create(req.body);
+    const note = await AdminNote.create(plannerPayload(req.body, 'note'));
     res.status(201).json(note);
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 router.put('/:id', async (req, res) => {
   try {
-    const note = await AdminNote.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true, runValidators: true });
+    const note = await AdminNote.findByIdAndUpdate(objectId(req.params.id), { $set: plannerPayload(req.body, 'note') }, { new: true, runValidators: true });
     if (!note) return res.status(404).json({ message: 'Note not found' });
     res.json(note);
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 router.delete('/:id', async (req, res) => {
   try {
-    const note = await AdminNote.findByIdAndDelete(req.params.id);
+    const note = await AdminNote.findByIdAndDelete(objectId(req.params.id));
     if (!note) return res.status(404).json({ message: 'Note not found' });
     res.json({ message: 'Note deleted successfully' });
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) { routeError(res, error); }
 });
 
 module.exports = router;

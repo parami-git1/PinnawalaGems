@@ -16,7 +16,12 @@ test('local and international numbers produce safe call and WhatsApp actions', (
   assert.equal(normalizeWorkshopPhone('077 830 7334'), '+94778307334');
   assert.equal(normalizeWorkshopPhone('0094 (77) 830-7334'), '+94778307334');
   assert.equal(normalizeWorkshopPhone('+1 (212) 555-0199'), '+12125550199');
-  assert.deepEqual(workshopContactLinks({ phoneNumber: '0769254499', whatsappNumber: '+94778307334' }), { call: 'tel:+94769254499', whatsapp: 'https://wa.me/94778307334' });
+  const links = workshopContactLinks({ title: 'Sapphire cutting', phoneNumber: '0769254499', whatsappNumber: '+94778307334' });
+  assert.equal(links.call, 'tel:+94769254499');
+  const chat = new URL(links.whatsapp);
+  assert.equal(chat.origin + chat.pathname, 'https://wa.me/94778307334');
+  assert.match(chat.searchParams.get('text'), /Workshop: Sapphire cutting/);
+  assert.match(chat.searchParams.get('text'), /confirm availability, fees and how to book/);
 });
 test('malformed contact numbers cannot become external URL or tel actions', () => {
   for (const value of ['javascript:alert(1)', '+94++778307334', '0778307334?message=bad', '123', '+0123456789', 'wa.me/94778307334']) assert.equal(normalizeWorkshopPhone(value), '');

@@ -50,6 +50,13 @@
 @media (max-width: 359px) {
   .pg-community .pg-community__heading h2 { font-size: 30px; }
 }
+@media (max-width: 767px) {
+  .pg-home .pg-community__track { grid-auto-columns: 90%; gap: 12px; }
+  .pg-home .pg-community__track--single { grid-auto-columns: 100%; }
+  .pg-home .pg-community__photo { background: #edf0ef; }
+  .pg-home .pg-community__photo img { object-fit: contain; object-position: center; transform: none; }
+  .pg-home .pg-community__photo::after { inset: 8px; border-color: rgb(255 255 255 / .4); }
+}
 @media (prefers-reduced-motion: reduce) {
   .pg-community *, .pg-community *::before, .pg-community *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

@@ -82,7 +82,8 @@ export function WorkshopPanel({ workshop, onSave, onDelete, loading = false }) {
     event.preventDefault();
     if (action.current || loading || uploadBusy.current) return;
     const submittedAt = new Date().getTime();
-    if (!form.title.trim() || !form.description.trim() || !form.imageUrl.trim()) { setStatus({ type: 'error', message: 'Add a title, description and an image before publishing.' }); return; }
+    const missing = !form.title.trim() ? 'title' : !form.description.trim() ? 'description' : !form.imageUrl.trim() ? 'imageUrl' : '';
+    if (missing) { invalid('Add a title, description and an image before publishing.', missing); return; }
     const payload = Object.fromEntries(Object.keys(EMPTY_WORKSHOP).map((field) => [field, form[field]]));
     if (isEditing) payload._id = form._id;
     payload.publishAt = null;

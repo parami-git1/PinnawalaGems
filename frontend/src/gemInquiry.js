@@ -1,4 +1,5 @@
 import { BUSINESS } from './businessDetails.js';
+import { whatsappChatUrl, whatsappNumber } from './whatsappLinks.js';
 
 const line = value => typeof value === 'string' || typeof value === 'number' ? String(value).replace(/\s+/g, ' ').trim().slice(0, 300) : '';
 
@@ -16,7 +17,7 @@ export function gemDetailUrl(gem, origin = 'https://pinnawala-gems.vercel.app') 
 export function gemInquiryMessage(gem, origin) {
   const title = line(gem?.title) || 'this gemstone';
   const reference = line(gem?.stoneId) || line(gem?._id);
-  const weight = line(gem?.weight).replace(/\s*(?:cts?\.?|carats?)$/i, '').trim();
+  const weight = (line(gem?.weight) || line(gem?.caratWeight)).replace(/\s*(?:cts?\.?|carats?)$/i, '').trim();
   const details = [
     `Gemstone: ${title}`, reference && `Gem ID: ${reference}`,
     weight && `Weight: ${weight} ct`,
@@ -31,7 +32,5 @@ export function gemInquiryMessage(gem, origin) {
 }
 
 export function gemWhatsAppUrl(gem, number = BUSINESS.whatsapp, origin) {
-  const digits = String(number || '').replace(/[+\s()-]/g, '');
-  const recipient = /^[1-9]\d{7,14}$/.test(digits) ? digits : BUSINESS.whatsapp;
-  return `https://wa.me/${recipient}?text=${encodeURIComponent(gemInquiryMessage(gem, origin))}`;
+  return whatsappChatUrl(whatsappNumber(number) || BUSINESS.whatsapp, gemInquiryMessage(gem, origin));
 }
